@@ -1,0 +1,49 @@
+= Goplum
+
+Golang, plugin-based service monitoring.
+
+== Plugin Architecture
+
+Plugins are independent binaries compiled with `-buildmode=plugin`.
+
+Goplum iterates a plugins directory and attempts to load all files
+found. Each plugin is expected to expose a function called `Plum()`
+which returns an implementation of the `Plugin` interface:
+
+[source,go]
+----
+package goplum
+
+import "encoding/json"
+
+type Plugin interface {
+    Name() string
+    Checks() []Check
+    Notifiers() []Notifier
+}
+
+// Check is one type of check that may be performed to determine the status of a service
+// e.g. making a HTTP request, or opening a TCP socket.
+type Check interface {
+    Name() string
+    Help() string
+    Create(config json.RawMessage) Task
+}
+
+type Task interface {
+    Execute() Result
+}
+
+type Result struct {
+    // TODO: Fill this in - good/warn/fail + message? Response time? Custom fields?
+}
+
+// Notifier is one way of notifying people when a service goes down or returns, e.g.
+// posting a webhook, sending a message with Twilio
+type Notifier interface {
+    // TODO: Fill this in - similar to the Check interface
+}
+----
+
+For local/Windows-based development, a separate entrypoint can exist that simply
+loads all known Checks directly instead of going through the plugin system.
