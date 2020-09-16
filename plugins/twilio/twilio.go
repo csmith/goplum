@@ -15,12 +15,12 @@ func (h Plugin) Name() string {
 	return "twilio"
 }
 
-func (h Plugin) Checks() []goplum.Check {
+func (h Plugin) Checks() []goplum.CheckType {
 	return nil
 }
 
-func (h Plugin) Notifiers() []goplum.Notifier {
-	return []goplum.Notifier{Notifier{}}
+func (h Plugin) Alerts() []goplum.AlertType {
+	return []goplum.AlertType{Notifier{}}
 }
 
 type params struct {
@@ -36,7 +36,7 @@ func (n Notifier) Name() string {
 	return "twilio"
 }
 
-func (n Notifier) Create(config json.RawMessage) (goplum.Notification, error) {
+func (n Notifier) Create(config json.RawMessage) (goplum.Alert, error) {
 	p := params{}
 	err := json.Unmarshal(config, &p)
 	if err != nil {

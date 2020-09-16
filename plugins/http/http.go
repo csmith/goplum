@@ -12,11 +12,11 @@ func (h Plugin) Name() string {
 	return "http"
 }
 
-func (h Plugin) Checks() []goplum.Check {
-	return []goplum.Check{Check{}}
+func (h Plugin) Checks() []goplum.CheckType {
+	return []goplum.CheckType{Check{}}
 }
 
-func (h Plugin) Notifiers() []goplum.Notifier {
+func (h Plugin) Alerts() []goplum.AlertType {
 	return nil
 }
 
@@ -30,7 +30,7 @@ func (c Check) Name() string {
 	return "http"
 }
 
-func (c Check) Create(config json.RawMessage) (goplum.Task, error) {
+func (c Check) Create(config json.RawMessage) (goplum.Check, error) {
 	p := params{}
 	err := json.Unmarshal(config, &p)
 	if err != nil {

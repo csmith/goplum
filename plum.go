@@ -7,7 +7,7 @@ import (
 
 type ScheduledCheck struct {
 	Config     ConfiguredCheck
-	Task       Task
+	Task       Check
 	LastRun    time.Time
 	History    [10]*Result
 	HistoryTop int
@@ -21,15 +21,15 @@ func Initialise(plugins []Plugin, configPath string) {
 		log.Fatalf("Unable to read config: %v", err)
 	}
 
-	checks := make(map[string]Check)
-	notifications := make(map[string]Notifier)
+	checks := make(map[string]CheckType)
+	notifications := make(map[string]AlertType)
 	for i := range plugins {
 		cs := plugins[i].Checks()
 		for j := range cs {
 			checks[cs[j].Name()] = cs[j]
 		}
 
-		ns := plugins[i].Notifiers()
+		ns := plugins[i].Alerts()
 		for j := range ns {
 			notifications[ns[j].Name()] = ns[j]
 		}
@@ -60,7 +60,7 @@ func Initialise(plugins []Plugin, configPath string) {
 		})
 	}
 
-	alerters := make([]Notification, 0)
+	alerters := make([]Alert, 0)
 	for i := range config.Alerts {
 		a := config.Alerts[i]
 		alert, ok := notifications[a.Notifier]
@@ -83,7 +83,7 @@ func (c *ScheduledCheck) Remaining() time.Duration {
 	return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
 }
 
-func (s ScheduledChecks) Schedule(notifiers []Notification) {
+func (s ScheduledChecks) Schedule(notifiers []Alert) {
 	for {
 		min := time.Hour
 		for i := range s {
