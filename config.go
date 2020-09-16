@@ -7,7 +7,13 @@ import (
 )
 
 type Config struct {
+	Alerts []ConfiguredAlert `json:"alerts"`
 	Checks []ConfiguredCheck `json:"checks"`
+}
+
+type ConfiguredAlert struct {
+	Notifier string          `json:"notifier"`
+	Params   json.RawMessage `json:"params"`
 }
 
 type ConfiguredCheck struct {

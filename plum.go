@@ -9,7 +9,7 @@ type ScheduledCheck struct {
 	Config     ConfiguredCheck
 	Task       Task
 	LastRun    time.Time
-	History    [10]Result
+	History    [10]*Result
 	HistoryTop int
 }
 
@@ -22,13 +22,20 @@ func Initialise(plugins []Plugin, configPath string) {
 	}
 
 	checks := make(map[string]Check)
+	notifications := make(map[string]Notifier)
 	for i := range plugins {
 		cs := plugins[i].Checks()
 		for j := range cs {
 			checks[cs[j].Name()] = cs[j]
 		}
+
+		ns := plugins[i].Notifiers()
+		for j := range ns {
+			notifications[ns[j].Name()] = ns[j]
+		}
 	}
-	log.Printf("Found %d checks from %d plugins\n", len(checks), len(plugins))
+
+	log.Printf("Found %d checks and %d notifiers from %d plugins\n", len(checks), len(notifications), len(plugins))
 
 	items := make(ScheduledChecks, 0)
 	for i := range config.Checks {
@@ -53,14 +60,30 @@ func Initialise(plugins []Plugin, configPath string) {
 		})
 	}
 
-	items.Schedule()
+	alerters := make([]Notification, 0)
+	for i := range config.Alerts {
+		a := config.Alerts[i]
+		alert, ok := notifications[a.Notifier]
+		if !ok {
+			log.Fatalf("Invalid notifier name in config: %s", a.Notifier)
+		}
+
+		n, err := alert.Create(a.Params)
+		if err != nil {
+			log.Fatalf("Unable to create notifier '%s': %v", a.Notifier, err)
+		}
+
+		alerters = append(alerters, n)
+	}
+
+	items.Schedule(alerters)
 }
 
 func (c *ScheduledCheck) Remaining() time.Duration {
 	return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
 }
 
-func (s ScheduledChecks) Schedule() {
+func (s ScheduledChecks) Schedule(notifiers []Notification) {
 	for {
 		min := time.Hour
 		for i := range s {
@@ -68,10 +91,17 @@ func (s ScheduledChecks) Schedule() {
 			if remaining <= 0 {
 				result := s[i].Task.Execute()
 				log.Printf("Check '%s' executed: %t\n", s[i].Config.Name, result.Good)
-				s[i].History[s[i].HistoryTop] = result
+				lastResult := s[i].History[s[i].HistoryTop]
 				s[i].HistoryTop = (s[i].HistoryTop + 1) % 10
+				s[i].History[s[i].HistoryTop] = &result
 				s[i].LastRun = time.Now()
 				remaining = s[i].Remaining()
+
+				if lastResult != nil && result.Good != lastResult.Good {
+					for n := range notifiers {
+						notifiers[n].Send(s[i])
+					}
+				}
 			}
 
 			if remaining < min {
