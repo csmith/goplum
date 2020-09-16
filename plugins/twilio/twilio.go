@@ -50,7 +50,7 @@ type Notification struct {
 	params params
 }
 
-func (n Notification) Send(check *goplum.ScheduledCheck) {
+func (n Notification) Send(check *goplum.ScheduledCheck) error {
 	req, err := http.NewRequest(
 		http.MethodPost,
 		fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Messages.json", n.params.SID),
@@ -61,15 +61,19 @@ func (n Notification) Send(check *goplum.ScheduledCheck) {
 		}.Encode()),
 	)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(n.params.SID, n.params.Token)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	fmt.Println(res)
+	if res.StatusCode >= 400 {
+		return fmt.Errorf("bad response from Twilio: HTTP %d", res.StatusCode)
+	}
+
+	return nil
 }

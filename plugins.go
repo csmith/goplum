@@ -46,5 +46,5 @@ type AlertType interface {
 // Alert defines the method to inform the user of a change to a service - e.g. when it comes up or goes down.
 type Alert interface {
 	// Send dispatches an alert in relation to the given check
-	Send(check *ScheduledCheck)
+	Send(check *ScheduledCheck) error
 }

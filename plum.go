@@ -99,7 +99,9 @@ func (s ScheduledChecks) Schedule(notifiers []Alert) {
 
 				if lastResult != nil && result.Good != lastResult.Good {
 					for n := range notifiers {
-						notifiers[n].Send(s[i])
+						if err := notifiers[n].Send(s[i]); err != nil {
+							log.Printf("Error sending alert: %v\n", err)
+						}
 					}
 				}
 			}
