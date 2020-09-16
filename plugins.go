@@ -12,8 +12,7 @@ type Plugin interface {
 // e.g. making a HTTP request, or opening a TCP socket.
 type Check interface {
 	Name() string
-	Help() string
-	Create(config json.RawMessage) Task
+	Create(config json.RawMessage) (Task, error)
 }
 
 type Task interface {
