@@ -68,7 +68,7 @@ func (p *Plum) LoadConfig(configPath string) {
 
 		n, err := alert.Create(a.Params)
 		if err != nil {
-			log.Fatalf("Unable to create notifier '%s': %v", a.Type, err)
+			log.Fatalf("Unable to create alert '%s': %v", a.Type, err)
 		}
 
 		p.alerts[a.Name] = n
