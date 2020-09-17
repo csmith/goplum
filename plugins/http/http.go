@@ -46,7 +46,5 @@ type Task struct {
 
 func (t Task) Execute() goplum.Result {
 	r, err := http.Get(t.params.Url)
-	return goplum.Result{
-		Good: err == nil && r.StatusCode < 400,
-	}
+	return goplum.ResultFor(err == nil && r.StatusCode < 400)
 }

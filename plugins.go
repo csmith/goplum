@@ -28,10 +28,45 @@ type Check interface {
 	Execute() Result
 }
 
+// CheckState describes the state of a check.
+type CheckState int
+
+const (
+	// StateIndeterminate indicates that it's not clear if the check passed or failed, e.g. it hasn't run yet.
+	StateIndeterminate CheckState = iota
+	// StateGood indicates the service is operating correctly.
+	StateGood
+	// StateFailing indicates a problem with the service.
+	StateFailing
+)
+
+// Name returns an english, lowercase name for the state.
+func (c CheckState) Name() string {
+	switch c {
+	case StateIndeterminate:
+		return "indeterminate"
+	case StateFailing:
+		return "failing"
+	case StateGood:
+		return "good"
+	default:
+		return "unknown"
+	}
+}
+
+// ResultFor is a convenience function for creating a Result based on whether the service is up or not.
+func ResultFor(up bool) Result {
+	if up {
+		return Result{State: StateGood}
+	} else {
+		return Result{State: StateFailing}
+	}
+}
+
 // Result contains information about a check that was performed.
 type Result struct {
-	// Good indicates that the service is in a good state (or not).
-	Good bool
+	// State gives the current state of the service.
+	State CheckState
 }
 
 // AlertType is one way of notifying people when a service goes down or returns, e.g.
@@ -45,6 +80,6 @@ type AlertType interface {
 
 // Alert defines the method to inform the user of a change to a service - e.g. when it comes up or goes down.
 type Alert interface {
-	// Send dispatches an alert in relation to the given check
-	Send(check *ScheduledCheck) error
+	// Send dispatches an alert in relation to the given check event.
+	Send(name string, lastResult *Result, previousState, newState CheckState) error
 }

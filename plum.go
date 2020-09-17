@@ -6,27 +6,6 @@ import (
 	"time"
 )
 
-type ScheduledCheck struct {
-	Config     ConfiguredCheck
-	Task       Check
-	LastRun    time.Time
-	history    [10]*Result
-	historyTop int
-}
-
-func (c *ScheduledCheck) Remaining() time.Duration {
-	return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
-}
-
-func (c *ScheduledCheck) AddResult(result *Result) {
-	c.historyTop = (c.historyTop + 1) % 10
-	c.history[c.historyTop] = result
-}
-
-func (c *ScheduledCheck) LastResult() *Result {
-	return c.history[c.historyTop]
-}
-
 type Plum struct {
 	checkTypes map[string]CheckType
 	alertTypes map[string]AlertType
@@ -77,7 +56,7 @@ func (p *Plum) LoadConfig(configPath string) {
 
 		p.checks = append(p.checks, &ScheduledCheck{
 			Config: cc,
-			Task:   t,
+			Check:  t,
 		})
 	}
 
@@ -119,21 +98,83 @@ func (p *Plum) Run() {
 }
 
 func (p *Plum) RunCheck(c *ScheduledCheck) {
-	result := c.Task.Execute()
-	log.Printf("Check '%s' executed: %t\n", c.Config.Name, result.Good)
-	lastResult := c.history[c.historyTop]
+	result := c.Check.Execute()
+	log.Printf("Check '%s' executed: %d\n", c.Config.Name, result.State)
 	c.AddResult(&result)
 	c.LastRun = time.Now()
 
-	if lastResult != nil && result.Good != lastResult.Good {
-		p.RaiseAlerts(c)
+	oldState := c.State
+	newState := c.History().State(map[CheckState]int{
+		StateFailing: 2,
+		StateGood:    2,
+	})
+	if newState != oldState {
+		c.State = newState
+		if c.Settled {
+			p.RaiseAlerts(c, oldState)
+		} else {
+			c.Settled = true
+		}
 	}
 }
 
-func (p *Plum) RaiseAlerts(c *ScheduledCheck) {
+func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 	for n := range p.alerts {
-		if err := p.alerts[n].Send(c); err != nil {
+		if err := p.alerts[n].Send(c.Config.Name, c.LastResult(), previousState, c.State); err != nil {
 			log.Printf("Error sending alert: %v\n", err)
 		}
 	}
+}
+
+type ScheduledCheck struct {
+	Config  ConfiguredCheck
+	Check   Check
+	LastRun time.Time
+	Settled bool
+	State   CheckState
+	history ResultHistory
+}
+
+func (c *ScheduledCheck) Remaining() time.Duration {
+	return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
+}
+
+func (c *ScheduledCheck) AddResult(result *Result) ResultHistory {
+	copy(c.history[1:9], c.history[0:8])
+	c.history[0] = result
+	return c.history
+}
+
+func (c *ScheduledCheck) LastResult() *Result {
+	return c.history[0]
+}
+
+func (c *ScheduledCheck) History() ResultHistory {
+	return c.history
+}
+
+type ResultHistory [10]*Result
+
+func (h ResultHistory) State(thresholds map[CheckState]int) CheckState {
+	var (
+		count = 0
+		last  = StateIndeterminate
+	)
+
+	for i := range h {
+		r := h[i]
+		if r != nil {
+			if r.State != last {
+				count = 0
+				last = r.State
+			}
+
+			count++
+			if count == thresholds[last] {
+				return last
+			}
+		}
+	}
+
+	return StateIndeterminate
 }

@@ -50,14 +50,14 @@ type Notification struct {
 	params params
 }
 
-func (n Notification) Send(check *goplum.ScheduledCheck) error {
+func (n Notification) Send(name string, _ *goplum.Result, previousState, newState goplum.CheckState) error {
 	req, err := http.NewRequest(
 		http.MethodPost,
 		fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Messages.json", n.params.SID),
 		strings.NewReader(url.Values{
 			"To":   []string{n.params.To},
 			"From": []string{n.params.From},
-			"Body": []string{fmt.Sprintf("Check '%s' status is now %t", check.Config.Name, check.LastResult().Good)},
+			"Body": []string{fmt.Sprintf("Check '%s' is now %s, was %s.", name, newState.Name(), previousState.Name())},
 		}.Encode()),
 	)
 	if err != nil {
