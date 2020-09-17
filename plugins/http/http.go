@@ -124,7 +124,7 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 		return err
 	}
 
-	res, err := http.Post(w.params.Url, "application/json", bytes.NewReader(b))
+	res, err := client.Post(w.params.Url, "application/json", bytes.NewReader(b))
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/csmith/goplum"
 	"github.com/csmith/goplum/plugins/debug"
 	"github.com/csmith/goplum/plugins/http"
@@ -8,6 +9,10 @@ import (
 	"github.com/csmith/goplum/plugins/twilio"
 	"github.com/kouhin/envflag"
 	"log"
+)
+
+var (
+	configPath = flag.String("config", "config.json", "Path to the config file")
 )
 
 func main() {
@@ -29,6 +34,6 @@ func main() {
 
 	plum := &goplum.Plum{}
 	plum.AddPlugins(plugins)
-	plum.LoadConfig("config.json")
+	plum.LoadConfig(*configPath)
 	plum.Run()
 }

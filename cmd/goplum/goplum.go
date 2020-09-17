@@ -10,6 +10,7 @@ import (
 
 var (
 	pluginsDir = flag.String("plugins", "plugins", "Directory to load plugins from")
+	configPath = flag.String("config", "config.json", "Path to the config file")
 )
 
 func main() {
@@ -26,6 +27,6 @@ func main() {
 
 	plum := &goplum.Plum{}
 	plum.AddPlugins(plugins)
-	plum.LoadConfig("config.json")
+	plum.LoadConfig(*configPath)
 	plum.Run()
 }
