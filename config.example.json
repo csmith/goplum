@@ -1,4 +1,10 @@
 {
+  "defaults": {
+    "alerts": ["*"],
+    "interval": "30s",
+    "good_threshold": 2,
+    "failing_threshold": 2
+  },
   "alerts": [
     {
       "name": "text",

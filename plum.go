@@ -3,14 +3,16 @@ package goplum
 import (
 	"fmt"
 	"log"
+	"regexp"
+	"strings"
 	"time"
 )
 
 type Plum struct {
 	checkTypes map[string]CheckType
 	alertTypes map[string]AlertType
+	alerts     map[string]Alert
 	checks     []*ScheduledCheck
-	alerts     []Alert
 }
 
 func (p *Plum) AddPlugins(plugins []Plugin) {
@@ -50,16 +52,13 @@ func (p *Plum) LoadConfig(configPath string) {
 			log.Fatalf("Unable to create check '%s': %v", cc.Name, err)
 		}
 
-		if cc.Interval == 0 {
-			cc.Interval = time.Second * 30
-		}
-
 		p.checks = append(p.checks, &ScheduledCheck{
 			Config: cc,
 			Check:  t,
 		})
 	}
 
+	p.alerts = make(map[string]Alert)
 	for i := range config.Alerts {
 		a := config.Alerts[i]
 		alert, ok := p.alertTypes[a.Type]
@@ -72,7 +71,7 @@ func (p *Plum) LoadConfig(configPath string) {
 			log.Fatalf("Unable to create notifier '%s': %v", a.Type, err)
 		}
 
-		p.alerts = append(p.alerts, n)
+		p.alerts[a.Name] = n
 	}
 }
 
@@ -105,8 +104,8 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 
 	oldState := c.State
 	newState := c.History().State(map[CheckState]int{
-		StateFailing: 2,
-		StateGood:    2,
+		StateFailing: c.Config.FailingThreshold,
+		StateGood:    c.Config.GoodThreshold,
 	})
 	if newState != oldState {
 		c.State = newState
@@ -119,11 +118,49 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 }
 
 func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
-	for n := range p.alerts {
-		if err := p.alerts[n].Send(c.Config.Name, c.LastResult(), previousState, c.State); err != nil {
+	alerts := p.AlertsMatching(c.Config.Alerts)
+	for n := range alerts {
+		if err := alerts[n].Send(c.Config.Name, c.LastResult(), previousState, c.State); err != nil {
 			log.Printf("Error sending alert: %v\n", err)
 		}
 	}
+}
+
+func (p *Plum) AlertsMatching(names []string) []Alert {
+	var res []Alert
+	re := regexpForWildcards(names)
+	for j := range p.alerts {
+		if re.MatchString(j) {
+			res = append(res, p.alerts[j])
+		}
+	}
+	return res
+}
+
+// regexpForWildcards converts a set of names containing '*' characters as wildcards into a single regex that will
+// match any of them.
+//
+// e.g. ["foo_*", "*+bar"] becomes /^(foo_.*)|(.*\+bar)$/
+func regexpForWildcards(names []string) *regexp.Regexp {
+	pattern := strings.Builder{}
+	pattern.WriteString("^")
+
+	for i := range names {
+		if i > 0 {
+			pattern.WriteString("|")
+		}
+		parts := strings.Split(names[i], "*")
+		for n := range parts {
+			if n > 0 {
+				pattern.WriteString(".*")
+			}
+			pattern.WriteString(regexp.QuoteMeta(parts[n]))
+		}
+	}
+
+	pattern.WriteString("$")
+	re, _ := regexp.Compile(pattern.String())
+	return re
 }
 
 type ScheduledCheck struct {
