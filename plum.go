@@ -98,7 +98,7 @@ func (p *Plum) Run() {
 
 func (p *Plum) RunCheck(c *ScheduledCheck) {
 	result := c.Check.Execute()
-	log.Printf("Check '%s' executed: %d\n", c.Config.Name, result.State)
+	log.Printf("Check '%s' executed: %s (%s)\n", c.Config.Name, result.State, result.Detail)
 	c.AddResult(&result)
 	c.LastRun = time.Now()
 
@@ -134,6 +134,7 @@ func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 	}
 
 	alerts := p.AlertsMatching(c.Config.Alerts)
+	log.Printf("Raising alerts for %s: %d alerts match\n", c.Config.Name, len(alerts))
 	for n := range alerts {
 		if err := alerts[n].Send(details); err != nil {
 			log.Printf("Error sending alert: %v\n", err)
