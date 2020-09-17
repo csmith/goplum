@@ -128,6 +128,27 @@ an error code less than 400.
 
 If the `content` parameter is specified then the response body must contain the exact string.
 
+=== slack
+
+The slack plugin provides alerts that send messages to Slack channels.
+
+==== Alert: slack.message
+
+[source,json]
+----
+{
+  "name": "example",
+  "type": "slack.message",
+  "params": {
+    "url": "https://hooks.slack.com/services/XXXXXXXXX/00000000000/abcdefghijklmnopqrstuvwxyz"
+  }
+}
+----
+
+Sends a Slack message via a Slack incoming webhook URL. To enable incoming webhooks you will need
+to create a Slack app in your workspace, enable the "Incoming Webhooks" feature, and then create
+a webhook for the channel you want messages to be displayed in.
+
 === twilio
 
 The twilio plugin provides alerts that use the Twilio API.

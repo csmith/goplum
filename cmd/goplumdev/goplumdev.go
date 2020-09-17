@@ -4,6 +4,7 @@ import (
 	"github.com/csmith/goplum"
 	"github.com/csmith/goplum/plugins/debug"
 	"github.com/csmith/goplum/plugins/http"
+	"github.com/csmith/goplum/plugins/slack"
 	"github.com/csmith/goplum/plugins/twilio"
 	"github.com/kouhin/envflag"
 	"log"
@@ -16,6 +17,7 @@ func main() {
 
 	plugins := []goplum.Plugin{
 		http.Plugin{},
+		slack.Plugin{},
 		twilio.Plugin{},
 		debug.Plugin{},
 	}
