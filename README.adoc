@@ -1,49 +1,193 @@
 = Goplum
 
-Golang, plugin-based service monitoring.
+Goplum is an extensible monitoring and alerting daemon designed for
+personal infrastructure and small businesses. It can monitor
+websites and APIs, and send alerts by text message if they go down.
 
-== Plugin Architecture
+== Getting started
 
-Plugins are independent binaries compiled with `-buildmode=plugin`.
+The easiest way to run Goplum is via Docker. It doesn't require any
+special privileges or settings, you just need to provide a JSON
+config file to it at `/config.json`.
 
-Goplum iterates a plugins directory and attempts to load all files
-found. Each plugin is expected to expose a function called `Plum()`
-which returns an implementation of the `Plugin` interface:
+Running it via the command line:
 
-[source,go]
+[source]
 ----
-package goplum
-
-import "encoding/json"
-
-type Plugin interface {
-    Name() string
-    Checks() []Check
-    Notifiers() []Notifier
-}
-
-// Check is one type of check that may be performed to determine the status of a service
-// e.g. making a HTTP request, or opening a TCP socket.
-type Check interface {
-    Name() string
-    Help() string
-    Create(config json.RawMessage) Task
-}
-
-type Task interface {
-    Execute() Result
-}
-
-type Result struct {
-    // TODO: Fill this in - good/warn/fail + message? Response time? Custom fields?
-}
-
-// Notifier is one way of notifying people when a service goes down or returns, e.g.
-// posting a webhook, sending a message with Twilio
-type Notifier interface {
-    // TODO: Fill this in - similar to the Check interface
-}
+docker run -d --restart always -v /path/to/my/config.json:/config.json csmith/goplum
 ----
 
-For local/Windows-based development, a separate entrypoint can exist that simply
-loads all known Checks directly instead of going through the plugin system.
+Or using Docker Compose:
+
+[source,yaml]
+----
+version: "3.8"
+
+services:
+  goplum:
+    image: csmith/goplum
+    volumes:
+      - ./config.json:/config.json
+    restart: always
+----
+
+== Configuration
+
+Goplum's configuration contains an optional defaults section, a list of alerts, and
+a list of checks. A simple example might look like this:
+
+[source,json]
+----
+{
+  "defaults": {
+    "alerts": ["*"],
+    "interval": "30s",
+    "good_threshold": 3,
+    "failing_threshold": 2
+  },
+  "alerts": [
+    {
+      "name": "text",
+      "type": "twilio.sms",
+      "params": {
+        "sid": "sid",
+        "token": "token",
+        "from": "+01 867 5309",
+        "to": "+01 867 5309"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "name": "Example",
+      "type": "http.get",
+      "params": {
+        "url": "https://www.example.com/"
+      }
+    }
+  ]
+}
+----
+
+This defines one check - of type `http.get` that will run every 30 seconds (the default
+interval specified in the "defaults" block). If two consecutive checks fail, all the
+defined alerts will be triggered -- in this case sending a text message via Twilio.
+If the check is failing and three consecutive checks pass, it will be considered up again.
+
+Each check and alert has a name, which is used to refer to it in the config and in messages,
+and a type. The type consists of the name of a plugin, a period, and then the type of check
+or alert from that plugin. Some checks and alerts take parameters, which are given in the
+"params" field.
+
+Checks have four additional settings. These can be changed globally by putting them in the
+"defaults" section. If they're not specified then Goplum's built-in defaults will be used:
+
+interval::
+The time after which the check is repeated, for example `20s` for 20 seconds, `10m` for
+10 minutes, or `7d` for 7 days. Global default: 30 seconds.
+
+alerts::
+A list of alert names which should be triggered when the service changes state. The wildcard
+'*' may be used anywhere to match any number of characters. Global default: `["*"]` (all alerts).
+
+failing_threshold::
+The number of times a check must fail in a row before the service is considered failing.
+This allows you to ignore brief, transient problems that may occur between your monitoring
+location and the service itself, or very brief outages such as webserver restarts.
+Global default: 2.
+
+good_threshold::
+The number of times a check must pass in a row before the service is considered up. This
+prevents alert noise if a check occasionally passes for some reason. Global default: 2.
+
+== Bundled plugins
+
+All checks and alerts in Goplum are implemented as plugins. The following are maintained in
+this repository and are available by default in the Docker image:
+
+=== http
+
+The HTTP plugin provides checks for HTTP services.
+
+==== Check: http.get
+
+[source,json]
+----
+{
+  "name": "example",
+  "type": "http.get",
+  "params": {
+    "url": "https://www.example.com/"
+  }
+}
+----
+
+Sends a HTTP GET request to the given URL. The check passes if a response is received with
+an error code less than 400.
+
+=== twilio
+
+The twilio plugin provides alerts that use the Twilio API.
+
+==== Alert: twilio.sms
+
+[source,json]
+----
+{
+  "name": "example",
+  "type": "twilio.sms",
+  "params": {
+    "sid": "twilio sid",
+    "token": "twilio token",
+    "from": "+01 867 5309",
+    "to": "+01 867 5309"
+  }
+}
+----
+
+Sends SMS alerts using the Twilio API. You must have a funded Twilio account, and configure the
+SID, Token, and From/To phone numbers.
+
+=== debug
+
+The debug plugin provides checks and alerts for testing and development purposes.
+
+==== Check: debug.random
+
+[source,json]
+----
+{
+  "name": "example",
+  "type": "debug.random",
+  "params": {
+    "good_percentage": 0.8
+  }
+}
+----
+
+Passes or fails at random. If the `good_percentage` parameter is specified then checks will pass with
+that probability (i.e. a value of 0.8 means a check has an 80% chance to pass).
+
+==== Alert: debug.sysout
+
+[source,json]
+----
+{
+  "name": "example",
+  "type": "debug.sysout"
+}
+----
+
+Prints alerts to system out, prefixed with 'DEBUG ALERT'.
+
+== Plugin API
+
+Goplum is designed to be easily extensible. Plugins must have a main package which contains
+a function named "Plum" that returns an implementation of `goplum.Plugin`. They are then
+compiled with the `-buildtype=plugin` flag to create a shared library.
+
+The Docker image loads plugins recursively from the `/plugins` directory, allowing you to
+mount custom folders if you wish to supply your own plugins.
+
+Note that the Go plugin loader does not work on Windows. For Windows-based development,
+the `goplumdev` command hardcodes plugins, skipping the loader.
