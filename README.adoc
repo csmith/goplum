@@ -117,13 +117,16 @@ The HTTP plugin provides checks for HTTP services.
   "name": "example",
   "type": "http.get",
   "params": {
-    "url": "https://www.example.com/"
+    "url": "https://www.example.com/",
+    "content": "I'm Feeling Lucky"
   }
 }
 ----
 
 Sends a HTTP GET request to the given URL. The check passes if a response is received with
 an error code less than 400.
+
+If the `content` parameter is specified then the response body must contain the exact string.
 
 === twilio
 

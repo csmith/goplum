@@ -3,7 +3,9 @@ package http
 import (
 	"encoding/json"
 	"github.com/csmith/goplum"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -24,7 +26,8 @@ func (h Plugin) Alerts() []goplum.AlertType {
 }
 
 type GetParams struct {
-	Url string `json:"url"`
+	Url     string `json:"url"`
+	Content string `json:"content"`
 }
 
 type GetCheckType struct{}
@@ -49,5 +52,24 @@ type GetCheck struct {
 
 func (t GetCheck) Execute() goplum.Result {
 	r, err := client.Get(t.params.Url)
-	return goplum.ResultFor(err == nil && r.StatusCode < 400)
+
+	if err != nil || r.StatusCode >= 400 {
+		return goplum.Result{State: goplum.StateFailing}
+	}
+
+	if len(t.params.Content) > 0 {
+		defer r.Body.Close()
+		content, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return goplum.Result{State: goplum.StateFailing}
+		}
+
+		// TODO: It would be nice to scan the body instead of having to read it all into memory
+		// TODO: Add options around case sensitivity/consider allowing regexp
+		if !strings.Contains(string(content), t.params.Content) {
+			return goplum.Result{State: goplum.StateFailing}
+		}
+	}
+
+	return goplum.Result{State: goplum.StateGood}
 }
