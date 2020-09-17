@@ -54,6 +54,10 @@ func (c CheckState) Name() string {
 	}
 }
 
+func (c CheckState) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.Name())
+}
+
 // ResultFor is a convenience function for creating a Result based on whether the service is up or not.
 func ResultFor(up bool) Result {
 	if up {
@@ -66,7 +70,7 @@ func ResultFor(up bool) Result {
 // Result contains information about a check that was performed.
 type Result struct {
 	// State gives the current state of the service.
-	State CheckState
+	State CheckState `json:"state"`
 }
 
 // AlertType is one way of notifying people when a service goes down or returns, e.g.
@@ -81,5 +85,5 @@ type AlertType interface {
 // Alert defines the method to inform the user of a change to a service - e.g. when it comes up or goes down.
 type Alert interface {
 	// Send dispatches an alert in relation to the given check event.
-	Send(name string, lastResult *Result, previousState, newState CheckState) error
+	Send(name, checkType string, params interface{}, lastResult *Result, previousState, newState CheckState) error
 }

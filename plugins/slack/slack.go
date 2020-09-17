@@ -49,7 +49,7 @@ type MessageAlert struct {
 	params MessageParams
 }
 
-func (m MessageAlert) Send(name string, _ *goplum.Result, previousState, newState goplum.CheckState) error {
+func (m MessageAlert) Send(name, _ string, _ interface{}, _ *goplum.Result, previousState, newState goplum.CheckState) error {
 	payload, err := json.Marshal(struct {
 		Text string `json:"text"`
 	}{

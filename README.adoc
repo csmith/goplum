@@ -107,7 +107,7 @@ this repository and are available by default in the Docker image:
 
 === http
 
-The HTTP plugin provides checks for HTTP services.
+The HTTP plugin provides checks for HTTP services, and HTTP-based alerts.
 
 ==== Check: http.get
 
@@ -134,6 +134,40 @@ If the `content` parameter is specified then the response body must contain the 
 If the `certificate.valid_for` parameter is specified, then the connection must have been made over
 TLS, and the returned certificate must be valid for at least the given duration from now. (An expired
 or untrusted certificate will cause a failure regardless of this setting.)
+
+==== Alert: http.webhook
+
+[source,json]
+----
+{
+  "name": "example",
+  "type": "http.webhook",
+  "params": {
+    "url": "https://www.example.com/"
+  }
+}
+----
+
+Sends alerts as a POST request to the given webhook URL with a JSON paypload:
+
+[source,json]
+----
+{
+  "text": "Check 'Testing' is now good, was failing.",
+  "name": "Testing",
+  "type": "debug.random",
+  "config": {
+    "good_percentage": 0.8
+  },
+  "last_result": {
+    "state": "good"
+  },
+  "transition": {
+    "from": "failing",
+    "to": "good"
+  }
+}
+----
 
 === slack
 

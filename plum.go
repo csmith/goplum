@@ -120,7 +120,7 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 	alerts := p.AlertsMatching(c.Config.Alerts)
 	for n := range alerts {
-		if err := alerts[n].Send(c.Config.Name, c.LastResult(), previousState, c.State); err != nil {
+		if err := alerts[n].Send(c.Config.Name, c.Config.Type, c.Config.Params, c.LastResult(), previousState, c.State); err != nil {
 			log.Printf("Error sending alert: %v\n", err)
 		}
 	}

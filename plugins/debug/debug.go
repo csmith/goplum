@@ -67,7 +67,7 @@ func (s SysOutAlertType) Create(_ json.RawMessage) (goplum.Alert, error) {
 type SysOutAlert struct {
 }
 
-func (s SysOutAlert) Send(name string, _ *goplum.Result, previousState, newState goplum.CheckState) error {
+func (s SysOutAlert) Send(name, _ string, _ interface{}, _ *goplum.Result, previousState, newState goplum.CheckState) error {
 	log.Printf("DEBUG ALERT - Check '%s' is now %s, was %s.\n", name, newState.Name(), previousState.Name())
 
 	return nil
