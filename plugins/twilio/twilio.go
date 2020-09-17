@@ -7,7 +7,10 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
+
+var client = http.Client{Timeout: 20 * time.Second}
 
 type Plugin struct{}
 
@@ -66,7 +69,7 @@ func (n SmsAlert) Send(name string, _ *goplum.Result, previousState, newState go
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(n.params.SID, n.params.Token)
-	res, err := http.DefaultClient.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		return err
 	}

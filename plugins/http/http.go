@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"github.com/csmith/goplum"
 	"net/http"
+	"time"
 )
+
+var client = http.Client{Timeout: 20 * time.Second}
 
 type Plugin struct{}
 
@@ -45,6 +48,6 @@ type GetCheck struct {
 }
 
 func (t GetCheck) Execute() goplum.Result {
-	r, err := http.Get(t.params.Url)
+	r, err := client.Get(t.params.Url)
 	return goplum.ResultFor(err == nil && r.StatusCode < 400)
 }
