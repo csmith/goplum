@@ -88,7 +88,9 @@ The time after which the check is repeated, for example `20s` for 20 seconds, `1
 
 alerts::
 A list of alert names which should be triggered when the service changes state. The wildcard
-'\*' may be used anywhere to match any number of characters. Global default: `["*"]` (all alerts).
+'\*' may be used anywhere to match any number of characters. Note that an empty array is treated
+the same as a missing option, so default settings will be used; to disable alerts use
+`["-"]`. Global default: `["*"]` (all alerts).
 
 failing_threshold::
 The number of times a check must fail in a row before the service is considered failing.
