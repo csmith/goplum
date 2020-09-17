@@ -2,6 +2,7 @@ package goplum
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"time"
 )
@@ -13,10 +14,10 @@ type Config struct {
 }
 
 type CheckSettings struct {
-	Alerts           []string      `json:"alerts"`
-	Interval         time.Duration `json:"interval"`
-	GoodThreshold    int           `json:"good_threshold"`
-	FailingThreshold int           `json:"failing_threshold"`
+	Alerts           []string `json:"alerts"`
+	Interval         Duration `json:"interval"`
+	GoodThreshold    int      `json:"good_threshold"`
+	FailingThreshold int      `json:"failing_threshold"`
 }
 
 type ConfiguredAlert struct {
@@ -34,7 +35,7 @@ type ConfiguredCheck struct {
 
 var DefaultSettings = CheckSettings{
 	Alerts:           []string{"*"},
-	Interval:         time.Second * 30,
+	Interval:         Duration(time.Second * 30),
 	GoodThreshold:    2,
 	FailingThreshold: 2,
 }
@@ -77,5 +78,32 @@ func (c *CheckSettings) fillCheckSettings(from CheckSettings) {
 
 	if c.GoodThreshold == 0 {
 		c.GoodThreshold = from.GoodThreshold
+	}
+}
+
+type Duration time.Duration
+
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Duration(d).String())
+}
+
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	switch value := v.(type) {
+	case float64:
+		*d = Duration(time.Duration(value))
+		return nil
+	case string:
+		tmp, err := time.ParseDuration(value)
+		if err != nil {
+			return err
+		}
+		*d = Duration(tmp)
+		return nil
+	default:
+		return errors.New("invalid duration")
 	}
 }

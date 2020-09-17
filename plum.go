@@ -173,7 +173,7 @@ type ScheduledCheck struct {
 }
 
 func (c *ScheduledCheck) Remaining() time.Duration {
-	return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
+	return c.LastRun.Add(time.Duration(c.Config.Interval)).Sub(time.Now())
 }
 
 func (c *ScheduledCheck) AddResult(result *Result) ResultHistory {
