@@ -33,7 +33,7 @@ type params struct {
 type Notifier struct{}
 
 func (n Notifier) Name() string {
-	return "twilio"
+	return "sms"
 }
 
 func (n Notifier) Create(config json.RawMessage) (goplum.Alert, error) {

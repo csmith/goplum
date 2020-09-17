@@ -1,6 +1,7 @@
 package goplum
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
@@ -27,12 +28,12 @@ func (p *Plum) AddPlugins(plugins []Plugin) {
 	for i := range plugins {
 		cs := plugins[i].Checks()
 		for j := range cs {
-			p.checkTypes[cs[j].Name()] = cs[j]
+			p.checkTypes[fmt.Sprintf("%s.%s", plugins[i].Name(), cs[j].Name())] = cs[j]
 		}
 
 		ns := plugins[i].Alerts()
 		for j := range ns {
-			p.alertTypes[ns[j].Name()] = ns[j]
+			p.alertTypes[fmt.Sprintf("%s.%s", plugins[i].Name(), ns[j].Name())] = ns[j]
 		}
 	}
 

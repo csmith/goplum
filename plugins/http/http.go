@@ -27,7 +27,7 @@ type params struct {
 type Check struct{}
 
 func (c Check) Name() string {
-	return "http"
+	return "get"
 }
 
 func (c Check) Create(config json.RawMessage) (goplum.Check, error) {

@@ -14,7 +14,7 @@ type Plugin interface {
 // CheckType is one type of check that may be performed to determine the status of a service
 // e.g. making a HTTP request, or opening a TCP socket.
 type CheckType interface {
-	// Name returns a globally unique name for this type of check.
+	// Name returns a name for this type of check, which must be unique within the plugin.
 	Name() string
 	// Create instantiates a new check of this type, with the provided configuration.
 	Create(config json.RawMessage) (Check, error)
@@ -37,7 +37,7 @@ type Result struct {
 // AlertType is one way of notifying people when a service goes down or returns, e.g.
 // posting a webhook, sending a message with Twilio
 type AlertType interface {
-	// Name returns a globally unique name for this type of alert.
+	// Name returns a name for this type of alert, which must be unique within the plugin.
 	Name() string
 	// Create instantiates a new alert of this type, with the provided configuration.
 	Create(config json.RawMessage) (Alert, error)

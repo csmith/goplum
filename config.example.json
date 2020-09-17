@@ -1,0 +1,22 @@
+{
+  "alerts": [
+    {
+      "notifier": "twilio.sms",
+      "params": {
+        "sid": "sid",
+        "token": "token",
+        "from": "+01 867 5309",
+        "to": "+01 867 5309"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "name": "Example",
+      "check": "http.get",
+      "params": {
+        "url": "https://www.example.com/"
+      }
+    }
+  ]
+}
