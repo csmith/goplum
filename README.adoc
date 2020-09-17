@@ -148,7 +148,7 @@ or untrusted certificate will cause a failure regardless of this setting.)
 }
 ----
 
-Sends alerts as a POST request to the given webhook URL with a JSON paypload:
+Sends alerts as a POST request to the given webhook URL with a JSON payload:
 
 [source,json]
 ----
@@ -164,10 +164,8 @@ Sends alerts as a POST request to the given webhook URL with a JSON paypload:
     "time": "2020-09-17T17:55:02.224973486+01:00",
     "detail": "Random value 0.813640 greater than percent_good 0.800000"
   },
-  "transition": {
-    "from": "good",
-    "to": "failing"
-  }
+  "previous_state": "failing",
+  "new_state": "good"
 }
 ----
 

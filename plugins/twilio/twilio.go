@@ -53,14 +53,14 @@ type SmsAlert struct {
 	params SmsParams
 }
 
-func (n SmsAlert) Send(name, _ string, _ interface{}, _ *goplum.Result, previousState, newState goplum.CheckState) error {
+func (n SmsAlert) Send(details goplum.AlertDetails) error {
 	req, err := http.NewRequest(
 		http.MethodPost,
 		fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Messages.json", n.params.SID),
 		strings.NewReader(url.Values{
 			"To":   []string{n.params.To},
 			"From": []string{n.params.From},
-			"Body": []string{fmt.Sprintf("Check '%s' is now %s, was %s.", name, newState.Name(), previousState.Name())},
+			"Body": []string{details.Text},
 		}.Encode()),
 	)
 	if err != nil {

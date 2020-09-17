@@ -1,11 +1,11 @@
 package slack
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/csmith/goplum"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -49,14 +49,14 @@ type MessageAlert struct {
 	params MessageParams
 }
 
-func (m MessageAlert) Send(name, _ string, _ interface{}, _ *goplum.Result, previousState, newState goplum.CheckState) error {
+func (m MessageAlert) Send(details goplum.AlertDetails) error {
 	payload, err := json.Marshal(struct {
 		Text string `json:"text"`
 	}{
-		fmt.Sprintf("Check '%s' is now %s, was %s.", name, newState.Name(), previousState.Name()),
+		details.Text,
 	})
 
-	req, err := http.NewRequest(http.MethodPost, m.params.Url, strings.NewReader(string(payload)))
+	req, err := http.NewRequest(http.MethodPost, m.params.Url, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}

@@ -118,9 +118,24 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 }
 
 func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
+	details := AlertDetails{
+		Name:          c.Config.Name,
+		Type:          c.Config.Type,
+		Config:        c.Config.Params,
+		LastResult:    c.LastResult(),
+		PreviousState: previousState,
+		NewState:      c.State,
+	}
+
+	if len(details.LastResult.Detail) > 0 {
+		details.Text = fmt.Sprintf("Check '%s' is now %s (%s), was %s .", details.Name, details.NewState, details.LastResult.Detail, details.PreviousState)
+	} else {
+		details.Text = fmt.Sprintf("Check '%s' is now %s, was %s.", details.Name, details.NewState, details.PreviousState)
+	}
+
 	alerts := p.AlertsMatching(c.Config.Alerts)
 	for n := range alerts {
-		if err := alerts[n].Send(c.Config.Name, c.Config.Type, c.Config.Params, c.LastResult(), previousState, c.State); err != nil {
+		if err := alerts[n].Send(details); err != nil {
 			log.Printf("Error sending alert: %v\n", err)
 		}
 	}

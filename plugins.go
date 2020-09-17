@@ -44,8 +44,8 @@ const (
 	StateFailing
 )
 
-// Name returns an english, lowercase name for the state.
-func (c CheckState) Name() string {
+// String returns an english, lowercase name for the state.
+func (c CheckState) String() string {
 	switch c {
 	case StateIndeterminate:
 		return "indeterminate"
@@ -59,7 +59,7 @@ func (c CheckState) Name() string {
 }
 
 func (c CheckState) MarshalJSON() ([]byte, error) {
-	return json.Marshal(c.Name())
+	return json.Marshal(c.String())
 }
 
 // Result contains information about a check that was performed.
@@ -98,8 +98,26 @@ type AlertType interface {
 	Create(config json.RawMessage) (Alert, error)
 }
 
+// AlertDetails contains information about a triggered alert
+type AlertDetails struct {
+	// Text is a short, pre-generated message describing the alert.
+	Text string `json:"text"`
+	// Name is the name of the check that transitioned.
+	Name string `json:"name"`
+	// Type is the type of check involved.
+	Type string `json:"type"`
+	// Config is the user-supplied parameters to the check.
+	Config interface{} `json:"config"`
+	// LastResult is the most recent result that caused the transition.
+	LastResult *Result `json:"last_result"`
+	// PreviousState is the state this check was previously in.
+	PreviousState CheckState `json:"previous_state"`
+	// NewState is the state this check is now in.
+	NewState CheckState `json:"new_state"`
+}
+
 // Alert defines the method to inform the user of a change to a service - e.g. when it comes up or goes down.
 type Alert interface {
 	// Send dispatches an alert in relation to the given check event.
-	Send(name, checkType string, params interface{}, lastResult *Result, previousState, newState CheckState) error
+	Send(details AlertDetails) error
 }

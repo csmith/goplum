@@ -118,32 +118,8 @@ type WebHookAlert struct {
 	params WebHookParams
 }
 
-func (w WebHookAlert) Send(name, checkType string, params interface{}, lastResult *goplum.Result, previousState, newState goplum.CheckState) error {
-	type Transition struct {
-		From string `json:"from"`
-		To   string `json:"to"`
-	}
-
-	type Payload struct {
-		Text       string         `json:"text"`
-		Name       string         `json:"name"`
-		Type       string         `json:"type"`
-		Config     interface{}    `json:"config"`
-		LastResult *goplum.Result `json:"last_result"`
-		Transition Transition     `json:"transition"`
-	}
-
-	b, err := json.Marshal(Payload{
-		Text:       fmt.Sprintf("Check '%s' is now %s, was %s.", name, newState.Name(), previousState.Name()),
-		Name:       name,
-		Type:       checkType,
-		Config:     params,
-		LastResult: lastResult,
-		Transition: Transition{
-			From: previousState.Name(),
-			To:   newState.Name(),
-		},
-	})
+func (w WebHookAlert) Send(details goplum.AlertDetails) error {
+ 	b, err := json.Marshal(details)
 	if err != nil {
 		return err
 	}
