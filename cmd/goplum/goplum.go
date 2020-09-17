@@ -1,15 +1,23 @@
 package main
 
 import (
+	"flag"
 	"github.com/csmith/goplum"
 	"github.com/csmith/goplum/internal"
+	"github.com/kouhin/envflag"
 	"log"
-	"os"
+)
+
+var (
+	pluginsDir = flag.String("plugins", "plugins", "Directory to load plugins from")
 )
 
 func main() {
-	cwd, _ := os.Getwd()
-	plugins := internal.LoadPlugins(cwd)
+	if err := envflag.Parse(); err != nil {
+		panic(err)
+	}
+
+	plugins := internal.LoadPlugins(*pluginsDir)
 
 	log.Printf("Loaded %d plugins\n", len(plugins))
 	for i := range plugins {

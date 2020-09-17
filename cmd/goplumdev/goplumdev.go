@@ -4,10 +4,15 @@ import (
 	"github.com/csmith/goplum"
 	"github.com/csmith/goplum/plugins/http"
 	"github.com/csmith/goplum/plugins/twilio"
+	"github.com/kouhin/envflag"
 	"log"
 )
 
 func main() {
+	if err := envflag.Parse(); err != nil {
+		panic(err)
+	}
+
 	plugins := []goplum.Plugin{
 		http.Plugin{},
 		twilio.Plugin{},
