@@ -12,13 +12,14 @@ type Config struct {
 }
 
 type ConfiguredAlert struct {
-	Notifier string          `json:"notifier"`
-	Params   json.RawMessage `json:"params"`
+	Name   string          `json:"name"`
+	Type   string          `json:"type"`
+	Params json.RawMessage `json:"params"`
 }
 
 type ConfiguredCheck struct {
 	Name     string          `json:"name"`
-	Check    string          `json:"check"`
+	Type     string          `json:"type"`
 	Interval time.Duration   `json:"interval"`
 	Params   json.RawMessage `json:"params"`
 }

@@ -48,9 +48,9 @@ func (p *Plum) LoadConfig(configPath string) {
 
 	for i := range config.Checks {
 		cc := config.Checks[i]
-		check, ok := p.checkTypes[cc.Check]
+		check, ok := p.checkTypes[cc.Type]
 		if !ok {
-			log.Fatalf("Invalid check name in config: %s", cc.Check)
+			log.Fatalf("Invalid check type in config: %s", cc.Type)
 		}
 
 		t, err := check.Create(cc.Params)
@@ -70,14 +70,14 @@ func (p *Plum) LoadConfig(configPath string) {
 
 	for i := range config.Alerts {
 		a := config.Alerts[i]
-		alert, ok := p.alertTypes[a.Notifier]
+		alert, ok := p.alertTypes[a.Type]
 		if !ok {
-			log.Fatalf("Invalid notifier name in config: %s", a.Notifier)
+			log.Fatalf("Invalid alert type in config: %s", a.Type)
 		}
 
 		n, err := alert.Create(a.Params)
 		if err != nil {
-			log.Fatalf("Unable to create notifier '%s': %v", a.Notifier, err)
+			log.Fatalf("Unable to create notifier '%s': %v", a.Type, err)
 		}
 
 		p.alerts = append(p.alerts, n)

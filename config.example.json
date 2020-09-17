@@ -1,7 +1,8 @@
 {
   "alerts": [
     {
-      "notifier": "twilio.sms",
+      "name": "text",
+      "type": "twilio.sms",
       "params": {
         "sid": "sid",
         "token": "token",
@@ -13,7 +14,7 @@
   "checks": [
     {
       "name": "Example",
-      "check": "http.get",
+      "type": "http.get",
       "params": {
         "url": "https://www.example.com/"
       }
