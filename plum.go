@@ -10,15 +10,28 @@ type ScheduledCheck struct {
 	Config     ConfiguredCheck
 	Task       Check
 	LastRun    time.Time
-	History    [10]*Result
-	HistoryTop int
+	history    [10]*Result
+	historyTop int
+}
+
+func (c *ScheduledCheck) Remaining() time.Duration {
+	return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
+}
+
+func (c *ScheduledCheck) AddResult(result *Result) {
+	c.historyTop = (c.historyTop + 1) % 10
+	c.history[c.historyTop] = result
+}
+
+func (c *ScheduledCheck) LastResult() *Result {
+	return c.history[c.historyTop]
 }
 
 type Plum struct {
 	checkTypes map[string]CheckType
 	alertTypes map[string]AlertType
-	checks []*ScheduledCheck
-	alerts []Alert
+	checks     []*ScheduledCheck
+	alerts     []Alert
 }
 
 func (p *Plum) AddPlugins(plugins []Plugin) {
@@ -63,8 +76,8 @@ func (p *Plum) LoadConfig(configPath string) {
 		}
 
 		p.checks = append(p.checks, &ScheduledCheck{
-			Config:  cc,
-			Task:    t,
+			Config: cc,
+			Task:   t,
 		})
 	}
 
@@ -84,10 +97,6 @@ func (p *Plum) LoadConfig(configPath string) {
 	}
 }
 
-func (c *ScheduledCheck) Remaining() time.Duration {
-	return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
-}
-
 func (p *Plum) Run() {
 	for {
 		min := time.Hour
@@ -95,21 +104,8 @@ func (p *Plum) Run() {
 			c := p.checks[i]
 			remaining := c.Remaining()
 			if remaining <= 0 {
-				result := c.Task.Execute()
-				log.Printf("Check '%s' executed: %t\n", c.Config.Name, result.Good)
-				lastResult := c.History[c.HistoryTop]
-				c.HistoryTop = (c.HistoryTop + 1) % 10
-				c.History[c.HistoryTop] = &result
-				c.LastRun = time.Now()
+				p.RunCheck(c)
 				remaining = c.Remaining()
-
-				if lastResult != nil && result.Good != lastResult.Good {
-					for n := range p.alerts {
-						if err := p.alerts[n].Send(c); err != nil {
-							log.Printf("Error sending alert: %v\n", err)
-						}
-					}
-				}
 			}
 
 			if remaining < min {
@@ -119,5 +115,25 @@ func (p *Plum) Run() {
 
 		log.Printf("Sleeping for %s\n", min)
 		time.Sleep(min)
+	}
+}
+
+func (p *Plum) RunCheck(c *ScheduledCheck) {
+	result := c.Task.Execute()
+	log.Printf("Check '%s' executed: %t\n", c.Config.Name, result.Good)
+	lastResult := c.history[c.historyTop]
+	c.AddResult(&result)
+	c.LastRun = time.Now()
+
+	if lastResult != nil && result.Good != lastResult.Good {
+		p.RaiseAlerts(c)
+	}
+}
+
+func (p *Plum) RaiseAlerts(c *ScheduledCheck) {
+	for n := range p.alerts {
+		if err := p.alerts[n].Send(c); err != nil {
+			log.Printf("Error sending alert: %v\n", err)
+		}
 	}
 }

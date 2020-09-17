@@ -57,7 +57,7 @@ func (n Notification) Send(check *goplum.ScheduledCheck) error {
 		strings.NewReader(url.Values{
 			"To":   []string{n.params.To},
 			"From": []string{n.params.From},
-			"Body": []string{fmt.Sprintf("Check '%s' status is now %t", check.Config.Name, check.History[check.HistoryTop].Good)},
+			"Body": []string{fmt.Sprintf("Check '%s' status is now %t", check.Config.Name, check.LastResult().Good)},
 		}.Encode()),
 	)
 	if err != nil {
