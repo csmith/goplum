@@ -60,35 +60,38 @@ type GetCheck struct {
 func (t GetCheck) Execute() goplum.Result {
 	r, err := client.Get(t.params.Url)
 
-	if err != nil || r.StatusCode >= 400 {
-		return goplum.Result{State: goplum.StateFailing}
+	if err != nil {
+		return goplum.FailingResult("Error making request: %v", err)
+	} else if r.StatusCode >= 400 {
+		return goplum.FailingResult("Bad status code: %d", r.StatusCode)
 	}
 
 	if len(t.params.Content) > 0 {
 		defer r.Body.Close()
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			return goplum.Result{State: goplum.StateFailing}
+			return goplum.FailingResult("Error reading response body: %v", err)
 		}
 
 		// TODO: It would be nice to scan the body instead of having to read it all into memory
 		// TODO: Add options around case sensitivity/consider allowing regexp
 		if !strings.Contains(string(content), t.params.Content) {
-			return goplum.Result{State: goplum.StateFailing}
+			return goplum.FailingResult("Body does not contain '%s'", t.params.Content)
 		}
 	}
 
 	if t.params.Certificate != nil {
 		if r.TLS == nil {
-			return goplum.Result{State: goplum.StateFailing}
+			return goplum.FailingResult("Connection did not use TLS")
 		}
 
-		if r.TLS.PeerCertificates[0].NotAfter.Sub(time.Now()) < time.Duration(t.params.Certificate.ValidFor) {
-			return goplum.Result{State: goplum.StateFailing}
+		remaining := r.TLS.PeerCertificates[0].NotAfter.Sub(time.Now())
+		if remaining < time.Duration(t.params.Certificate.ValidFor) {
+			return goplum.FailingResult("Certificate expires in %s", remaining)
 		}
 	}
 
-	return goplum.Result{State: goplum.StateGood}
+	return goplum.GoodResult()
 }
 
 type WebHookParams struct {

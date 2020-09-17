@@ -50,9 +50,13 @@ type RandomCheck struct {
 }
 
 func (t RandomCheck) Execute() goplum.Result {
-	return goplum.ResultFor(rand.Float32() <= t.params.PercentGood)
+	r := rand.Float32()
+	if r <= t.params.PercentGood {
+		return goplum.GoodResult()
+	} else {
+		return goplum.FailingResult("Random value %f greater than percent_good %f", r, t.params.PercentGood)
+	}
 }
-
 
 type SysOutAlertType struct{}
 

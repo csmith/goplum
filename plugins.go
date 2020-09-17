@@ -1,6 +1,10 @@
 package goplum
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
 
 // Plugin is the API between plugins and the core. Plugins must provide an exported "Plum()" method in the
 // main package which returns an instance of Plugin. The Plugin in turn then provides its name and the
@@ -58,19 +62,31 @@ func (c CheckState) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.Name())
 }
 
-// ResultFor is a convenience function for creating a Result based on whether the service is up or not.
-func ResultFor(up bool) Result {
-	if up {
-		return Result{State: StateGood}
-	} else {
-		return Result{State: StateFailing}
-	}
-}
-
 // Result contains information about a check that was performed.
 type Result struct {
 	// State gives the current state of the service.
 	State CheckState `json:"state"`
+	// Time is the time the check was performed.
+	Time time.Time `json:"time"`
+	// Detail is an short, optional explanation of the current state.
+	Detail string `json:"detail,omitempty"`
+}
+
+// GoodResult creates a new result indicating the service is in a good state.
+func GoodResult() Result {
+	return Result{
+		State: StateGood,
+		Time:  time.Now(),
+	}
+}
+
+// FailingResult creates a new result indicating the service is in a bad state.
+func FailingResult(format string, a ...interface{}) Result {
+	return Result{
+		State:  StateFailing,
+		Time:   time.Now(),
+		Detail: fmt.Sprintf(format, a...),
+	}
 }
 
 // AlertType is one way of notifying people when a service goes down or returns, e.g.

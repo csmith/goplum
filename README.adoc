@@ -157,14 +157,16 @@ Sends alerts as a POST request to the given webhook URL with a JSON paypload:
   "name": "Testing",
   "type": "debug.random",
   "config": {
-    "good_percentage": 0.8
+    "percent_good": 0.8
   },
   "last_result": {
-    "state": "good"
+    "state": "failing",
+    "time": "2020-09-17T17:55:02.224973486+01:00",
+    "detail": "Random value 0.813640 greater than percent_good 0.800000"
   },
   "transition": {
-    "from": "failing",
-    "to": "good"
+    "from": "good",
+    "to": "failing"
   }
 }
 ----
@@ -225,12 +227,12 @@ The debug plugin provides checks and alerts for testing and development purposes
   "name": "example",
   "type": "debug.random",
   "params": {
-    "good_percentage": 0.8
+    "percent_good": 0.8
   }
 }
 ----
 
-Passes or fails at random. If the `good_percentage` parameter is specified then checks will pass with
+Passes or fails at random. If the `percent_good` parameter is specified then checks will pass with
 that probability (i.e. a value of 0.8 means a check has an 80% chance to pass).
 
 ==== Alert: debug.sysout
