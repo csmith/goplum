@@ -26,8 +26,13 @@ func (h Plugin) Alerts() []goplum.AlertType {
 }
 
 type GetParams struct {
-	Url     string `json:"url"`
-	Content string `json:"content"`
+	Url         string              `json:"url"`
+	Content     string              `json:"content"`
+	Certificate *CertificateOptions `json:"certificate"`
+}
+
+type CertificateOptions struct {
+	ValidFor goplum.Duration `json:"valid_for"`
 }
 
 type GetCheckType struct{}
@@ -67,6 +72,16 @@ func (t GetCheck) Execute() goplum.Result {
 		// TODO: It would be nice to scan the body instead of having to read it all into memory
 		// TODO: Add options around case sensitivity/consider allowing regexp
 		if !strings.Contains(string(content), t.params.Content) {
+			return goplum.Result{State: goplum.StateFailing}
+		}
+	}
+
+	if t.params.Certificate != nil {
+		if r.TLS == nil {
+			return goplum.Result{State: goplum.StateFailing}
+		}
+
+		if r.TLS.PeerCertificates[0].NotAfter.Sub(time.Now()) < time.Duration(t.params.Certificate.ValidFor) {
 			return goplum.Result{State: goplum.StateFailing}
 		}
 	}
