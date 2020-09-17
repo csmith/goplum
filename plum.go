@@ -13,34 +13,41 @@ type ScheduledCheck struct {
 	HistoryTop int
 }
 
-type ScheduledChecks []*ScheduledCheck
+type Plum struct {
+	checkTypes map[string]CheckType
+	alertTypes map[string]AlertType
+	checks []*ScheduledCheck
+	alerts []Alert
+}
 
-func Initialise(plugins []Plugin, configPath string) {
+func (p *Plum) AddPlugins(plugins []Plugin) {
+	p.checkTypes = make(map[string]CheckType)
+	p.alertTypes = make(map[string]AlertType)
+
+	for i := range plugins {
+		cs := plugins[i].Checks()
+		for j := range cs {
+			p.checkTypes[cs[j].Name()] = cs[j]
+		}
+
+		ns := plugins[i].Alerts()
+		for j := range ns {
+			p.alertTypes[ns[j].Name()] = ns[j]
+		}
+	}
+
+	log.Printf("Found %d check types and %d alert types from %d plugins\n", len(p.checkTypes), len(p.alertTypes), len(plugins))
+}
+
+func (p *Plum) LoadConfig(configPath string) {
 	config, err := LoadConfig(configPath)
 	if err != nil {
 		log.Fatalf("Unable to read config: %v", err)
 	}
 
-	checks := make(map[string]CheckType)
-	notifications := make(map[string]AlertType)
-	for i := range plugins {
-		cs := plugins[i].Checks()
-		for j := range cs {
-			checks[cs[j].Name()] = cs[j]
-		}
-
-		ns := plugins[i].Alerts()
-		for j := range ns {
-			notifications[ns[j].Name()] = ns[j]
-		}
-	}
-
-	log.Printf("Found %d checks and %d notifiers from %d plugins\n", len(checks), len(notifications), len(plugins))
-
-	items := make(ScheduledChecks, 0)
 	for i := range config.Checks {
 		cc := config.Checks[i]
-		check, ok := checks[cc.Check]
+		check, ok := p.checkTypes[cc.Check]
 		if !ok {
 			log.Fatalf("Invalid check name in config: %s", cc.Check)
 		}
@@ -54,16 +61,15 @@ func Initialise(plugins []Plugin, configPath string) {
 			cc.Interval = time.Second * 30
 		}
 
-		items = append(items, &ScheduledCheck{
+		p.checks = append(p.checks, &ScheduledCheck{
 			Config:  cc,
 			Task:    t,
 		})
 	}
 
-	alerters := make([]Alert, 0)
 	for i := range config.Alerts {
 		a := config.Alerts[i]
-		alert, ok := notifications[a.Notifier]
+		alert, ok := p.alertTypes[a.Notifier]
 		if !ok {
 			log.Fatalf("Invalid notifier name in config: %s", a.Notifier)
 		}
@@ -73,33 +79,32 @@ func Initialise(plugins []Plugin, configPath string) {
 			log.Fatalf("Unable to create notifier '%s': %v", a.Notifier, err)
 		}
 
-		alerters = append(alerters, n)
+		p.alerts = append(p.alerts, n)
 	}
-
-	items.Schedule(alerters)
 }
 
 func (c *ScheduledCheck) Remaining() time.Duration {
 	return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
 }
 
-func (s ScheduledChecks) Schedule(notifiers []Alert) {
+func (p *Plum) Run() {
 	for {
 		min := time.Hour
-		for i := range s {
-			remaining := s[i].Remaining()
+		for i := range p.checks {
+			c := p.checks[i]
+			remaining := c.Remaining()
 			if remaining <= 0 {
-				result := s[i].Task.Execute()
-				log.Printf("Check '%s' executed: %t\n", s[i].Config.Name, result.Good)
-				lastResult := s[i].History[s[i].HistoryTop]
-				s[i].HistoryTop = (s[i].HistoryTop + 1) % 10
-				s[i].History[s[i].HistoryTop] = &result
-				s[i].LastRun = time.Now()
-				remaining = s[i].Remaining()
+				result := c.Task.Execute()
+				log.Printf("Check '%s' executed: %t\n", c.Config.Name, result.Good)
+				lastResult := c.History[c.HistoryTop]
+				c.HistoryTop = (c.HistoryTop + 1) % 10
+				c.History[c.HistoryTop] = &result
+				c.LastRun = time.Now()
+				remaining = c.Remaining()
 
 				if lastResult != nil && result.Good != lastResult.Good {
-					for n := range notifiers {
-						if err := notifiers[n].Send(s[i]); err != nil {
+					for n := range p.alerts {
+						if err := p.alerts[n].Send(c); err != nil {
 							log.Printf("Error sending alert: %v\n", err)
 						}
 					}

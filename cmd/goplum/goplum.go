@@ -16,5 +16,8 @@ func main() {
 		log.Printf("Plugin %d is '%s' with %d checks, %d notifiers\n", i, plugins[i].Name(), len(plugins[i].Checks()), len(plugins[i].Alerts()))
 	}
 
-	goplum.Initialise(plugins, "config.json")
+	plum := &goplum.Plum{}
+	plum.AddPlugins(plugins)
+	plum.LoadConfig("config.json")
+	plum.Run()
 }
