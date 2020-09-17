@@ -20,37 +20,37 @@ func (h Plugin) Checks() []goplum.CheckType {
 }
 
 func (h Plugin) Alerts() []goplum.AlertType {
-	return []goplum.AlertType{Notifier{}}
+	return []goplum.AlertType{SmsAlertType{}}
 }
 
-type params struct {
+type SmsParams struct {
 	To    string `json:"to"`
 	From  string `json:"from"`
 	SID   string `json:"sid"`
 	Token string `json:"token"`
 }
 
-type Notifier struct{}
+type SmsAlertType struct{}
 
-func (n Notifier) Name() string {
+func (n SmsAlertType) Name() string {
 	return "sms"
 }
 
-func (n Notifier) Create(config json.RawMessage) (goplum.Alert, error) {
-	p := params{}
+func (n SmsAlertType) Create(config json.RawMessage) (goplum.Alert, error) {
+	p := SmsParams{}
 	err := json.Unmarshal(config, &p)
 	if err != nil {
 		return nil, err
 	}
 
-	return Notification{p}, nil
+	return SmsAlert{p}, nil
 }
 
-type Notification struct {
-	params params
+type SmsAlert struct {
+	params SmsParams
 }
 
-func (n Notification) Send(name string, _ *goplum.Result, previousState, newState goplum.CheckState) error {
+func (n SmsAlert) Send(name string, _ *goplum.Result, previousState, newState goplum.CheckState) error {
 	req, err := http.NewRequest(
 		http.MethodPost,
 		fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Messages.json", n.params.SID),

@@ -13,38 +13,38 @@ func (h Plugin) Name() string {
 }
 
 func (h Plugin) Checks() []goplum.CheckType {
-	return []goplum.CheckType{Check{}}
+	return []goplum.CheckType{GetCheckType{}}
 }
 
 func (h Plugin) Alerts() []goplum.AlertType {
 	return nil
 }
 
-type params struct {
+type GetParams struct {
 	Url string `json:"url"`
 }
 
-type Check struct{}
+type GetCheckType struct{}
 
-func (c Check) Name() string {
+func (c GetCheckType) Name() string {
 	return "get"
 }
 
-func (c Check) Create(config json.RawMessage) (goplum.Check, error) {
-	p := params{}
+func (c GetCheckType) Create(config json.RawMessage) (goplum.Check, error) {
+	p := GetParams{}
 	err := json.Unmarshal(config, &p)
 	if err != nil {
 		return nil, err
 	}
 
-	return Task{p}, nil
+	return GetCheck{p}, nil
 }
 
-type Task struct {
-	params params
+type GetCheck struct {
+	params GetParams
 }
 
-func (t Task) Execute() goplum.Result {
+func (t GetCheck) Execute() goplum.Result {
 	r, err := http.Get(t.params.Url)
 	return goplum.ResultFor(err == nil && r.StatusCode < 400)
 }
