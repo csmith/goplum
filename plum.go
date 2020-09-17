@@ -77,7 +77,7 @@ func (p *Plum) LoadConfig(configPath string) {
 
 func (p *Plum) Run() {
 	for {
-		min := time.Hour
+		min := time.Now().Add(time.Hour)
 		for i := range p.checks {
 			c := p.checks[i]
 			remaining := c.Remaining()
@@ -86,13 +86,14 @@ func (p *Plum) Run() {
 				remaining = c.Remaining()
 			}
 
-			if remaining < min {
-				min = remaining
+			next := time.Now().Add(remaining)
+			if next.Before(min) {
+				min = next
 			}
 		}
 
-		log.Printf("Sleeping for %s\n", min)
-		time.Sleep(min)
+		log.Printf("Sleeping until %s (%s)\n", min, min.Sub(time.Now()))
+		time.Sleep(min.Sub(time.Now()))
 	}
 }
 
