@@ -135,7 +135,7 @@ func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 	}
 
 	alerts := p.AlertsMatching(c.Config.Alerts)
-	log.Printf("Raising alerts for %s: %d alerts match\n", c.Config.Name, len(alerts))
+	log.Printf("Raising alerts for %s: %d alerts match config %v\n", c.Config.Name, len(alerts), c.Config.Alerts)
 	for n := range alerts {
 		if err := alerts[n].Send(details); err != nil {
 			log.Printf("Error sending alert: %v\n", err)
