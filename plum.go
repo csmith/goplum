@@ -3,6 +3,7 @@ package goplum
 import (
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -35,7 +36,13 @@ func (p *Plum) AddPlugins(plugins []Plugin) {
 }
 
 func (p *Plum) LoadConfig(configPath string) {
-	config, err := LoadConfig(configPath)
+	f, err := os.Open(configPath)
+	if err != nil {
+		log.Fatalf("Unable to open config file at %s: %v", configPath, err)
+	}
+	defer f.Close()
+
+	config, err := LoadConfig(f)
 	if err != nil {
 		log.Fatalf("Unable to read config: %v", err)
 	}

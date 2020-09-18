@@ -3,7 +3,8 @@ package goplum
 import (
 	"encoding/json"
 	"errors"
-	"os"
+	"github.com/imdario/mergo"
+	"io"
 	"time"
 )
 
@@ -40,15 +41,9 @@ var DefaultSettings = CheckSettings{
 	FailingThreshold: 2,
 }
 
-func LoadConfig(path string) (*Config, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
+func LoadConfig(reader io.Reader) (*Config, error) {
 	config := &Config{}
-	if err := json.NewDecoder(f).Decode(config); err != nil {
+	if err := json.NewDecoder(reader).Decode(config); err != nil {
 		return nil, err
 	}
 
@@ -56,29 +51,17 @@ func LoadConfig(path string) (*Config, error) {
 	// hardcoded defaults.
 	for i := range config.Checks {
 		check := &config.Checks[i].CheckSettings
-		check.fillCheckSettings(config.Defaults)
-		check.fillCheckSettings(DefaultSettings)
+
+		if err := mergo.Merge(check, config.Defaults); err != nil {
+			return nil, err
+		}
+
+		if err := mergo.Merge(check, DefaultSettings); err != nil {
+			return nil, err
+		}
 	}
 
 	return config, nil
-}
-
-func (c *CheckSettings) fillCheckSettings(from CheckSettings) {
-	if len(c.Alerts) == 0 {
-		c.Alerts = from.Alerts
-	}
-
-	if c.Interval == 0 {
-		c.Interval = from.Interval
-	}
-
-	if c.FailingThreshold == 0 {
-		c.FailingThreshold = from.FailingThreshold
-	}
-
-	if c.GoodThreshold == 0 {
-		c.GoodThreshold = from.GoodThreshold
-	}
 }
 
 type Duration time.Duration
