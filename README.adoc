@@ -148,7 +148,7 @@ an error code less than 400.
 
 If the `content` parameter is specified then the response body must contain the exact string.
 
-If the `certificate.certificate_validity` parameter is specified, then the connection must have
+If the `certificate_validity` parameter is specified, then the connection must have
 been made over TLS, and the returned certificate must be valid for at least the given duration
 from now. (An expired or untrusted certificate will cause a failure regardless of this setting.)
 
