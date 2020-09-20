@@ -1,7 +1,6 @@
 package debug
 
 import (
-	"encoding/json"
 	"github.com/csmith/goplum"
 	"log"
 	"math/rand"
@@ -9,63 +8,39 @@ import (
 
 type Plugin struct{}
 
-func (h Plugin) Name() string {
-	return "debug"
-}
-
-func (h Plugin) Checks() []goplum.CheckType {
-	return []goplum.CheckType{RandomCheckType{}}
-}
-
-func (h Plugin) Alerts() []goplum.AlertType {
-	return []goplum.AlertType{SysOutAlertType{}}
-}
-
-type RandomParameters struct {
-	PercentGood float32 `json:"percent_good"`
-}
-
-type RandomCheckType struct{}
-
-func (c RandomCheckType) Name() string {
-	return "random"
-}
-
-func (c RandomCheckType) Create(config json.RawMessage) (goplum.Check, error) {
-	p := RandomParameters{}
-	err := json.Unmarshal(config, &p)
-	if err != nil {
-		return nil, err
+func (p Plugin) Alert(kind string) goplum.Alert {
+	switch kind {
+	case "sysout":
+		return SysOutAlert{}
+	default:
+		return nil
 	}
+}
 
-	if p.PercentGood == 0 {
-		p.PercentGood = 0.5
+func (p Plugin) Check(kind string) goplum.Check {
+	switch kind {
+	case "random":
+		return RandomCheck{PercentGood: 0.5}
+	default:
+		return nil
 	}
-
-	return RandomCheck{p}, nil
 }
 
 type RandomCheck struct {
-	params RandomParameters
+	PercentGood float64
 }
 
 func (t RandomCheck) Execute() goplum.Result {
-	r := rand.Float32()
-	if r <= t.params.PercentGood {
+	r := rand.Float64()
+	if r <= t.PercentGood {
 		return goplum.GoodResult()
 	} else {
-		return goplum.FailingResult("Random value %f greater than percent_good %f", r, t.params.PercentGood)
+		return goplum.FailingResult("Random value %f greater than percent_good %f", r, t.PercentGood)
 	}
 }
 
-type SysOutAlertType struct{}
-
-func (s SysOutAlertType) Name() string {
-	return "sysout"
-}
-
-func (s SysOutAlertType) Create(_ json.RawMessage) (goplum.Alert, error) {
-	return SysOutAlert{}, nil
+func (t RandomCheck) Validate() error {
+	return nil
 }
 
 type SysOutAlert struct {
@@ -73,5 +48,9 @@ type SysOutAlert struct {
 
 func (s SysOutAlert) Send(details goplum.AlertDetails) error {
 	log.Printf("DEBUG ALERT - %s\n", details.Text)
+	return nil
+}
+
+func (s SysOutAlert) Validate() error {
 	return nil
 }

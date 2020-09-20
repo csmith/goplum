@@ -1,0 +1,32 @@
+[
+  {
+    "Class": 16,
+    "Line": 1,
+    "Column": 0,
+    "Value": "defaults"
+  },
+  {
+    "Class": 2,
+    "Line": 1,
+    "Column": 9,
+    "Value": 123
+  },
+  {
+    "Class": 4,
+    "Line": 2,
+    "Column": 4,
+    "Value": "foo"
+  },
+  {
+    "Class": 5,
+    "Line": 2,
+    "Column": 8,
+    "Value": 61
+  },
+  {
+    "Class": 0,
+    "Line": 2,
+    "Column": 11,
+    "Value": "unterminated string literal"
+  }
+]

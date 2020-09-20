@@ -13,40 +13,21 @@ var client = http.Client{Timeout: 20 * time.Second}
 
 type Plugin struct{}
 
-func (h Plugin) Name() string {
-	return "slack"
+func (p Plugin) Alert(kind string) goplum.Alert {
+	switch kind {
+	case "message":
+		return MessageAlert{}
+	default:
+		return nil
+	}
 }
 
-func (h Plugin) Checks() []goplum.CheckType {
+func (p Plugin) Check(_ string) goplum.Check {
 	return nil
 }
 
-func (h Plugin) Alerts() []goplum.AlertType {
-	return []goplum.AlertType{MessageAlertType{}}
-}
-
-type MessageParams struct {
-	Url string `json:"url"`
-}
-
-type MessageAlertType struct{}
-
-func (n MessageAlertType) Name() string {
-	return "message"
-}
-
-func (n MessageAlertType) Create(config json.RawMessage) (goplum.Alert, error) {
-	p := MessageParams{}
-	err := json.Unmarshal(config, &p)
-	if err != nil {
-		return nil, err
-	}
-
-	return MessageAlert{p}, nil
-}
-
 type MessageAlert struct {
-	params MessageParams
+	Url string
 }
 
 func (m MessageAlert) Send(details goplum.AlertDetails) error {
@@ -56,7 +37,7 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 		details.Text,
 	})
 
-	req, err := http.NewRequest(http.MethodPost, m.params.Url, bytes.NewReader(payload))
+	req, err := http.NewRequest(http.MethodPost, m.Url, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
@@ -69,6 +50,14 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 
 	if res.StatusCode >= 400 {
 		return fmt.Errorf("bad response from Slack: HTTP %d", res.StatusCode)
+	}
+
+	return nil
+}
+
+func (m MessageAlert) Validate() error {
+	if len(m.Url) == 0 {
+		return fmt.Errorf("missing required argument: url")
 	}
 
 	return nil

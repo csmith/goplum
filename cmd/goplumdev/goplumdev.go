@@ -12,28 +12,36 @@ import (
 )
 
 var (
-	configPath = flag.String("config", "config.json", "Path to the config file")
+	configPath = flag.String("config", "goplum.conf", "Path to the config file")
 )
+
+var plugins = map[string]goplum.PluginLoader{
+	"http": func() (goplum.Plugin, error) {
+		return http.Plugin{}, nil
+	},
+	"slack": func() (goplum.Plugin, error) {
+		return slack.Plugin{}, nil
+	},
+	"twilio": func() (goplum.Plugin, error) {
+		return twilio.Plugin{}, nil
+	},
+	"debug": func() (goplum.Plugin, error) {
+		return debug.Plugin{}, nil
+	},
+}
 
 func main() {
 	if err := envflag.Parse(); err != nil {
 		panic(err)
 	}
 
-	plugins := []goplum.Plugin{
-		http.Plugin{},
-		slack.Plugin{},
-		twilio.Plugin{},
-		debug.Plugin{},
+	plum := goplum.NewPlum()
+
+	plum.RegisterPlugins(plugins)
+
+	if err := plum.ReadConfig(*configPath); err != nil {
+		log.Fatalf("Unable to read config: %v", err)
 	}
 
-	log.Printf("Loaded %d plugins\n", len(plugins))
-	for i := range plugins {
-		log.Printf("Plugin %d is '%s' with %d check types, %d alert types\n", i, plugins[i].Name(), len(plugins[i].Checks()), len(plugins[i].Alerts()))
-	}
-
-	plum := &goplum.Plum{}
-	plum.AddPlugins(plugins)
-	plum.LoadConfig(*configPath)
 	plum.Run()
 }

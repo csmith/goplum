@@ -7,8 +7,8 @@ websites and APIs, and send alerts by text message if they go down.
 == Getting started
 
 The easiest way to run Goplum is via Docker. It doesn't require any
-special privileges or settings, you just need to provide a JSON
-config file to it at `/config.json`.
+special privileges or settings, you just need to provide a config file
+to it at `/goplum.conf`.
 
 Running it via the command line:
 
@@ -36,48 +36,34 @@ services:
 Goplum's configuration contains an optional defaults section, a list of alerts, and
 a list of checks. A simple example might look like this:
 
-[source,json]
+[source,goplum]
 ----
-{
-  "defaults": {
-    "alerts": ["*"],
-    "interval": "30s",
-    "good_threshold": 3,
-    "failing_threshold": 2
-  },
-  "alerts": [
-    {
-      "name": "text",
-      "type": "twilio.sms",
-      "params": {
-        "sid": "sid",
-        "token": "token",
-        "from": "+01 867 5309",
-        "to": "+01 867 5309"
-      }
-    }
-  ],
-  "checks": [
-    {
-      "name": "Example",
-      "type": "http.get",
-      "params": {
-        "url": "https://www.example.com/"
-      }
-    }
-  ]
+defaults {
+  # Change the default interval for all checks to 10 second, rather than
+  # Goplum's normal default of 30 seconds:
+  interval = 10s
+}
+
+alert twilio.sms "text" {
+  sid = "sid"
+  token = "token"
+  from = "+01 867 5309"
+  to = "+01 867 5309"
+}
+
+check http.get "Example" {
+  url = "https://www.example.com/"
 }
 ----
 
 This defines one check - of type `http.get` that will run every 30 seconds (the default
-interval specified in the "defaults" block). If two consecutive checks fail, all the
+interval specified in the "defaults" block). If the check starts failing, all the
 defined alerts will be triggered -- in this case sending a text message via Twilio.
-If the check is failing and three consecutive checks pass, it will be considered up again.
 
 Each check and alert has a name, which is used to refer to it in the config and in messages,
 and a type. The type consists of the name of a plugin, a period, and then the type of check
-or alert from that plugin. Some checks and alerts take parameters, which are given in the
-"params" field.
+or alert from that plugin. Some checks and alerts take parameters, which are specified as
+`key = value` assignments within the block, one per line.
 
 Checks have four additional settings. These can be changed globally by putting them in the
 "defaults" section. If they're not specified then Goplum's built-in defaults will be used:
@@ -102,6 +88,41 @@ good_threshold::
 The number of times a check must pass in a row before the service is considered up. This
 prevents alert noise if a check occasionally passes for some reason. Global default: 2.
 
+=== Data types
+
+The following data types can be used in config files:
+
+==== Strings
+
+Represented as double quoted text, e.g. `"This is a test"`.
+
+The character `\` may be used as an escape character, e.g.: `"Bob said:\n\t\"Hello\""`.
+
+==== Durations
+
+One or more integer numbers suffixed with units, e.g. `1d5h`.
+
+Valid units are:
+
+* `s` - seconds
+* `m` - minutes
+* `h` - hours
+* `d` - days (exactly 24 hours, regardless of calendar/DST changes)
+* `w` - week (exactly 7 days)
+
+==== Integers
+
+Sequence of digits in base 10, e.g. `123456`
+
+==== Floats
+
+Sequence of digits in base 10 with exactly one decimal point e.g. `1.234`, `.1` or `1.`
+
+==== Lists of strings
+
+Individual strings contained in square brackets, separated by commas, e.g. `["foo", "bar"]`.
+A single trailing comma is allowed e.g. `["foo", "bar",]`.
+
 == Bundled plugins
 
 All checks and alerts in Goplum are implemented as plugins. The following are maintained in
@@ -113,18 +134,12 @@ The HTTP plugin provides checks for HTTP services, and HTTP-based alerts.
 
 ==== Check: http.get
 
-[source,json]
+[source,goplum]
 ----
-{
-  "name": "example",
-  "type": "http.get",
-  "params": {
-    "url": "https://www.example.com/",
-    "content": "I'm Feeling Lucky",
-    "certificate": {
-      "valid_for": "48h"
-    }
-  }
+check http.get "example" {
+  url = "https://www.example.com/"
+  content = "Example Domain"
+  certificate_validity = 10d
 }
 ----
 
@@ -133,20 +148,16 @@ an error code less than 400.
 
 If the `content` parameter is specified then the response body must contain the exact string.
 
-If the `certificate.valid_for` parameter is specified, then the connection must have been made over
-TLS, and the returned certificate must be valid for at least the given duration from now. (An expired
-or untrusted certificate will cause a failure regardless of this setting.)
+If the `certificate.certificate_validity` parameter is specified, then the connection must have
+been made over TLS, and the returned certificate must be valid for at least the given duration
+from now. (An expired or untrusted certificate will cause a failure regardless of this setting.)
 
 ==== Alert: http.webhook
 
-[source,json]
+[source,goplum]
 ----
-{
-  "name": "example",
-  "type": "http.webhook",
-  "params": {
-    "url": "https://www.example.com/"
-  }
+alert http.webhook "example" {
+  url = "https://www.example.com/incoming"
 }
 ----
 
@@ -177,14 +188,10 @@ The slack plugin provides alerts that send messages to Slack channels.
 
 ==== Alert: slack.message
 
-[source,json]
+[source,goplum]
 ----
-{
-  "name": "example",
-  "type": "slack.message",
-  "params": {
-    "url": "https://hooks.slack.com/services/XXXXXXXXX/00000000000/abcdefghijklmnopqrstuvwxyz"
-  }
+alert slack.message "example" {
+  url = "https://hooks.slack.com/services/XXXXXXXXX/00000000000/abcdefghijklmnopqrstuvwxyz"
 }
 ----
 
@@ -198,17 +205,13 @@ The twilio plugin provides alerts that use the Twilio API.
 
 ==== Alert: twilio.sms
 
-[source,json]
+[source,goplum]
 ----
-{
-  "name": "example",
-  "type": "twilio.sms",
-  "params": {
-    "sid": "twilio sid",
-    "token": "twilio token",
-    "from": "+01 867 5309",
-    "to": "+01 867 5309"
-  }
+alert twilio.sms "example" {
+  sid = "twilio sid"
+  token = "twilio token"
+  from = "+01 867 5309"
+  to = "+01 867 5309"
 }
 ----
 
@@ -221,14 +224,10 @@ The debug plugin provides checks and alerts for testing and development purposes
 
 ==== Check: debug.random
 
-[source,json]
+[source,goplum]
 ----
-{
-  "name": "example",
-  "type": "debug.random",
-  "params": {
-    "percent_good": 0.8
-  }
+check debug.random "example" {
+  percent_good = 0.8
 }
 ----
 
@@ -237,12 +236,9 @@ that probability (i.e. a value of 0.8 means a check has an 80% chance to pass).
 
 ==== Alert: debug.sysout
 
-[source,json]
+[source,goplum]
 ----
-{
-  "name": "example",
-  "type": "debug.sysout"
-}
+alert debug.sysout "example" {}
 ----
 
 Prints alerts to system out, prefixed with 'DEBUG ALERT'.

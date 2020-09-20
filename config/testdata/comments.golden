@@ -1,0 +1,224 @@
+[
+  {
+    "Class": 16,
+    "Line": 1,
+    "Column": 10,
+    "Value": "defaults"
+  },
+  {
+    "Class": 2,
+    "Line": 1,
+    "Column": 19,
+    "Value": 123
+  },
+  {
+    "Class": 4,
+    "Line": 1,
+    "Column": 35,
+    "Value": "alerts"
+  },
+  {
+    "Class": 5,
+    "Line": 1,
+    "Column": 42,
+    "Value": 61
+  },
+  {
+    "Class": 13,
+    "Line": 1,
+    "Column": 44,
+    "Value": 91
+  },
+  {
+    "Class": 6,
+    "Line": 1,
+    "Column": 45,
+    "Value": "text"
+  },
+  {
+    "Class": 10,
+    "Line": 1,
+    "Column": 51,
+    "Value": 44
+  },
+  {
+    "Class": 6,
+    "Line": 1,
+    "Column": 53,
+    "Value": "foo"
+  },
+  {
+    "Class": 10,
+    "Line": 1,
+    "Column": 58,
+    "Value": 44
+  },
+  {
+    "Class": 6,
+    "Line": 1,
+    "Column": 60,
+    "Value": "bar"
+  },
+  {
+    "Class": 10,
+    "Line": 1,
+    "Column": 65,
+    "Value": 44
+  },
+  {
+    "Class": 14,
+    "Line": 1,
+    "Column": 67,
+    "Value": 93
+  },
+  {
+    "Class": 4,
+    "Line": 1,
+    "Column": 93,
+    "Value": "good_threshold"
+  },
+  {
+    "Class": 5,
+    "Line": 1,
+    "Column": 108,
+    "Value": 61
+  },
+  {
+    "Class": 7,
+    "Line": 1,
+    "Column": 110,
+    "Value": 3
+  },
+  {
+    "Class": 4,
+    "Line": 2,
+    "Column": 1,
+    "Value": "interval"
+  },
+  {
+    "Class": 5,
+    "Line": 2,
+    "Column": 10,
+    "Value": 61
+  },
+  {
+    "Class": 9,
+    "Line": 2,
+    "Column": 12,
+    "Value": 90000000000
+  },
+  {
+    "Class": 3,
+    "Line": 5,
+    "Column": 0,
+    "Value": 125
+  },
+  {
+    "Class": 15,
+    "Line": 7,
+    "Column": 10,
+    "Value": "alert"
+  },
+  {
+    "Class": 4,
+    "Line": 7,
+    "Column": 16,
+    "Value": "twilio.message"
+  },
+  {
+    "Class": 6,
+    "Line": 7,
+    "Column": 31,
+    "Value": "text"
+  },
+  {
+    "Class": 2,
+    "Line": 7,
+    "Column": 38,
+    "Value": 123
+  },
+  {
+    "Class": 4,
+    "Line": 8,
+    "Column": 4,
+    "Value": "sid"
+  },
+  {
+    "Class": 5,
+    "Line": 8,
+    "Column": 8,
+    "Value": 61
+  },
+  {
+    "Class": 6,
+    "Line": 8,
+    "Column": 10,
+    "Value": "xxx"
+  },
+  {
+    "Class": 4,
+    "Line": 9,
+    "Column": 4,
+    "Value": "token"
+  },
+  {
+    "Class": 5,
+    "Line": 9,
+    "Column": 10,
+    "Value": 61
+  },
+  {
+    "Class": 6,
+    "Line": 9,
+    "Column": 12,
+    "Value": "yyy"
+  },
+  {
+    "Class": 4,
+    "Line": 10,
+    "Column": 4,
+    "Value": "from"
+  },
+  {
+    "Class": 5,
+    "Line": 10,
+    "Column": 9,
+    "Value": 61
+  },
+  {
+    "Class": 6,
+    "Line": 10,
+    "Column": 11,
+    "Value": "+44 ..."
+  },
+  {
+    "Class": 4,
+    "Line": 11,
+    "Column": 4,
+    "Value": "to"
+  },
+  {
+    "Class": 5,
+    "Line": 11,
+    "Column": 7,
+    "Value": 61
+  },
+  {
+    "Class": 6,
+    "Line": 11,
+    "Column": 9,
+    "Value": "+44 ...."
+  },
+  {
+    "Class": 3,
+    "Line": 12,
+    "Column": 0,
+    "Value": 125
+  },
+  {
+    "Class": 1,
+    "Line": 14,
+    "Column": 125,
+    "Value": null
+  }
+]

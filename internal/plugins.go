@@ -1,51 +1,49 @@
 package internal
 
 import (
+	"fmt"
 	"github.com/csmith/goplum"
-	"io/ioutil"
-	"log"
 	"path"
 	"plugin"
+	"strings"
 )
+import "github.com/bmatcuk/doublestar/v2"
 
-func LoadPlugins(dir string) []goplum.Plugin {
-	files, err := ioutil.ReadDir(dir)
+func FindPlugins(pattern string) (map[string]goplum.PluginLoader, error) {
+	matches, err := doublestar.Glob(pattern)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	var plugins []goplum.Plugin
-	for i := range files {
-		location := path.Join(dir, files[i].Name())
-		if files[i].IsDir() {
-			plugins = append(plugins, LoadPlugins(location)...)
-		} else if p := loadPlugin(location); p != nil {
-			plugins = append(plugins, p)
+	plugins := make(map[string]goplum.PluginLoader)
+	for i := range matches {
+		name := path.Base(matches[i])
+		if strings.HasSuffix(name, ".so") {
+			location := matches[i]
+			plugins[strings.TrimSuffix(name, ".so")] = func() (goplum.Plugin, error) {
+				return loadPlugin(location)
+			}
 		}
 	}
 
-	return plugins
+	return plugins, nil
 }
 
-func loadPlugin(location string) goplum.Plugin {
-	log.Printf("Attempting to load plugin from %s\n", location)
+func loadPlugin(location string) (goplum.Plugin, error) {
 	p, err := plugin.Open(location)
 	if err != nil {
-		log.Printf("Plugin at %s couldn't be opened: %v\n", location, err)
-		return nil
+		return nil, fmt.Errorf("unable to open plugin at %s: %v", location, err)
 	}
 
 	f, err := p.Lookup("Plum")
 	if err != nil {
-		log.Printf("Plugin at %s doesn't export Plum() func: %v\n", location, err)
-		return nil
+		return nil, fmt.Errorf("plugin at %s doesn't export Plum() func: %v", location, err)
 	}
 
 	provider, valid := f.(func() goplum.Plugin)
 	if !valid {
-		log.Printf("Plugin at %s has Plum() func with incorrect return type: %#v\n", location, f)
-		return nil
+		return nil, fmt.Errorf("plugin at %s has Plum() func with incorrect return type: %v", location, err)
 	}
 
-	return provider()
+	return provider(), nil
 }

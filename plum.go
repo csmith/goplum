@@ -2,6 +2,9 @@ package goplum
 
 import (
 	"fmt"
+	"github.com/csmith/goplum/config"
+	"github.com/imdario/mergo"
+	"github.com/mitchellh/mapstructure"
 	"log"
 	"os"
 	"regexp"
@@ -9,77 +12,176 @@ import (
 	"time"
 )
 
+type CheckSettings struct {
+	Alerts           []string
+	Interval         time.Duration
+	GoodThreshold    int
+	FailingThreshold int
+}
+
+var DefaultSettings = CheckSettings{
+	Alerts:           []string{"*"},
+	Interval:         time.Second * 30,
+	GoodThreshold:    2,
+	FailingThreshold: 2,
+}
+
+type PluginLoader func() (Plugin, error)
+
 type Plum struct {
-	checkTypes map[string]CheckType
-	alertTypes map[string]AlertType
-	alerts     map[string]Alert
-	checks     []*ScheduledCheck
+	availablePlugins map[string]PluginLoader
+	loadedPlugins    map[string]Plugin
+	alerts           map[string]Alert
+	checks           []*ScheduledCheck
+	checkDefaults    CheckSettings
 }
 
-func (p *Plum) AddPlugins(plugins []Plugin) {
-	p.checkTypes = make(map[string]CheckType)
-	p.alertTypes = make(map[string]AlertType)
-
-	for i := range plugins {
-		cs := plugins[i].Checks()
-		for j := range cs {
-			p.checkTypes[fmt.Sprintf("%s.%s", plugins[i].Name(), cs[j].Name())] = cs[j]
-		}
-
-		ns := plugins[i].Alerts()
-		for j := range ns {
-			p.alertTypes[fmt.Sprintf("%s.%s", plugins[i].Name(), ns[j].Name())] = ns[j]
-		}
+func NewPlum() *Plum {
+	return &Plum{
+		availablePlugins: make(map[string]PluginLoader),
+		loadedPlugins:    make(map[string]Plugin),
+		alerts:           make(map[string]Alert),
 	}
-
-	log.Printf("Found %d check types and %d alert types from %d plugins\n", len(p.checkTypes), len(p.alertTypes), len(plugins))
 }
 
-func (p *Plum) LoadConfig(configPath string) {
-	f, err := os.Open(configPath)
+func (p *Plum) RegisterPlugins(plugins map[string]PluginLoader) {
+	fmt.Printf("%#v\n", plugins)
+	for n := range plugins {
+		p.RegisterPlugin(n, plugins[n])
+	}
+}
+
+func (p *Plum) RegisterPlugin(name string, loader PluginLoader) {
+	p.availablePlugins[name] = loader
+}
+
+func (p *Plum) ReadConfig(path string) error {
+	f, err := os.Open(path)
 	if err != nil {
-		log.Fatalf("Unable to open config file at %s: %v", configPath, err)
+		return err
 	}
 	defer f.Close()
 
-	config, err := LoadConfig(f)
-	if err != nil {
-		log.Fatalf("Unable to read config: %v", err)
+	parser := config.NewParser(f)
+	if err := parser.Parse(); err != nil {
+		return fmt.Errorf("unable to parse config file %s: %v", path, err)
 	}
 
-	for i := range config.Checks {
-		cc := config.Checks[i]
-		check, ok := p.checkTypes[cc.Type]
-		if !ok {
-			log.Fatalf("Invalid check type in config: %s", cc.Type)
+	if err := mergo.Map(&p.checkDefaults, parser.DefaultSettings); err != nil {
+		return fmt.Errorf("unable to merge default settings from %s: %v", path, err)
+	}
+
+	if err := p.addChecks(parser.CheckBlocks); err != nil {
+		return err
+	}
+
+	if err := p.addAlerts(parser.AlertBlocks); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Plum) addAlerts(alerts []*config.Block) error {
+	for i := range alerts {
+		parts := strings.SplitN(alerts[i].Type, ".", 2)
+		plugin, err := p.plugin(parts[0])
+		if err != nil {
+			return err
 		}
 
-		t, err := check.Create(cc.Params)
+		alert := plugin.Alert(parts[1])
+		if alert == nil {
+			return fmt.Errorf("invalid alert %s in plugin %s", parts[1], parts[0])
+		}
+
+		if err := mapstructure.Decode(alerts[i].Settings, &alert); err != nil {
+			return fmt.Errorf("error merging alert config: %v", err)
+		}
+
+		if err := alert.Validate(); err != nil {
+			return fmt.Errorf("error configuring alert %s: %v", alerts[i].Name, err)
+		}
+
+		p.alerts[alerts[i].Name] = alert
+	}
+
+	return nil
+}
+
+func (p *Plum) addChecks(checks []*config.Block) error {
+	for i := range checks {
+		parts := strings.SplitN(checks[i].Type, ".", 2)
+		plugin, err := p.plugin(parts[0])
 		if err != nil {
-			log.Fatalf("Unable to create check '%s': %v", cc.Name, err)
+			return err
+		}
+
+		check := plugin.Check(parts[1])
+		if check == nil {
+			fmt.Printf("%#v\n", plugin)
+			return fmt.Errorf("invalid check %s in plugin %s", parts[1], parts[0])
+		}
+
+		if err := mapstructure.Decode(checks[i].Settings, &check); err != nil {
+			return fmt.Errorf("error merging check config: %v", err)
+		}
+
+		if err := check.Validate(); err != nil {
+			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
+		}
+
+		settings, err := p.checkSettings(checks[i])
+		if err != nil {
+			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
 		}
 
 		p.checks = append(p.checks, &ScheduledCheck{
-			Config: cc,
-			Check:  t,
+			Name:   checks[i].Name,
+			Type:   checks[i].Type,
+			Config: settings,
+			Check:  check,
 		})
 	}
 
-	p.alerts = make(map[string]Alert)
-	for i := range config.Alerts {
-		a := config.Alerts[i]
-		alert, ok := p.alertTypes[a.Type]
-		if !ok {
-			log.Fatalf("Invalid alert type in config: %s", a.Type)
-		}
+	return nil
+}
 
-		n, err := alert.Create(a.Params)
-		if err != nil {
-			log.Fatalf("Unable to create alert '%s': %v", a.Type, err)
-		}
+func (p *Plum) checkSettings(block *config.Block) (*CheckSettings, error) {
+	settings := CheckSettings{}
 
-		p.alerts[a.Name] = n
+	if err := mergo.Map(&settings, block.Settings); err != nil {
+		return nil, fmt.Errorf("unable to merge check settings: %v", err)
 	}
+
+	if err := mergo.Merge(&settings, p.checkDefaults); err != nil {
+		return nil, fmt.Errorf("unable to merge default check settings: %v", err)
+	}
+
+	if err := mergo.Merge(&settings, DefaultSettings); err != nil {
+		return nil, fmt.Errorf("unable to merge fallback check settings: %v", err)
+	}
+
+	return &settings, nil
+}
+
+func (p *Plum) plugin(name string) (Plugin, error) {
+	loaded, ok := p.loadedPlugins[name]
+	if ok {
+		return loaded, nil
+	}
+
+	available, ok := p.availablePlugins[name]
+	if ok {
+		plugin, err := available()
+		if err != nil {
+			return nil, fmt.Errorf("unable to load plugin %s: %v", name, err)
+		}
+		p.loadedPlugins[name] = plugin
+		return plugin, nil
+	}
+
+	return nil, fmt.Errorf("no plugin found with name %s", name)
 }
 
 func (p *Plum) Run() {
@@ -106,7 +208,7 @@ func (p *Plum) Run() {
 
 func (p *Plum) RunCheck(c *ScheduledCheck) {
 	result := c.Check.Execute()
-	log.Printf("Check '%s' executed: %s (%s)\n", c.Config.Name, result.State, result.Detail)
+	log.Printf("Check '%s' executed: %s (%s)\n", c.Name, result.State, result.Detail)
 	c.AddResult(&result)
 	c.LastRun = time.Now()
 
@@ -127,22 +229,21 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 
 func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 	details := AlertDetails{
-		Name:          c.Config.Name,
-		Type:          c.Config.Type,
-		Config:        c.Config.Params,
+		Name:          c.Name,
+		Type:          c.Type,
 		LastResult:    c.LastResult(),
 		PreviousState: previousState,
 		NewState:      c.State,
 	}
 
 	if len(details.LastResult.Detail) > 0 {
-		details.Text = fmt.Sprintf("Check '%s' is now %s (%s), was %s .", details.Name, details.NewState, details.LastResult.Detail, details.PreviousState)
+		details.Text = fmt.Sprintf("Check '%s' is now %s (%s), was %s.", details.Name, details.NewState, details.LastResult.Detail, details.PreviousState)
 	} else {
 		details.Text = fmt.Sprintf("Check '%s' is now %s, was %s.", details.Name, details.NewState, details.PreviousState)
 	}
 
 	alerts := p.AlertsMatching(c.Config.Alerts)
-	log.Printf("Raising alerts for %s: %d alerts match config %v\n", c.Config.Name, len(alerts), c.Config.Alerts)
+	log.Printf("Raising alerts for %s: %d alerts match config %v\n", c.Name, len(alerts), c.Config.Alerts)
 	for n := range alerts {
 		if err := alerts[n].Send(details); err != nil {
 			log.Printf("Error sending alert: %v\n", err)
@@ -188,7 +289,9 @@ func regexpForWildcards(names []string) *regexp.Regexp {
 }
 
 type ScheduledCheck struct {
-	Config  ConfiguredCheck
+	Name    string
+	Type    string
+	Config  *CheckSettings
 	Check   Check
 	LastRun time.Time
 	Settled bool
@@ -197,7 +300,7 @@ type ScheduledCheck struct {
 }
 
 func (c *ScheduledCheck) Remaining() time.Duration {
-	return c.LastRun.Add(time.Duration(c.Config.Interval)).Sub(time.Now())
+	return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
 }
 
 func (c *ScheduledCheck) AddResult(result *Result) ResultHistory {

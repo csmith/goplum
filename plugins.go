@@ -7,21 +7,14 @@ import (
 )
 
 // Plugin is the API between plugins and the core. Plugins must provide an exported "Plum()" method in the
-// main package which returns an instance of Plugin. The Plugin in turn then provides its name and the
-// check and alerts it makes available.
+// main package which returns an instance of Plugin.
+//
+// The Check and Alert funcs should provide new instances of the named type, or nil if such a type does not
+// exist. Exported fields of the checks and alerts will then be populated according to the user's config, and
+// the Validate() func will be called.
 type Plugin interface {
-	Name() string
-	Checks() []CheckType
-	Alerts() []AlertType
-}
-
-// CheckType is one type of check that may be performed to determine the status of a service
-// e.g. making a HTTP request, or opening a TCP socket.
-type CheckType interface {
-	// Name returns a name for this type of check, which must be unique within the plugin.
-	Name() string
-	// Create instantiates a new check of this type, with the provided configuration.
-	Create(config json.RawMessage) (Check, error)
+	Check(kind string) Check
+	Alert(kind string) Alert
 }
 
 // Check defines the method to see if a service is up or not. The check is persistent - its
@@ -30,6 +23,9 @@ type Check interface {
 	// Execute performs the actual check to see if the service is up or not.
 	// It should block until a result is available.
 	Execute() Result
+
+	// Validate checks the configuration of this check and returns any errors.
+	Validate() error
 }
 
 // CheckState describes the state of a check.
@@ -89,15 +85,6 @@ func FailingResult(format string, a ...interface{}) Result {
 	}
 }
 
-// AlertType is one way of notifying people when a service goes down or returns, e.g.
-// posting a webhook, sending a message with Twilio
-type AlertType interface {
-	// Name returns a name for this type of alert, which must be unique within the plugin.
-	Name() string
-	// Create instantiates a new alert of this type, with the provided configuration.
-	Create(config json.RawMessage) (Alert, error)
-}
-
 // AlertDetails contains information about a triggered alert
 type AlertDetails struct {
 	// Text is a short, pre-generated message describing the alert.
@@ -120,4 +107,7 @@ type AlertDetails struct {
 type Alert interface {
 	// Send dispatches an alert in relation to the given check event.
 	Send(details AlertDetails) error
+
+	// Validate checks the configuration of this alert and returns any errors.
+	Validate() error
 }

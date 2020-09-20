@@ -1,0 +1,50 @@
+[
+  {
+    "Class": 16,
+    "Line": 1,
+    "Column": 0,
+    "Value": "defaults"
+  },
+  {
+    "Class": 2,
+    "Line": 1,
+    "Column": 9,
+    "Value": 123
+  },
+  {
+    "Class": 4,
+    "Line": 2,
+    "Column": 4,
+    "Value": "test"
+  },
+  {
+    "Class": 5,
+    "Line": 2,
+    "Column": 9,
+    "Value": 61
+  },
+  {
+    "Class": 6,
+    "Line": 2,
+    "Column": 11,
+    "Value": "abc\r\n\tdef\\ghi\\\"jkl\"mno"
+  },
+  {
+    "Class": 4,
+    "Line": 3,
+    "Column": 4,
+    "Value": "invalid"
+  },
+  {
+    "Class": 5,
+    "Line": 3,
+    "Column": 12,
+    "Value": 61
+  },
+  {
+    "Class": 0,
+    "Line": 3,
+    "Column": 14,
+    "Value": "invalid character escape x"
+  }
+]

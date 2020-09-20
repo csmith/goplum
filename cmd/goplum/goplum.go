@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	pluginsDir = flag.String("plugins", "plugins", "Directory to load plugins from")
-	configPath = flag.String("config", "config.json", "Path to the config file")
+	pluginsPattern = flag.String("plugins", "plugins/**.so", "Glob pattern used to locate plugins")
+	configPath = flag.String("config", "goplum.conf", "Path to the config file")
 )
 
 func main() {
@@ -18,15 +18,19 @@ func main() {
 		panic(err)
 	}
 
-	plugins := internal.LoadPlugins(*pluginsDir)
-
-	log.Printf("Loaded %d plugins\n", len(plugins))
-	for i := range plugins {
-		log.Printf("Plugin %d is '%s' with %d check types, %d alert types\n", i, plugins[i].Name(), len(plugins[i].Checks()), len(plugins[i].Alerts()))
+	plugins, err := internal.FindPlugins(*pluginsPattern)
+	if err != nil {
+		panic(err)
 	}
 
-	plum := &goplum.Plum{}
-	plum.AddPlugins(plugins)
-	plum.LoadConfig(*configPath)
+	log.Printf("Found %d plugins\n", len(plugins))
+
+	plum := goplum.NewPlum()
+	plum.RegisterPlugins(plugins)
+
+	if err := plum.ReadConfig(*configPath); err != nil {
+		log.Fatalf("Unable to read config: %v", err)
+	}
+
 	plum.Run()
 }

@@ -16,5 +16,4 @@ RUN go install  ./cmd/goplum
 FROM gcr.io/distroless/base
 COPY --from=build /go/bin/goplum /goplum
 COPY --from=build /go/src/app/*.so /plugins/
-ENV PLUGINS=/plugins
 ENTRYPOINT ["/goplum"]
