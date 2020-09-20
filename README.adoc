@@ -14,7 +14,7 @@ Running it via the command line:
 
 [source]
 ----
-docker run -d --restart always -v /path/to/my/config.json:/config.json csmith/goplum
+docker run -d --restart always -v /path/to/my/goplum.conf:/goplum.conf csmith/goplum
 ----
 
 Or using Docker Compose:
@@ -27,7 +27,7 @@ services:
   goplum:
     image: csmith/goplum
     volumes:
-      - ./config.json:/config.json
+      - ./goplum.conf:/goplum.conf
     restart: always
 ----
 
