@@ -45,7 +45,6 @@ func NewPlum() *Plum {
 }
 
 func (p *Plum) RegisterPlugins(plugins map[string]PluginLoader) {
-	fmt.Printf("%#v\n", plugins)
 	for n := range plugins {
 		p.RegisterPlugin(n, plugins[n])
 	}
