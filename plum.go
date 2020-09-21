@@ -14,8 +14,20 @@ import (
 type CheckSettings struct {
 	Alerts           []string
 	Interval         time.Duration
-	GoodThreshold    int
-	FailingThreshold int
+	GoodThreshold    int `config:"good_threshold"`
+	FailingThreshold int `config:"failing_threshold"`
+}
+
+func (c CheckSettings) Copy() CheckSettings {
+	alerts := make([]string, len(c.Alerts))
+	copy(alerts, c.Alerts)
+
+	return CheckSettings{
+		Alerts:           alerts,
+		Interval:         c.Interval,
+		GoodThreshold:    c.GoodThreshold,
+		FailingThreshold: c.FailingThreshold,
+	}
 }
 
 var DefaultSettings = CheckSettings{
@@ -30,16 +42,16 @@ type PluginLoader func() (Plugin, error)
 type Plum struct {
 	availablePlugins map[string]PluginLoader
 	loadedPlugins    map[string]Plugin
-	alerts           map[string]Alert
-	checks           []*ScheduledCheck
 	checkDefaults    CheckSettings
+	Alerts           map[string]Alert
+	Checks           []*ScheduledCheck
 }
 
 func NewPlum() *Plum {
 	return &Plum{
 		availablePlugins: make(map[string]PluginLoader),
 		loadedPlugins:    make(map[string]Plugin),
-		alerts:           make(map[string]Alert),
+		Alerts:           make(map[string]Alert),
 		checkDefaults:    DefaultSettings,
 	}
 }
@@ -106,7 +118,7 @@ func (p *Plum) addAlerts(alerts []*config.Block) error {
 			return fmt.Errorf("error configuring alert %s: %v", alerts[i].Name, err)
 		}
 
-		p.alerts[alerts[i].Name] = alert
+		p.Alerts[alerts[i].Name] = alert
 	}
 
 	return nil
@@ -130,7 +142,7 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
 		}
 
-		settings := p.checkDefaults
+		settings := p.checkDefaults.Copy()
 		if err := p.decodeSettings(&checks[i].Settings, &settings); err != nil {
 			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
 		}
@@ -143,7 +155,7 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
 		}
 
-		p.checks = append(p.checks, &ScheduledCheck{
+		p.Checks = append(p.Checks, &ScheduledCheck{
 			Name:   checks[i].Name,
 			Type:   checks[i].Type,
 			Config: &settings,
@@ -209,8 +221,8 @@ func (p *Plum) plugin(name string) (Plugin, error) {
 func (p *Plum) Run() {
 	for {
 		min := time.Now().Add(time.Hour)
-		for i := range p.checks {
-			c := p.checks[i]
+		for i := range p.Checks {
+			c := p.Checks[i]
 			remaining := c.Remaining()
 			if remaining <= 0 {
 				p.RunCheck(c)
@@ -276,9 +288,9 @@ func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 func (p *Plum) AlertsMatching(names []string) []Alert {
 	var res []Alert
 	re := regexpForWildcards(names)
-	for j := range p.alerts {
+	for j := range p.Alerts {
 		if re.MatchString(j) {
-			res = append(res, p.alerts[j])
+			res = append(res, p.Alerts[j])
 		}
 	}
 	return res

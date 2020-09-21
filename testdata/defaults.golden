@@ -1,0 +1,59 @@
+{
+  "Alerts": {},
+  "Checks": [
+    {
+      "Name": "override1",
+      "Type": "debug.random",
+      "Config": {
+        "Alerts": [
+          "foo"
+        ],
+        "Interval": 2000000000,
+        "GoodThreshold": 3,
+        "FailingThreshold": 2
+      },
+      "Check": {
+        "PercentGood": 0.5
+      },
+      "LastRun": "0001-01-01T00:00:00Z",
+      "Settled": false,
+      "State": "indeterminate"
+    },
+    {
+      "Name": "override2",
+      "Type": "debug.random",
+      "Config": {
+        "Alerts": [
+          "text"
+        ],
+        "Interval": 3000000000,
+        "GoodThreshold": 5,
+        "FailingThreshold": 6
+      },
+      "Check": {
+        "PercentGood": 0.5
+      },
+      "LastRun": "0001-01-01T00:00:00Z",
+      "Settled": false,
+      "State": "indeterminate"
+    },
+    {
+      "Name": "defaults",
+      "Type": "debug.random",
+      "Config": {
+        "Alerts": [
+          "text"
+        ],
+        "Interval": 90000000000,
+        "GoodThreshold": 3,
+        "FailingThreshold": 2
+      },
+      "Check": {
+        "PercentGood": 0.5
+      },
+      "LastRun": "0001-01-01T00:00:00Z",
+      "Settled": false,
+      "State": "indeterminate"
+    }
+  ]
+}
