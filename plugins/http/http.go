@@ -61,8 +61,9 @@ func (g GetCheck) Execute() goplum.Result {
 		return goplum.FailingResult("Bad status code: %d", r.StatusCode)
 	}
 
+	defer r.Body.Close()
+
 	if len(g.Content) > 0 {
-		defer r.Body.Close()
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return goplum.FailingResult("Error reading response body: %v", err)
@@ -111,6 +112,8 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 	if err != nil {
 		return err
 	}
+
+	defer res.Body.Close()
 
 	if res.StatusCode >= 400 {
 		return fmt.Errorf("bad response from webhook: HTTP %d", res.StatusCode)
