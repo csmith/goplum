@@ -6,12 +6,25 @@ import (
 	"fmt"
 	"github.com/csmith/goplum"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
 	"time"
 )
 
-var client = http.Client{Timeout: 20 * time.Second}
+var client = http.Client{
+	Timeout: 20 * time.Second,
+	Transport: &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout: 20 * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		DisableKeepAlives:     true,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	},
+}
 
 type Plugin struct{}
 
