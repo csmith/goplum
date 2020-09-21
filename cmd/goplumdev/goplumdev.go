@@ -5,6 +5,7 @@ import (
 	"github.com/csmith/goplum"
 	"github.com/csmith/goplum/plugins/debug"
 	"github.com/csmith/goplum/plugins/http"
+	"github.com/csmith/goplum/plugins/network"
 	"github.com/csmith/goplum/plugins/slack"
 	"github.com/csmith/goplum/plugins/twilio"
 	"github.com/kouhin/envflag"
@@ -18,6 +19,9 @@ var (
 var plugins = map[string]goplum.PluginLoader{
 	"http": func() (goplum.Plugin, error) {
 		return http.Plugin{}, nil
+	},
+	"network": func() (goplum.Plugin, error) {
+		return network.Plugin{}, nil
 	},
 	"slack": func() (goplum.Plugin, error) {
 		return slack.Plugin{}, nil
