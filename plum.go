@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const checkRunners = 4
+
 type CheckSettings struct {
 	Alerts           []string
 	Interval         time.Duration
@@ -40,11 +42,12 @@ var DefaultSettings = CheckSettings{
 type PluginLoader func() (Plugin, error)
 
 type Plum struct {
+	Alerts           map[string]Alert
+	Checks           []*ScheduledCheck
 	availablePlugins map[string]PluginLoader
 	loadedPlugins    map[string]Plugin
 	checkDefaults    CheckSettings
-	Alerts           map[string]Alert
-	Checks           []*ScheduledCheck
+	scheduled        chan *ScheduledCheck
 }
 
 func NewPlum() *Plum {
@@ -53,6 +56,7 @@ func NewPlum() *Plum {
 		loadedPlugins:    make(map[string]Plugin),
 		Alerts:           make(map[string]Alert),
 		checkDefaults:    DefaultSettings,
+		scheduled:        make(chan *ScheduledCheck, 100),
 	}
 }
 
@@ -219,13 +223,18 @@ func (p *Plum) plugin(name string) (Plugin, error) {
 }
 
 func (p *Plum) Run() {
+	for i := 0; i < checkRunners; i++ {
+		go p.processScheduledChecks()
+	}
+
 	for {
 		min := time.Now().Add(time.Hour)
 		for i := range p.Checks {
 			c := p.Checks[i]
 			remaining := c.Remaining()
 			if remaining <= 0 {
-				p.RunCheck(c)
+				c.Scheduled = true
+				p.scheduled <- c
 				remaining = c.Remaining()
 			}
 
@@ -235,13 +244,30 @@ func (p *Plum) Run() {
 			}
 		}
 
-		log.Printf("Sleeping until %s (%s)\n", min, min.Sub(time.Now()))
 		time.Sleep(min.Sub(time.Now()))
 	}
 }
 
+func (p *Plum) processScheduledChecks() {
+	for c := range p.scheduled {
+		func(check *ScheduledCheck) {
+			p.RunCheck(check)
+			check.Scheduled = false
+		}(c)
+	}
+}
+
 func (p *Plum) RunCheck(c *ScheduledCheck) {
-	result := c.Check.Execute()
+	result := func() (res Result) {
+		defer func() {
+			if r := recover(); r != nil {
+				res = FailingResult("PANIC: %v", r)
+			}
+		}()
+		res = c.Check.Execute()
+		return
+	}()
+
 	log.Printf("Check '%s' executed: %s (%s)\n", c.Name, result.State, result.Detail)
 	c.AddResult(&result)
 	c.LastRun = time.Now()
@@ -323,18 +349,23 @@ func regexpForWildcards(names []string) *regexp.Regexp {
 }
 
 type ScheduledCheck struct {
-	Name    string
-	Type    string
-	Config  *CheckSettings
-	Check   Check
-	LastRun time.Time
-	Settled bool
-	State   CheckState
-	history ResultHistory
+	Name      string
+	Type      string
+	Config    *CheckSettings
+	Check     Check
+	LastRun   time.Time
+	Scheduled bool
+	Settled   bool
+	State     CheckState
+	history   ResultHistory
 }
 
 func (c *ScheduledCheck) Remaining() time.Duration {
-	return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
+	if c.Scheduled {
+		return c.Config.Interval
+	} else {
+		return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
+	}
 }
 
 func (c *ScheduledCheck) AddResult(result *Result) ResultHistory {

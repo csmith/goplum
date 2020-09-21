@@ -31,7 +31,7 @@ type ConnectCheck struct {
 }
 
 func (c ConnectCheck) Execute() goplum.Result {
-	conn , err := net.DialTimeout(c.Network, c.Address, 10 * time.Second)
+	conn, err := net.DialTimeout(c.Network, c.Address, 10*time.Second)
 	if err != nil {
 		return goplum.FailingResult("unable to connect to %s: %v", c.Address, err)
 	}
