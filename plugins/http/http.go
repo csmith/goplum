@@ -36,7 +36,7 @@ func (p Plugin) Check(kind string) goplum.Check {
 type GetCheck struct {
 	Url                 string
 	Content             string
-	CertificateValidity time.Duration
+	CertificateValidity time.Duration `config:"certificate_validity"`
 }
 
 func (g GetCheck) Execute() goplum.Result {

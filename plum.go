@@ -3,7 +3,6 @@ package goplum
 import (
 	"fmt"
 	"github.com/csmith/goplum/config"
-	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
 	"log"
 	"os"
@@ -41,6 +40,7 @@ func NewPlum() *Plum {
 		availablePlugins: make(map[string]PluginLoader),
 		loadedPlugins:    make(map[string]Plugin),
 		alerts:           make(map[string]Alert),
+		checkDefaults:    DefaultSettings,
 	}
 }
 
@@ -66,7 +66,7 @@ func (p *Plum) ReadConfig(path string) error {
 		return fmt.Errorf("unable to parse config file %s: %v", path, err)
 	}
 
-	if err := mergo.Map(&p.checkDefaults, parser.DefaultSettings); err != nil {
+	if err := p.decodeSettings(&parser.DefaultSettings, &p.checkDefaults); err != nil {
 		return fmt.Errorf("unable to merge default settings from %s: %v", path, err)
 	}
 
@@ -94,8 +94,12 @@ func (p *Plum) addAlerts(alerts []*config.Block) error {
 			return fmt.Errorf("invalid alert %s in plugin %s", parts[1], parts[0])
 		}
 
-		if err := mapstructure.Decode(alerts[i].Settings, &alert); err != nil {
+		if err := p.decodeSettings(&alerts[i].Settings, &alert); err != nil {
 			return fmt.Errorf("error merging alert config: %v", err)
+		}
+
+		for k := range alerts[i].Settings {
+			return fmt.Errorf("invalid configuration key in alert %s: %s", alerts[i].Name, k)
 		}
 
 		if err := alert.Validate(); err != nil {
@@ -122,23 +126,27 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 			return fmt.Errorf("invalid check %s in plugin %s", parts[1], parts[0])
 		}
 
-		if err := mapstructure.Decode(checks[i].Settings, &check); err != nil {
-			return fmt.Errorf("error merging check config: %v", err)
+		if err := p.decodeSettings(&checks[i].Settings, &check); err != nil {
+			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
+		}
+
+		settings := p.checkDefaults
+		if err := p.decodeSettings(&checks[i].Settings, &settings); err != nil {
+			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
+		}
+
+		for k := range checks[i].Settings {
+			return fmt.Errorf("invalid configuration key in check %s: %s", checks[i].Name, k)
 		}
 
 		if err := check.Validate(); err != nil {
 			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
 		}
 
-		settings, err := p.checkSettings(checks[i])
-		if err != nil {
-			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
-		}
-
 		p.checks = append(p.checks, &ScheduledCheck{
 			Name:   checks[i].Name,
 			Type:   checks[i].Type,
-			Config: settings,
+			Config: &settings,
 			Check:  check,
 		})
 	}
@@ -146,22 +154,37 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 	return nil
 }
 
-func (p *Plum) checkSettings(block *config.Block) (*CheckSettings, error) {
-	settings := CheckSettings{}
+func (p *Plum) decodeSettings(src *map[string]interface{}, dst interface{}) error {
+	metadata := mapstructure.Metadata{}
+	dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		TagName:          "config",
+		Metadata:         &metadata,
+		Result:           dst,
+	})
 
-	if err := mergo.Map(&settings, block.Settings); err != nil {
-		return nil, fmt.Errorf("unable to merge check settings: %v", err)
+	if err != nil {
+		return err
 	}
 
-	if err := mergo.Merge(&settings, p.checkDefaults); err != nil {
-		return nil, fmt.Errorf("unable to merge default check settings: %v", err)
+	if err := dec.Decode(*src); err != nil {
+		return err
 	}
 
-	if err := mergo.Merge(&settings, DefaultSettings); err != nil {
-		return nil, fmt.Errorf("unable to merge fallback check settings: %v", err)
+	for key := range *src {
+		unused := false
+		for _, val := range metadata.Unused {
+			if val == key {
+				unused = true
+				break
+			}
+		}
+		if !unused {
+			delete(*src, key)
+		}
 	}
 
-	return &settings, nil
+	return nil
 }
 
 func (p *Plum) plugin(name string) (Plugin, error) {

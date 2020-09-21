@@ -27,7 +27,7 @@ func (p Plugin) Check(kind string) goplum.Check {
 }
 
 type RandomCheck struct {
-	PercentGood float64
+	PercentGood float64 `config:"percent_good"`
 }
 
 func (t RandomCheck) Execute() goplum.Result {
