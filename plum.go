@@ -250,10 +250,8 @@ func (p *Plum) Run() {
 
 func (p *Plum) processScheduledChecks() {
 	for c := range p.scheduled {
-		func(check *ScheduledCheck) {
-			p.RunCheck(check)
-			check.Scheduled = false
-		}(c)
+		p.RunCheck(c)
+		c.Scheduled = false
 	}
 }
 
