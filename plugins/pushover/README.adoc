@@ -1,0 +1,42 @@
+= Pushover plugin
+:toc: macro
+
+The pushover plugin sends alerts as push notifications via https://pushover.net[Pushover].
+
+== Alerts
+
+=== pushover.message
+
+[source,goplum]
+----
+alert pushover.message "example" {
+    token = "application-token"
+    key = "user-or-group-key"
+    devices = ["iphone", "nexus17"]
+    failing {
+        priority = 2
+        sound = "siren"
+        retry = 30s
+        expire = 1h
+    }
+    recovering {
+        priority = 1
+        sound = "bugle"
+    }
+}
+----
+
+Sends a push notification via Pushover. The `token` and `key` values are required: `token`
+is an application key (you will need to create one for your goplum install via the Pushover
+website), and `key` is the user or group key you wish to send the alert to.
+
+Optionally you can limit the alert to a specific device or devices by passing their names
+in the `devices` option.
+
+You can configure sounds and priorities for both failing and recovering alerts by using the
+appropriate blocks. For emergency alerts (priority 2), you must also specify how often the
+alert is retried (minimum: 30s), and after how long it will stop (maximum: 3h).
+
+If the priority is not set, or the blocks are omitted entirely, the alerts are sent as
+priority `0`. If sounds are not set then the default sounds configured in the Pushover
+app will be used.

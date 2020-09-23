@@ -1,0 +1,58 @@
+= HTTP plugin
+:toc: macro
+
+The HTTP plugin provides checks for HTTP services, and HTTP-based alerts.
+
+== Checks
+
+=== http.get
+
+[source,goplum]
+----
+check http.get "example" {
+  url = "https://www.example.com/"
+  content = "Example Domain"
+  certificate_validity = 10d
+}
+----
+
+Sends an HTTP GET request to the given URL. The check passes if a response is received with
+an error code less than 400.
+
+If the `content` parameter is specified then the response body must contain the exact string.
+
+If the `certificate_validity` parameter is specified, then the connection must have
+been made over TLS, and the returned certificate must be valid for at least the given duration
+from now. (An expired or untrusted certificate will cause a failure regardless of this setting.)
+
+== Alerts
+
+=== http.webhook
+
+[source,goplum]
+----
+alert http.webhook "example" {
+  url = "https://www.example.com/incoming"
+}
+----
+
+Sends alerts as a POST request to the given webhook URL with a JSON payload:
+
+[source,json]
+----
+{
+  "text": "Check 'Testing' is now good, was failing.",
+  "name": "Testing",
+  "type": "debug.random",
+  "config": {
+    "percent_good": 0.8
+  },
+  "last_result": {
+    "state": "failing",
+    "time": "2020-09-17T17:55:02.224973486+01:00",
+    "detail": "Random value 0.813640 greater than percent_good 0.800000"
+  },
+  "previous_state": "failing",
+  "new_state": "good"
+}
+----
