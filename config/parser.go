@@ -118,8 +118,13 @@ func (p *Parser) parseBlock() (map[string]interface{}, error) {
 }
 
 func (p *Parser) parseAssignment() (interface{}, error) {
-	if _, err := p.take(tokenAssignment); err != nil {
+	s, err := p.take(tokenAssignment, tokenBlockStart)
+	if err != nil {
 		return nil, err
+	}
+	if s.Class == tokenBlockStart {
+		p.backup()
+		return p.parseBlock()
 	}
 
 	n, err := p.take(tokenString, tokenDuration, tokenInt, tokenFloat, tokenArrayStart)
