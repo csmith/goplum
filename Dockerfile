@@ -13,7 +13,8 @@ RUN go install  ./cmd/goplum
 
 # Step 2: execute
 
-FROM gcr.io/distroless/base
+FROM gcr.io/distroless/base:nonroot
+WORKDIR /
 COPY --from=build /go/bin/goplum /goplum
 COPY --from=build /go/src/app/*.so /plugins/
 ENTRYPOINT ["/goplum"]
