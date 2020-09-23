@@ -33,6 +33,8 @@ services:
     restart: always
 ----
 
+For alternative installation methods see link:docs/install.adoc[the installation documentation].
+
 == Configuration
 
 Goplum's configuration contains an optional defaults section, a list of alerts, and

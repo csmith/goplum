@@ -1,0 +1,99 @@
+= Installing Goplum
+
+== Using Docker
+
+The easiest way to run Goplum is via Docker. It doesn't require any
+special privileges or settings, you just need to provide a config file
+to it at `/goplum.conf`.
+
+Running it via the command line:
+
+[source]
+----
+docker run -d --restart always -v /path/to/my/goplum.conf:/goplum.conf csmith/goplum
+----
+
+Or using Docker Compose:
+
+[source,yaml]
+----
+version: "3.8"
+
+services:
+  goplum:
+    image: csmith/goplum
+    volumes:
+      - ./goplum.conf:/goplum.conf
+    restart: always
+----
+
+== Manual installation
+
+Alternatively, you can manually compile Goplum and manually configure your system to run it.
+
+=== Compiling
+
+You must have https://golang.org/[Go 1.15] or newer installed.
+
+[source,shell script]
+----
+# Compile the main goplum executable
+go build -o goplum ./cmd/goplum
+
+# Compile all of the bundled plugins
+for plugin in $(ls plugins); do
+    go build -o $plugin.so -buildmode=plugin ./plugins/$plugin/cmd;
+done
+----
+
+This will produce a `goplum` binary, and a number of plugin libraries in the current directory.
+
+=== Paths
+
+By default, Goplum will look for a config file named `goplum.conf` in its working directory
+and recursively scan for plugins starting at the `plugins` folder in its working directory.
+These are good defaults for Docker and for local development, but probably aren't good for
+a system-wide install.
+
+These can be configured using either flags or environment variables:
+
+[source,shell script]
+----
+# Flags
+goplum --plugins /path/to/plugins/**.so --config /path/to/goplum.conf
+
+# Environment
+PLUGINS=/path/to/plugins/**.so CONFIG=/path/to/goplum.conf goplum
+----
+
+=== Execution
+
+The goplum binary does not fork, and does not require any special privileges, so it should
+be easy enough to integrate with most init systems.
+
+For example, with systemd:
+
+[source,systemd]
+----
+[Unit]
+Description=Goplum
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+User=goplum
+Group=goplum
+WorkingDirectory=/tmp
+ExecStart=/usr/bin/goplum --config /etc/goplum.conf --plugins /usr/lib/goplum/**.so
+
+[Install]
+WantedBy=multi-user.target
+----
+
+This assumes that:
+
+ * The `goplum` binary is in `/usr/bin/goplum`
+ * Plugins are found under `/usr/lib/goplum/`
+ * The config file is at `/etc/goplum.conf`
+ * You have created a `goplum` user and group.
