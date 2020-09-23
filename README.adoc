@@ -1,5 +1,7 @@
 = Goplum
 
+image::logo.png?raw=true[Goplum logo,role="right"]
+
 Goplum is an extensible monitoring and alerting daemon designed for
 personal infrastructure and small businesses. It can monitor
 websites and APIs, and send alerts by text message if they go down.
