@@ -281,6 +281,29 @@ alert twilio.sms "example" {
 Sends SMS alerts using the Twilio API. You must have a funded Twilio account, and configure the
 SID, Token, and From/To phone numbers.
 
+=== exec
+
+The exec plugin allows you to execute commands.
+
+==== Check: exec.command
+
+[source,goplum]
+----
+check exec.command "example" {
+  name = "/path/to/script.sh"
+  arguments = ["-c", "3", "--verbose"]
+}
+----
+
+Executes an arbitrary binary, passing if the exit code is 0, and failing otherwise.
+
+[IMPORTANT]
+====
+The exec plugin should be used as a last resort. Using (or writing) a Goplum plugin
+provides much more control around how the check runs, allows for standardised
+configuration, avoids the need for external dependencies, and so on.
+====
+
 === debug
 
 The debug plugin provides checks and alerts for testing and development purposes.

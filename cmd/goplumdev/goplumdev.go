@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/csmith/goplum"
 	"github.com/csmith/goplum/plugins/debug"
+	"github.com/csmith/goplum/plugins/exec"
 	"github.com/csmith/goplum/plugins/http"
 	"github.com/csmith/goplum/plugins/network"
 	"github.com/csmith/goplum/plugins/pushover"
@@ -18,6 +19,9 @@ var (
 )
 
 var plugins = map[string]goplum.PluginLoader{
+	"exec": func() (goplum.Plugin, error) {
+		return exec.Plugin{}, nil
+	},
 	"http": func() (goplum.Plugin, error) {
 		return http.Plugin{}, nil
 	},
