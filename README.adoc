@@ -92,40 +92,8 @@ good_threshold::
 The number of times a check must pass in a row before the service is considered up. This
 prevents alert noise if a check occasionally passes for some reason. Global default: 2.
 
-=== Data types
-
-The following data types can be used in config files:
-
-==== Strings
-
-Represented as double quoted text, e.g. `"This is a test"`.
-
-The character `\` may be used as an escape character, e.g.: `"Bob said:\n\t\"Hello\""`.
-
-==== Durations
-
-One or more integer numbers suffixed with units, e.g. `1d5h`.
-
-Valid units are:
-
-* `s` - seconds
-* `m` - minutes
-* `h` - hours
-* `d` - days (exactly 24 hours, regardless of calendar/DST changes)
-* `w` - week (exactly 7 days)
-
-==== Integers
-
-Sequence of digits in base 10, e.g. `123456`
-
-==== Floats
-
-Sequence of digits in base 10 with exactly one decimal point e.g. `1.234`, `.1` or `1.`
-
-==== Lists of strings
-
-Individual strings contained in square brackets, separated by commas, e.g. `["foo", "bar"]`.
-A single trailing comma is allowed e.g. `["foo", "bar",]`.
+More information on the syntax for configuration files is found in the
+link:docs/syntax.adoc[syntax guide].
 
 == Bundled plugins
 

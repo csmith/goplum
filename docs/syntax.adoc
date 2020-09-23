@@ -1,0 +1,149 @@
+= Configuration syntax
+
+Goplum uses a custom configuration syntax, designed to be concise yet
+flexible and readable.
+
+== Components
+
+=== Blocks
+
+[source,goplum]
+----
+{
+  # <Assignments>
+}
+----
+
+A block is a group of <<Assignments>>, contained within braces. Two
+types of special blocks exist: <<Defaults>>, and <<Named blocks (checks and alerts)>>.
+These have keywords to identify them, and checks/alerts have some
+additional metadata prior to the block opening.
+
+==== Defaults
+
+[source,goplum]
+----
+defaults {
+  # <Assignments>
+}
+----
+
+The defaults block allows you to set default values for common check
+settings. The defaults block can only exist at the top-level of the
+configuration file.
+
+==== Named blocks (checks and alerts)
+
+[source,goplum]
+----
+alert <identifier> "<name>" {
+  # <Assignments>
+}
+
+check <identifier> "<name>" {
+  # <Assignments>
+}
+----
+
+The alert and check blocks require an <<Identifier>> (the type of the
+alert or check, including the plugin name) and a name. They can
+exist only at the top-level of the configuration file.
+
+=== Assignments
+
+==== Simple assignment
+
+[source,goplum]
+----
+identifier = "value"
+identifier = 42
+identifier = 1.2345
+identifier = 3d2h1m
+identifier = ["a", "b", "c", "d"]
+----
+
+Simple assignments consist of an <<Identifier>>, the `=` symbol, and a value.
+The types of allowed values are explained in the <<Data types>> section.
+
+==== Block assignment
+
+[source,goplum]
+----
+identifier {
+  # <Assignments>
+}
+----
+
+More complex configuration may require nested blocks. This may be to group related
+options together, or when the same information has to be collected multiple times.
+These consist of the <<Identifier>> and then a simple block containing further
+assignments. Block assignments can be infinitely nested but plugin authors should
+avoid requiring configuration to be layered too deeply.
+
+=== Miscellaneous
+
+==== Identifier
+
+Identifiers are unquoted strings consisting of letters, dots and underscores.
+They refer to variables and types provided by goplum plugins.
+
+==== Keywords
+
+A keyword is an <<Identifier>> with special meaning to the configuration
+system. It may only be used where prescribed in this guide. Current keywords
+are:
+
+* `defaults`
+* `alert`
+* `check`
+
+==== Whitespace
+
+The goplum configuration format ignores all whitespace except for
+terminating <<Comments>>, but it is strongly recommended to only have
+one assignment per line and to indent the content of blocks, for
+readability and debugging purposes.
+
+==== Comments
+
+Comments can exist at the top-level of the configuration file or within <<Blocks>>.
+Comments start with a `#` and run to the end of the line. Note that comments
+can't exist inside <<Assignments>> or <<Lists of strings>>.
+
+== Data types
+
+The following data types can be used in config files:
+
+=== Strings
+
+Represented as double quoted text, e.g. `"This is a test"`.
+
+The character `\` may be used as an escape character, e.g.: `"Bob said:\n\t\"Hello\""`.
+
+=== Durations
+
+One or more integer numbers suffixed with units, e.g. `1d5h`.
+
+Valid units are:
+
+* `s` - seconds
+* `m` - minutes
+* `h` - hours
+* `d` - days (exactly 24 hours, regardless of calendar/DST changes)
+* `w` - week (exactly 7 days)
+
+=== Integers
+
+Sequence of digits in base 10, e.g. `123456`
+
+=== Floats
+
+Sequence of digits in base 10 with exactly one decimal point e.g. `1.234`, `.1` or `1.`
+
+=== Lists of strings
+
+Individual strings contained in square brackets, separated by commas, e.g. `["foo", "bar"]`.
+A single trailing comma is allowed e.g. `["foo", "bar",]`.
+
+If the list has a single item, it can be represented as a plain string instead
+(i.e., `["foo"]` can be simplified to just `"foo"`).
