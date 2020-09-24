@@ -43,9 +43,15 @@ func (p Plugin) Check(kind string) goplum.Check {
 	}
 }
 
+type Credentials struct {
+	Username string
+	Password string
+}
+
 type GetCheck struct {
 	Url                 string
 	Content             string
+	Auth                Credentials
 	ContentExpected     bool          `config:"content_expected"`
 	CertificateValidity time.Duration `config:"certificate_validity"`
 }
@@ -54,6 +60,10 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, g.Url, http.NoBody)
 	if err != nil {
 		goplum.FailingResult("Error building request: %v", err)
+	}
+
+	if len(g.Auth.Username) > 0 || len(g.Auth.Password) > 0 {
+		req.SetBasicAuth(g.Auth.Username, g.Auth.Password)
 	}
 
 	r, err := client.Do(req)

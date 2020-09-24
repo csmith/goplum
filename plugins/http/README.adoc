@@ -14,6 +14,10 @@ check http.get "example" {
   content = "Example Domain"
   content_expected = true
   certificate_validity = 10d
+  auth {
+    username = "acidburn"
+    password = "HackThePlanet"
+  }
 }
 ----
 
@@ -27,6 +31,9 @@ is set to `false` then the string must NOT be present, and the check will fail i
 If the `certificate_validity` parameter is specified, then the connection must have
 been made over TLS, and the returned certificate must be valid for at least the given duration
 from now. (An expired or untrusted certificate will cause a failure regardless of this setting.)
+
+If the `auth` settings are provided, they will be sent in a Basic authentication header. Note
+that basic authentication isn't encrypted, so shouldn't be used over an insecure connection.
 
 == Alerts
 

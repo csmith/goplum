@@ -6,6 +6,8 @@
 
 * The http.get check can now make sure content *isn't* present
   (https://github.com/csmith/goplum/issues/28[#28])
+* The http.get check now supports basic authentication
+  (https://github.com/csmith/goplum/issues/7[#7])
 * Added a timeout setting for checks, and updated bundled plugins
   to respect it (https://github.com/csmith/goplum/issues/10[#10])
 
