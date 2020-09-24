@@ -48,6 +48,7 @@ defaults {
   interval = 10s
 }
 
+# An alert named 'text' that will send an SMS message via Twilio:
 alert twilio.sms "text" {
   sid = "sid"
   token = "token"
@@ -55,49 +56,47 @@ alert twilio.sms "text" {
   to = "+01 867 5309"
 }
 
+# A check named 'Example' that checks a webpage is accessible:
 check http.get "Example" {
   url = "https://www.example.com/"
 }
 ----
 
-This defines one check - of type `http.get` that will run every 30 seconds (the default
-interval specified in the "defaults" block). If the check starts failing, all the
-defined alerts will be triggered -- in this case sending a text message via Twilio.
+This defines one check and one alert. You can add as many of both as you want; by default
+all alerts will be triggered when a check changes status.
 
-Each check and alert has a name, which is used to refer to it in the config and in messages,
-and a type. The type consists of the name of a plugin, a period, and then the type of check
-or alert from that plugin. Some checks and alerts take parameters, which are specified as
-`key = value` assignments within the block, one per line.
+All checks have a number of additional settings to control how they work. These can be
+specified for each check, or changed globally by putting them in the "defaults" section.
+If they're not specified then Goplum's built-in defaults will be used.
 
-Checks have four additional settings. These can be changed globally by putting them in the
-"defaults" section. If they're not specified then Goplum's built-in defaults will be used:
+|===
+|Setting |Description |Default
 
-interval::
-The time after which the check is repeated, for example `20s` for 20 seconds, `10m` for
-10 minutes, or `7h` for 7 hours. Global default: 30 seconds.
+|`interval`
+|Length of time between each run of the check.
+|`30s`
 
-timeout::
-The maximum length of time the check can run for before it's assumed to have broken and
-is terminated. Global default: 20 seconds.
+|`timeout`
+|Maximum length of time the check can run for before it's terminated.
+|`20s`
 
-alerts::
-A list of alert names which should be triggered when the service changes state. The wildcard
-'\*' may be used anywhere to match any number of characters. Note that an empty array is treated
-the same as a missing option, so default settings will be used; to disable alerts use
-`["-"]`. Global default: `["*"]` (all alerts).
+|`alerts`
+|A list of alert names to trigger when the service changes state.
+ Supports '*' as a wildcard.
+|`["*"]`
 
-failing_threshold::
-The number of times a check must fail in a row before the service is considered failing.
-This allows you to ignore brief, transient problems that may occur between your monitoring
-location and the service itself, or very brief outages such as webserver restarts.
-Global default: 2.
+|`failing_threshold`
+|The number of checks that must fail in a row before a failure alert is raised.
+|`2`
 
-good_threshold::
-The number of times a check must pass in a row before the service is considered up. This
-prevents alert noise if a check occasionally passes for some reason. Global default: 2.
+|`good_threshold`
+|The number of checks that must pass in a row before a recovery alert is raised.
+|`2`
+|===
 
-More information on the syntax for configuration files is found in the
-link:docs/syntax.adoc[syntax guide].
+An link:docs/example.conf[extended example] and a
+link:docs/syntax.adoc[detailed guide to configuration syntax] are available in
+the docs folder.
 
 == Bundled plugins
 
