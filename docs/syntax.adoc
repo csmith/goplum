@@ -46,8 +46,9 @@ check <identifier> "<name>" {
 ----
 
 The alert and check blocks require an <<Identifier>> (the type of the
-alert or check, including the plugin name) and a name. They can
-exist only at the top-level of the configuration file.
+alert or check, including the plugin name) and a name. The name must
+be unique for the type of block (check/alert). They can exist only at
+the top-level of the configuration file.
 
 === Assignments
 
