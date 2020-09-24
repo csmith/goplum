@@ -60,6 +60,7 @@ identifier = "value"
 identifier = 42
 identifier = 1.2345
 identifier = 3d2h1m
+identifier = true
 identifier = ["a", "b", "c", "d"]
 ----
 
@@ -97,6 +98,12 @@ are:
 * `defaults`
 * `alert`
 * `check`
+* `yes`
+* `no`
+* `on`
+* `off`
+* `true`
+* `false`
 
 ==== Whitespace
 
@@ -140,6 +147,10 @@ Sequence of digits in base 10, e.g. `123456`
 === Floats
 
 Sequence of digits in base 10 with exactly one decimal point e.g. `1.234`, `.1` or `1.`
+
+=== Booleans
+
+One of the keywords: `true`, `false`, `on`, `off`, or `yes`, `no`.
 
 === Lists of strings
 

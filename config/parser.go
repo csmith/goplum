@@ -127,7 +127,7 @@ func (p *Parser) parseAssignment() (interface{}, error) {
 		return p.parseBlock()
 	}
 
-	n, err := p.take(tokenString, tokenDuration, tokenInt, tokenFloat, tokenArrayStart)
+	n, err := p.take(tokenString, tokenDuration, tokenInt, tokenFloat, tokenBoolean, tokenArrayStart)
 	if err != nil {
 		return nil, err
 	}

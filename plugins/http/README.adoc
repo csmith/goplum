@@ -12,6 +12,7 @@ The HTTP plugin provides checks for HTTP services, and HTTP-based alerts.
 check http.get "example" {
   url = "https://www.example.com/"
   content = "Example Domain"
+  content_expected = true
   certificate_validity = 10d
 }
 ----
@@ -19,7 +20,9 @@ check http.get "example" {
 Sends an HTTP GET request to the given URL. The check passes if a response is received with
 an error code less than 400.
 
-If the `content` parameter is specified then the response body must contain the exact string.
+If the `content` parameter is specified then the response body is checked for the exact string.
+By default the string must be present, and the check will fail if it is not. If `content_expected`
+is set to `false` then the string must NOT be present, and the check will fail if it is.
 
 If the `certificate_validity` parameter is specified, then the connection must have
 been made over TLS, and the returned certificate must be valid for at least the given duration

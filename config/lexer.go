@@ -30,6 +30,7 @@ const (
 	tokenInt                             // 123 - value is an int
 	tokenFloat                           // 1.234 - value is a float32
 	tokenDuration                        // 10d3m - value is a time.Duration
+	tokenBoolean                         // true/false - value is a boolean
 	tokenDelimiter                       // ,
 	tokenFunctionStart                   // (
 	tokenFunctionEnd                     // )
@@ -51,6 +52,7 @@ var tokenNames = map[tokenClass]string{
 	tokenInt:           "integer",
 	tokenFloat:         "float",
 	tokenDuration:      "duration",
+	tokenBoolean:       "boolean",
 	tokenDelimiter:     "delimiter",
 	tokenFunctionStart: "start of function arguments",
 	tokenFunctionEnd:   "end of function arguments",
@@ -65,6 +67,15 @@ var keywords = map[string]tokenClass{
 	"defaults": tokenDefaults,
 	"alert":    tokenAlert,
 	"check":    tokenCheck,
+}
+
+var booleans = map[string]bool{
+	"true":  true,
+	"on":    true,
+	"yes":   true,
+	"false": false,
+	"off":   false,
+	"no":    false,
 }
 
 var symbols = map[rune]tokenClass{
@@ -200,10 +211,12 @@ func lexIdentifier(lexer *Lexer) stateFunc {
 		} else {
 			lexer.backup()
 			value := builder.String()
+			name := strings.ToLower(value)
 
-			keyword, ok := keywords[value]
-			if ok {
+			if keyword, ok := keywords[name]; ok {
 				lexer.emit(keyword, len(value), value)
+			} else if boolean, ok := booleans[name]; ok {
+				lexer.emit(tokenBoolean, len(value), boolean)
 			} else {
 				lexer.emit(tokenIdentifier, len(value), value)
 			}

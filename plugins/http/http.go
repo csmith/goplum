@@ -14,7 +14,7 @@ import (
 
 var client = http.Client{
 	Transport: &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy:                 http.ProxyFromEnvironment,
 		ForceAttemptHTTP2:     true,
 		DisableKeepAlives:     true,
 		ExpectContinueTimeout: 1 * time.Second,
@@ -35,7 +35,9 @@ func (p Plugin) Alert(kind string) goplum.Alert {
 func (p Plugin) Check(kind string) goplum.Check {
 	switch kind {
 	case "get":
-		return GetCheck{}
+		return GetCheck{
+			ContentExpected: true,
+		}
 	default:
 		return nil
 	}
@@ -44,6 +46,7 @@ func (p Plugin) Check(kind string) goplum.Check {
 type GetCheck struct {
 	Url                 string
 	Content             string
+	ContentExpected     bool          `config:"content_expected"`
 	CertificateValidity time.Duration `config:"certificate_validity"`
 }
 
@@ -71,8 +74,11 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 
 		// TODO: It would be nice to scan the body instead of having to read it all into memory
 		// TODO: Add options around case sensitivity/consider allowing regexp
-		if !strings.Contains(string(content), g.Content) {
+		found := strings.Contains(string(content), g.Content)
+		if !found && g.ContentExpected {
 			return goplum.FailingResult("Body does not contain '%s'", g.Content)
+		} else if found && !g.ContentExpected {
+			return goplum.FailingResult("Body contains '%s'", g.Content)
 		}
 	}
 
