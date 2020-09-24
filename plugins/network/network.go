@@ -1,10 +1,10 @@
 package network
 
 import (
+	"context"
 	"fmt"
 	"github.com/csmith/goplum"
 	"net"
-	"time"
 )
 
 type Plugin struct{}
@@ -30,8 +30,9 @@ type ConnectCheck struct {
 	Address string
 }
 
-func (c ConnectCheck) Execute() goplum.Result {
-	conn, err := net.DialTimeout(c.Network, c.Address, 10*time.Second)
+func (c ConnectCheck) Execute(ctx context.Context) goplum.Result {
+	d := net.Dialer{}
+	conn, err := d.DialContext(ctx, c.Network, c.Address)
 	if err != nil {
 		return goplum.FailingResult("unable to connect to %s: %v", c.Address, err)
 	}

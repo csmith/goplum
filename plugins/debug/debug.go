@@ -1,6 +1,7 @@
 package debug
 
 import (
+	"context"
 	"github.com/csmith/goplum"
 	"log"
 	"math/rand"
@@ -30,7 +31,7 @@ type RandomCheck struct {
 	PercentGood float64 `config:"percent_good"`
 }
 
-func (t RandomCheck) Execute() goplum.Result {
+func (t RandomCheck) Execute(_ context.Context) goplum.Result {
 	r := rand.Float64()
 	if r <= t.PercentGood {
 		return goplum.GoodResult()

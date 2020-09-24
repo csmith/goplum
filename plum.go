@@ -1,6 +1,7 @@
 package goplum
 
 import (
+	"context"
 	"fmt"
 	"github.com/csmith/goplum/config"
 	"github.com/mitchellh/mapstructure"
@@ -16,6 +17,7 @@ const checkRunners = 4
 type CheckSettings struct {
 	Alerts           []string
 	Interval         time.Duration
+	Timeout          time.Duration
 	GoodThreshold    int `config:"good_threshold"`
 	FailingThreshold int `config:"failing_threshold"`
 }
@@ -27,6 +29,7 @@ func (c CheckSettings) Copy() CheckSettings {
 	return CheckSettings{
 		Alerts:           alerts,
 		Interval:         c.Interval,
+		Timeout:          c.Timeout,
 		GoodThreshold:    c.GoodThreshold,
 		FailingThreshold: c.FailingThreshold,
 	}
@@ -35,6 +38,7 @@ func (c CheckSettings) Copy() CheckSettings {
 var DefaultSettings = CheckSettings{
 	Alerts:           []string{"*"},
 	Interval:         time.Second * 30,
+	Timeout:          time.Second * 20,
 	GoodThreshold:    2,
 	FailingThreshold: 2,
 }
@@ -262,7 +266,11 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 				res = FailingResult("PANIC: %v", r)
 			}
 		}()
-		res = c.Check.Execute()
+
+		ctx, cancel := context.WithTimeout(context.Background(), c.Config.Timeout)
+		defer cancel()
+
+		res = c.Check.Execute(ctx)
 		return
 	}()
 

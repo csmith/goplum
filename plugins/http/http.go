@@ -2,26 +2,21 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/csmith/goplum"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"strings"
 	"time"
 )
 
 var client = http.Client{
-	Timeout: 20 * time.Second,
 	Transport: &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout: 20 * time.Second,
-		}).DialContext,
 		ForceAttemptHTTP2:     true,
 		DisableKeepAlives:     true,
-		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	},
 }
@@ -52,8 +47,13 @@ type GetCheck struct {
 	CertificateValidity time.Duration `config:"certificate_validity"`
 }
 
-func (g GetCheck) Execute() goplum.Result {
-	r, err := client.Get(g.Url)
+func (g GetCheck) Execute(ctx context.Context) goplum.Result {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, g.Url, http.NoBody)
+	if err != nil {
+		goplum.FailingResult("Error building request: %v", err)
+	}
+
+	r, err := client.Do(req)
 
 	if err != nil {
 		return goplum.FailingResult("Error making request: %v", err)

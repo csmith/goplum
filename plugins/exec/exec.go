@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"fmt"
 	"github.com/csmith/goplum"
 	"os/exec"
@@ -29,8 +30,8 @@ type CommandCheck struct {
 	Arguments []string
 }
 
-func (c CommandCheck) Execute() goplum.Result {
-	cmd := exec.Command(c.Name, c.Arguments...)
+func (c CommandCheck) Execute(ctx context.Context) goplum.Result {
+	cmd := exec.CommandContext(ctx, c.Name, c.Arguments...)
 	if err := cmd.Run(); err != nil {
 		return goplum.FailingResult(fmt.Sprintf("command failed: %v", err))
 	}

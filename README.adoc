@@ -76,6 +76,10 @@ interval::
 The time after which the check is repeated, for example `20s` for 20 seconds, `10m` for
 10 minutes, or `7h` for 7 hours. Global default: 30 seconds.
 
+timeout::
+The maximum length of time the check can run for before it's assumed to have broken and
+is terminated. Global default: 20 seconds.
+
 alerts::
 A list of alert names which should be triggered when the service changes state. The wildcard
 '\*' may be used anywhere to match any number of characters. Note that an empty array is treated

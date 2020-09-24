@@ -1,6 +1,7 @@
 package goplum
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -21,8 +22,8 @@ type Plugin interface {
 // Execute method will be called repeatedly over the lifetime of the application.
 type Check interface {
 	// Execute performs the actual check to see if the service is up or not.
-	// It should block until a result is available.
-	Execute() Result
+	// It should block until a result is available or the passed context is cancelled.
+	Execute(ctx context.Context) Result
 
 	// Validate checks the configuration of this check and returns any errors.
 	Validate() error
