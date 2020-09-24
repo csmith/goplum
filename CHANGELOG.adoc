@@ -16,6 +16,8 @@
 * Added boolean support to configuration files
 ** The following are now reserved keywords: `yes`, `no`, `true`, `false`, `on`, `off`
 * Keywords in configuration files are now case-insensitive
+* The "network" argument in network.connect is now actually optional,
+  per its documentation.
 
 == v0.2.0
 

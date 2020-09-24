@@ -19,7 +19,9 @@ func (p Plugin) Alert(kind string) goplum.Alert {
 func (p Plugin) Check(kind string) goplum.Check {
 	switch kind {
 	case "connect":
-		return ConnectCheck{}
+		return ConnectCheck{
+			Network: "tcp",
+		}
 	default:
 		return nil
 	}
@@ -48,10 +50,6 @@ func (c ConnectCheck) Validate() error {
 	_, _, err := net.SplitHostPort(c.Address)
 	if err != nil {
 		return err
-	}
-
-	if len(c.Network) == 0 {
-		c.Network = "tcp"
 	}
 
 	return nil
