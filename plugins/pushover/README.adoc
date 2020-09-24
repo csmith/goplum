@@ -10,19 +10,19 @@ The pushover plugin sends alerts as push notifications via https://pushover.net[
 [source,goplum]
 ----
 alert pushover.message "example" {
-    token = "application-token"
-    key = "user-or-group-key"
-    devices = ["iphone", "nexus17"]
-    failing {
-        priority = 2
-        sound = "siren"
-        retry = 30s
-        expire = 1h
-    }
-    recovering {
-        priority = 1
-        sound = "bugle"
-    }
+  token = "application-token"
+  key = "user-or-group-key"
+  devices = ["iphone", "nexus17"]
+  failing {
+    priority = 2
+    sound = "siren"
+    retry = 30s
+    expire = 1h
+  }
+  recovering {
+    priority = 1
+    sound = "bugle"
+  }
 }
 ----
 
