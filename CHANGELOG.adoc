@@ -1,0 +1,35 @@
+= Changelog
+
+== vNext
+
+=== Features
+
+* The http.get check can now make sure content *isn't* present
+  (https://github.com/csmith/goplum/issues/28[#28])
+* Added a timeout setting for checks, and updated bundled plugins
+  to respect it (https://github.com/csmith/goplum/issues/10[#10])
+
+=== Changes
+
+* Added boolean support to configuration files
+** The following are now reserved keywords: `yes`, `no`, `true`, `false`, `on`, `off`
+* Keywords in configuration files are now case-insensitive
+
+== v0.2.0
+
+=== Features
+
+* Switched to a custom config format instead of JSON
+* Added exec.command check (https://github.com/csmith/goplum/issues/9[#9])
+* Added pushover.message alert (https://github.com/csmith/goplum/issues/23[#23])
+* Added network.connect check (https://github.com/csmith/goplum/issues/1[#1])
+* Checks are now executed in parallel
+* The configuration path is now configurable via a flag or env var
+  (https://github.com/csmith/goplum/issues/13[#13])
+
+=== Changes
+
+* Fixed potential resource leak in several checks/alerts using HTTP requests
+* Fixed timing issues if a check took a long time to execute
+* Fixed issue with connection reuse when multiple http.get checks ran
+  against the same host (https://github.com/csmith/goplum/issues/21[#21])
