@@ -35,6 +35,31 @@ from now. (An expired or untrusted certificate will cause a failure regardless o
 If the `auth` settings are provided, they will be sent in a Basic authentication header. Note
 that basic authentication isn't encrypted, so shouldn't be used over an insecure connection.
 
+=== http.healthcheck
+
+[source,goplum]
+----
+check http.healthcheck "example" {
+  url = "https://www.example.com/health"
+  check_components = true
+  auth {
+    username = "acidburn"
+    password = "HackThePlanet"
+  }
+}
+----
+
+Retrieves the current status from a HTTP healthcheck endpoint. The endpoint is expected
+to return JSON in a manner compatible with
+https://tools.ietf.org/id/draft-inadarei-api-health-check-04.html[draft-inadarei-api-health-check-04].
+
+If the `check_components` setting is enabled, the state of each component/dependency
+reported in the healthcheck response will also be verified. This means if the overall service
+status is `pass` but a component is `fail` then the Goplum check will fail.
+
+If the `auth` settings are provided, they will be sent in a Basic authentication header. Note
+that basic authentication isn't encrypted, so shouldn't be used over an insecure connection.
+
 == Alerts
 
 === http.webhook

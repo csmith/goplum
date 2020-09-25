@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/csmith/goplum"
+	"github.com/nelkinda/health-go"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -38,6 +39,8 @@ func (p Plugin) Check(kind string) goplum.Check {
 		return GetCheck{
 			ContentExpected: true,
 		}
+	case "healthcheck":
+		return HealthCheck{}
 	default:
 		return nil
 	}
@@ -48,10 +51,14 @@ type Credentials struct {
 	Password string
 }
 
+type BaseCheck struct {
+	Url  string
+	Auth Credentials
+}
+
 type GetCheck struct {
-	Url                 string
+	BaseCheck           `config:",squash"`
 	Content             string
-	Auth                Credentials
 	ContentExpected     bool          `config:"content_expected"`
 	CertificateValidity time.Duration `config:"certificate_validity"`
 }
@@ -112,6 +119,74 @@ func (g GetCheck) Validate() error {
 	}
 
 	return nil
+}
+
+type HealthCheck struct {
+	BaseCheck       `config:",squash"`
+	CheckComponents bool `config:"check_components"`
+}
+
+func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.Url, http.NoBody)
+	if err != nil {
+		goplum.FailingResult("Error building request: %v", err)
+	}
+
+	if len(h.Auth.Username) > 0 || len(h.Auth.Password) > 0 {
+		req.SetBasicAuth(h.Auth.Username, h.Auth.Password)
+	}
+
+	r, err := client.Do(req)
+
+	if err != nil {
+		return goplum.FailingResult("Error making request: %v", err)
+	}
+
+	defer r.Body.Close()
+
+	res := &health.Health{}
+	if err := json.NewDecoder(r.Body).Decode(res); err != nil {
+		return goplum.FailingResult("Error decoding response: %v", err)
+	}
+
+	status := h.convert(res.Status)
+	detail := res.Output
+
+	if status == goplum.StateGood && h.CheckComponents {
+		for name, checks := range res.Checks {
+			for i := range checks {
+				check := checks[i]
+				checkStatus := h.convert(check.Status)
+				if checkStatus > status {
+					status = checkStatus
+					detail = fmt.Sprintf("component %s: %s", name, check.Output)
+				}
+			}
+		}
+	}
+
+	return goplum.Result{State: status, Detail: detail, Time: time.Now()}
+}
+
+func (h HealthCheck) Validate() error {
+	if len(h.Url) == 0 {
+		return fmt.Errorf("missing required argument: url")
+	}
+
+	return nil
+}
+
+func (h HealthCheck) convert(status health.Status) goplum.CheckState {
+	lower := strings.ToLower(string(status))
+	if lower == "pass" || lower == "ok" || lower == "up" {
+		return goplum.StateGood
+	} else if lower == "fail" || lower == "error" || lower == "down" {
+		return goplum.StateFailing
+	} else if lower == "warn" {
+		return goplum.StateGood // TODO: Change when goplum implements warnings
+	} else {
+		return goplum.StateIndeterminate
+	}
 }
 
 type WebHookAlert struct {
