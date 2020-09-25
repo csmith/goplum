@@ -59,6 +59,20 @@ func (c CheckState) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.String())
 }
 
+func (c *CheckState) UnmarshalJSON(val []byte) error {
+	switch string(val) {
+	case "\"indeterminate\"":
+		*c = StateIndeterminate
+	case "\"failing\"":
+		*c = StateFailing
+	case "\"good\"":
+		*c = StateGood
+	default:
+		return fmt.Errorf("unknown value for CheckState: %s", val)
+	}
+	return nil
+}
+
 // Result contains information about a check that was performed.
 type Result struct {
 	// State gives the current state of the service.

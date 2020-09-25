@@ -3,14 +3,18 @@
 == Using Docker
 
 The easiest way to run Goplum is via Docker. It doesn't require any
-special privileges or settings, you just need to provide a config file
-to it at `/goplum.conf`.
+special privileges or settings you just need to provide a config file
+to it at `/goplum.conf`, and optionally give it a persistent directory
+to store data in across restarts.
 
 Running it via the command line:
 
 [source]
 ----
-docker run -d --restart always -v /path/to/my/goplum.conf:/goplum.conf csmith/goplum
+docker run -d --restart always \
+   -v /path/to/my/goplum.conf:/goplum.conf \
+   -v /tmp/goplum:/tmp \
+   csmith/goplum
 ----
 
 Or using Docker Compose:
@@ -24,8 +28,20 @@ services:
     image: csmith/goplum
     volumes:
       - ./goplum.conf:/goplum.conf
+      - /tmp/goplum:/tmp
     restart: always
 ----
+
+In these examples we are mounting a folder on the host - `/tmp/goplum` - at `/tmp`
+within the container. Goplum by default tries to save its state to `/tmp/goplum.tomb` when it
+is being stopped, so that it can be restored if it's restarted again shortly thereafter.
+This prevents alerts from being missed if the services change state around the time of a
+Goplum restart/upgrade.
+
+Instead of mounting a directory from the host's /tmpfs you could create a docker volume,
+or create an empty `goplum.tomb` file and bind mount that directly to `/tmp/goplum.tomb`.
+If you don't provide a way for goplum to persist this file, it will operate normally but
+will not be able to preserve check states across restarts.
 
 == Manual installation
 
@@ -52,18 +68,19 @@ This will produce a `goplum` binary, and a number of plugin libraries in the cur
 
 By default, Goplum will look for a config file named `goplum.conf` in its working directory
 and recursively scan for plugins starting at the `plugins` folder in its working directory.
-These are good defaults for Docker and for local development, but probably aren't good for
-a system-wide install.
+It will also try to persist data to `/tmp/goplum.tomb` when stopping, and read the same file
+when it starts up. These are good defaults for Docker and for local development, but probably
+aren't good for a system-wide install.
 
 These can be configured using either flags or environment variables:
 
 [source,shell script]
 ----
 # Flags
-goplum --plugins /path/to/plugins/**.so --config /path/to/goplum.conf
+goplum --plugins /path/to/plugins/**.so --config /path/to/goplum.conf --tombstone /var/run/goplum.tomb
 
 # Environment
-PLUGINS=/path/to/plugins/**.so CONFIG=/path/to/goplum.conf goplum
+PLUGINS=/path/to/plugins/**.so CONFIG=/path/to/goplum.conf TOMBSTONE=/var/run/goplum.tomb goplum
 ----
 
 === Execution
@@ -85,7 +102,7 @@ Restart=always
 User=goplum
 Group=goplum
 WorkingDirectory=/tmp
-ExecStart=/usr/bin/goplum --config /etc/goplum.conf --plugins /usr/lib/goplum/**.so
+ExecStart=/usr/bin/goplum --config /etc/goplum.conf --plugins /usr/lib/goplum/**.so --tombstone /var/run/goplum.tomb
 
 [Install]
 WantedBy=multi-user.target
@@ -96,4 +113,6 @@ This assumes that:
  * The `goplum` binary is in `/usr/bin/goplum`
  * Plugins are found under `/usr/lib/goplum/`
  * The config file is at `/etc/goplum.conf`
+ * The tombstone will be created at `/var/run/goplum.tomb`
  * You have created a `goplum` user and group.
+ * The `goplum` user can read and write to `/var/run/goplum.tomb`

@@ -7,8 +7,10 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"log"
 	"os"
+	"os/signal"
 	"regexp"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -99,6 +101,19 @@ func (p *Plum) ReadConfig(path string) error {
 	}
 
 	return nil
+}
+
+func (p *Plum) RestoreState() error {
+	ts, err := LoadTombStone()
+	if err != nil {
+		return err
+	}
+
+	return ts.Restore(p.Checks)
+}
+
+func (p *Plum) SaveState() error {
+	return NewTombStone(p.Checks).Save()
 }
 
 func (p *Plum) addAlerts(alerts []*config.Block) error {
@@ -279,7 +294,7 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 	c.LastRun = time.Now()
 
 	oldState := c.State
-	newState := c.History().State(map[CheckState]int{
+	newState := c.History.State(map[CheckState]int{
 		StateFailing: c.Config.FailingThreshold,
 		StateGood:    c.Config.GoodThreshold,
 	})
@@ -363,7 +378,7 @@ type ScheduledCheck struct {
 	Scheduled bool
 	Settled   bool
 	State     CheckState
-	history   ResultHistory
+	History   ResultHistory
 }
 
 func (c *ScheduledCheck) Remaining() time.Duration {
@@ -375,17 +390,13 @@ func (c *ScheduledCheck) Remaining() time.Duration {
 }
 
 func (c *ScheduledCheck) AddResult(result *Result) ResultHistory {
-	copy(c.history[1:9], c.history[0:8])
-	c.history[0] = result
-	return c.history
+	copy(c.History[1:9], c.History[0:8])
+	c.History[0] = result
+	return c.History
 }
 
 func (c *ScheduledCheck) LastResult() *Result {
-	return c.history[0]
-}
-
-func (c *ScheduledCheck) History() ResultHistory {
-	return c.history
+	return c.History[0]
 }
 
 type ResultHistory [10]*Result
@@ -412,4 +423,32 @@ func (h ResultHistory) State(thresholds map[CheckState]int) CheckState {
 	}
 
 	return StateIndeterminate
+}
+
+// Run creates a new instance of Plum, registers plugins and loads configuration, and starts the main loop.
+// Lists for interrupt and sigterm signals in order to save state and clean up. It is expected that flag.Parse
+// has been called prior to calling this method.
+func Run(plugins map[string]PluginLoader, configPath string) {
+	p := NewPlum()
+	p.RegisterPlugins(plugins)
+
+	if err := p.ReadConfig(configPath); err != nil {
+		log.Fatalf("Unable to read config: %v", err)
+	}
+
+	if err := p.RestoreState(); err != nil {
+		log.Printf("Unable to restore state from tombstone: %v", err)
+	}
+
+	go p.Run()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, syscall.SIGTERM)
+
+	<-c
+
+	if err := p.SaveState(); err != nil {
+		log.Printf("Unable to save state to tombstone: %v", err)
+	}
 }

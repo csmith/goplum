@@ -25,12 +25,5 @@ func main() {
 
 	log.Printf("Found %d plugins\n", len(plugins))
 
-	plum := goplum.NewPlum()
-	plum.RegisterPlugins(plugins)
-
-	if err := plum.ReadConfig(*configPath); err != nil {
-		log.Fatalf("Unable to read config: %v", err)
-	}
-
-	plum.Run()
+	goplum.Run(plugins, *configPath)
 }

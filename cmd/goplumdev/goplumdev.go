@@ -11,7 +11,6 @@ import (
 	"github.com/csmith/goplum/plugins/slack"
 	"github.com/csmith/goplum/plugins/twilio"
 	"github.com/kouhin/envflag"
-	"log"
 )
 
 var (
@@ -47,13 +46,5 @@ func main() {
 		panic(err)
 	}
 
-	plum := goplum.NewPlum()
-
-	plum.RegisterPlugins(plugins)
-
-	if err := plum.ReadConfig(*configPath); err != nil {
-		log.Fatalf("Unable to read config: %v", err)
-	}
-
-	plum.Run()
+	goplum.Run(plugins, *configPath)
 }

@@ -10,6 +10,8 @@
   (https://github.com/csmith/goplum/issues/7[#7])
 * Added a timeout setting for checks, and updated bundled plugins
   to respect it (https://github.com/csmith/goplum/issues/10[#10])
+* Check state is now persisted across restarts
+  (https://github.com/csmith/goplum/issues/14[#14])
 
 === Changes
 

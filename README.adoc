@@ -9,14 +9,18 @@ websites and APIs, and send alerts by text message if they go down.
 == Getting started
 
 The easiest way to run Goplum is via Docker. It doesn't require any
-special privileges or settings, you just need to provide a config file
-to it at `/goplum.conf`.
+special privileges or settings you just need to provide a config file
+to it at `/goplum.conf`, and optionally give it a persistent directory
+to store data in across restarts.
 
 Running it via the command line:
 
 [source]
 ----
-docker run -d --restart always -v /path/to/my/goplum.conf:/goplum.conf csmith/goplum
+docker run -d --restart always \
+   -v /path/to/my/goplum.conf:/goplum.conf \
+   -v /tmp/goplum:/tmp \
+   csmith/goplum
 ----
 
 Or using Docker Compose:
@@ -30,10 +34,12 @@ services:
     image: csmith/goplum
     volumes:
       - ./goplum.conf:/goplum.conf
+      - /tmp/goplum:/tmp
     restart: always
 ----
 
-For alternative installation methods see link:docs/install.adoc[the installation documentation].
+For more information and alternative installation methods see
+link:docs/install.adoc[the installation documentation].
 
 == Configuration
 
