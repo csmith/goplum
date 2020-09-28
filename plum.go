@@ -137,8 +137,10 @@ func (p *Plum) addAlerts(alerts []*config.Block) error {
 			return fmt.Errorf("invalid configuration key in alert %s: %s", alerts[i].Name, k)
 		}
 
-		if err := alert.Validate(); err != nil {
-			return fmt.Errorf("error configuring alert %s: %v", alerts[i].Name, err)
+		if v, ok := alert.(Validator); ok {
+			if err := v.Validate(); err != nil {
+				return fmt.Errorf("error configuring alert %s: %v", alerts[i].Name, err)
+			}
 		}
 
 		p.Alerts[alerts[i].Name] = alert
@@ -174,8 +176,10 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 			return fmt.Errorf("invalid configuration key in check %s: %s", checks[i].Name, k)
 		}
 
-		if err := check.Validate(); err != nil {
-			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
+		if v, ok := check.(Validator); ok {
+			if err := v.Validate(); err != nil {
+				return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
+			}
 		}
 
 		p.Checks = append(p.Checks, &ScheduledCheck{

@@ -40,18 +40,10 @@ func (t RandomCheck) Execute(_ context.Context) goplum.Result {
 	}
 }
 
-func (t RandomCheck) Validate() error {
-	return nil
-}
-
 type SysOutAlert struct {
 }
 
 func (s SysOutAlert) Send(details goplum.AlertDetails) error {
 	log.Printf("DEBUG ALERT - %s\n", details.Text)
-	return nil
-}
-
-func (s SysOutAlert) Validate() error {
 	return nil
 }

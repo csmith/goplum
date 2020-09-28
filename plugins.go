@@ -20,13 +20,12 @@ type Plugin interface {
 
 // Check defines the method to see if a service is up or not. The check is persistent - its
 // Execute method will be called repeatedly over the lifetime of the application.
+//
+// Checks may also implement the Validator interface to validate their arguments when configured.
 type Check interface {
 	// Execute performs the actual check to see if the service is up or not.
 	// It should block until a result is available or the passed context is cancelled.
 	Execute(ctx context.Context) Result
-
-	// Validate checks the configuration of this check and returns any errors.
-	Validate() error
 }
 
 // CheckState describes the state of a check.
@@ -119,10 +118,14 @@ type AlertDetails struct {
 }
 
 // Alert defines the method to inform the user of a change to a service - e.g. when it comes up or goes down.
+//
+// Alerts may also implement the Validator interface to validate their arguments when configured.
 type Alert interface {
 	// Send dispatches an alert in relation to the given check event.
 	Send(details AlertDetails) error
+}
 
-	// Validate checks the configuration of this alert and returns any errors.
+type Validator interface {
+	// Validate checks the configuration of the object and returns any errors.
 	Validate() error
 }
