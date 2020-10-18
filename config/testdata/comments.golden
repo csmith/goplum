@@ -1,6 +1,6 @@
 [
   {
-    "Class": 16,
+    "Class": 17,
     "Line": 1,
     "Column": 10,
     "Value": "defaults"
@@ -24,7 +24,7 @@
     "Value": 61
   },
   {
-    "Class": 13,
+    "Class": 14,
     "Line": 1,
     "Column": 44,
     "Value": 91
@@ -36,7 +36,7 @@
     "Value": "text"
   },
   {
-    "Class": 10,
+    "Class": 11,
     "Line": 1,
     "Column": 51,
     "Value": 44
@@ -48,7 +48,7 @@
     "Value": "foo"
   },
   {
-    "Class": 10,
+    "Class": 11,
     "Line": 1,
     "Column": 58,
     "Value": 44
@@ -60,13 +60,13 @@
     "Value": "bar"
   },
   {
-    "Class": 10,
+    "Class": 11,
     "Line": 1,
     "Column": 65,
     "Value": 44
   },
   {
-    "Class": 14,
+    "Class": 15,
     "Line": 1,
     "Column": 67,
     "Value": 93
@@ -114,7 +114,7 @@
     "Value": 125
   },
   {
-    "Class": 15,
+    "Class": 16,
     "Line": 7,
     "Column": 10,
     "Value": "alert"

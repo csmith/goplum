@@ -9,6 +9,7 @@
           "foo"
         ],
         "Interval": 2000000000,
+        "Timeout": 20000000000,
         "GoodThreshold": 3,
         "FailingThreshold": 2
       },
@@ -16,8 +17,21 @@
         "PercentGood": 0.5
       },
       "LastRun": "0001-01-01T00:00:00Z",
+      "Scheduled": false,
       "Settled": false,
-      "State": "indeterminate"
+      "State": "indeterminate",
+      "History": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
     },
     {
       "Name": "override2",
@@ -27,6 +41,7 @@
           "text"
         ],
         "Interval": 3000000000,
+        "Timeout": 20000000000,
         "GoodThreshold": 5,
         "FailingThreshold": 6
       },
@@ -34,8 +49,21 @@
         "PercentGood": 0.5
       },
       "LastRun": "0001-01-01T00:00:00Z",
+      "Scheduled": false,
       "Settled": false,
-      "State": "indeterminate"
+      "State": "indeterminate",
+      "History": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
     },
     {
       "Name": "defaults",
@@ -45,6 +73,7 @@
           "text"
         ],
         "Interval": 90000000000,
+        "Timeout": 20000000000,
         "GoodThreshold": 3,
         "FailingThreshold": 2
       },
@@ -52,8 +81,21 @@
         "PercentGood": 0.5
       },
       "LastRun": "0001-01-01T00:00:00Z",
+      "Scheduled": false,
       "Settled": false,
-      "State": "indeterminate"
+      "State": "indeterminate",
+      "History": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
     }
   ]
 }
