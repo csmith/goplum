@@ -2,6 +2,7 @@ package goplum
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"github.com/csmith/goplum/config"
 	"github.com/csmith/goplum/internal"
@@ -13,6 +14,10 @@ import (
 	"strings"
 	"syscall"
 	"time"
+)
+
+var (
+	quietLogging = flag.Bool("quiet", false, "Reduce logging output from normal operations")
 )
 
 const checkRunners = 4
@@ -70,6 +75,7 @@ func NewPlum() *Plum {
 	}
 
 	plum.AddCheckListener(plum.updateStatus)
+	plum.AddCheckListener(plum.logCheck)
 
 	return plum
 }
@@ -255,9 +261,7 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 		return
 	}()
 
-	log.Printf("Check '%s' executed: %s (%s)\n", c.Name, result.State, result.Detail)
 	c.AddResult(&result)
-	c.LastRun = time.Now()
 
 	for _, listener := range p.checkListeners {
 		listener(c, result)
@@ -277,6 +281,12 @@ func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
 		} else {
 			c.Settled = true
 		}
+	}
+}
+
+func (p *Plum) logCheck(c *ScheduledCheck, result Result) {
+	if !*quietLogging {
+		log.Printf("Check '%s' executed: %s (%s)\n", c.Name, result.State, result.Detail)
 	}
 }
 
@@ -372,6 +382,7 @@ func (c *ScheduledCheck) Remaining() time.Duration {
 func (c *ScheduledCheck) AddResult(result *Result) ResultHistory {
 	copy(c.History[1:9], c.History[0:8])
 	c.History[0] = result
+	c.LastRun = time.Now()
 	return c.History
 }
 

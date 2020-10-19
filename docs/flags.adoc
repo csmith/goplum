@@ -1,0 +1,97 @@
+= Flags
+
+The following flags are available to customise Goplum's behaviour. They can be
+either passed on the command-line, or set as environment variables:
+
+== config
+
+[source,shell script]
+----
+# Command line
+goplum -config /etc/goplum.conf
+
+# Environment variable
+CONFIG=/etc/goplum.conf goplum
+----
+
+Sets the path to Goplum's configuration file.
+
+If the path is relative it is interpreted with respect to Goplum's working directory.
+
+Default: `goplum.conf`.
+
+== plugins
+
+[source,shell script]
+----
+# Command line
+goplum -plugins /path/to/plugins/**.so
+
+# Environment variable
+PLUGINS=/path/to/plugins/**.so goplum
+----
+
+Sets the glob pattern that Goplum will use to find plugins. The glob pattern can contain
+the following special terms:
+
+[cols="1,4"]
+|==============================================================================
+|Term | Meaning
+
+|`*`
+|Matches any sequence of non-path-separators
+
+|`**`
+|Matches any sequence of characters, including path separators
+
+|`?`
+|Matches any single non-path-separator character
+
+|`[class]`
+|Matches any single non-path-separator from the class of characters
+ (e.g. `[abc]`, `[a-z]`, or `[^def]`).
+
+|`{a,b,...}`
+|Matches a sequence of characters if one of the comma-separated alternatives match
+|==============================================================================
+
+These special terms can be escaped with a backslash.
+
+If the path is relative it is interpreted with respect to Goplum's working directory.
+
+Default: `plugins/**.so`.
+
+== quiet
+
+[source,shell script]
+----
+# Command line
+goplum -quiet
+
+# Environment variable
+QUIET=true goplum
+----
+
+Reduces the amount of logging from normal operations, such as checks being
+executed.
+
+Default: `false`
+
+== tombstone
+
+[source,shell script]
+----
+# Command line
+goplum -tombstone /var/run/goplum.tomb
+
+# Environment variable
+TOMBSTONE=/var/run/goplum.tomb goplum
+----
+
+The path to save and load Goplum's "tombstone" data. This is data saved when Goplum is
+shutting down, and reloaded if it starts up again within a short period of time.
+
+Goplum can operate without a tombstone file, and will run even if it can't read or
+write to the specified file, but the status of checks will be lost when it is restarted.
+
+Default: `/tmp/goplum.tomb`

@@ -4,6 +4,9 @@
 
 === Features
 
+* Verbose logging can now be suppressed with the quiet flag
+  (https://github.com/csmith/goplum/issues/29[#29])
+
 === Changes
 
 * Small improvement to error messages for invalid config keys

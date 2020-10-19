@@ -43,6 +43,9 @@ or create an empty `goplum.tomb` file and bind mount that directly to `/tmp/gopl
 If you don't provide a way for goplum to persist this file, it will operate normally but
 will not be able to preserve check states across restarts.
 
+You can tweak some of Goplum's behaviour using environment variables. See
+link:flags.adoc[the flags documentation] for more information.
+
 == Manual installation
 
 Alternatively, you can manually compile Goplum and manually configure your system to run it.
@@ -72,7 +75,8 @@ It will also try to persist data to `/tmp/goplum.tomb` when stopping, and read t
 when it starts up. These are good defaults for Docker and for local development, but probably
 aren't good for a system-wide install.
 
-These can be configured using either flags or environment variables:
+These can be configured using either flags or environment variables. See
+link:flags.adoc[the flags documentation] for more information.
 
 [source,shell script]
 ----
