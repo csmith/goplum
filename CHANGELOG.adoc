@@ -2,6 +2,12 @@
 
 == vNext
 
+=== Features
+
+=== Changes
+
+* Small improvement to error messages for invalid config keys
+
 == v0.3.0
 
 === Features

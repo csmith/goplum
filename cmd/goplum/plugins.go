@@ -1,13 +1,13 @@
-package internal
+package main
 
 import (
 	"fmt"
+	"github.com/bmatcuk/doublestar/v2"
 	"github.com/csmith/goplum"
 	"path"
 	"plugin"
 	"strings"
 )
-import "github.com/bmatcuk/doublestar/v2"
 
 func FindPlugins(pattern string) (map[string]goplum.PluginLoader, error) {
 	matches, err := doublestar.Glob(pattern)

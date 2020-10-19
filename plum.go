@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/csmith/goplum/config"
-	"github.com/mitchellh/mapstructure"
+	"github.com/csmith/goplum/internal"
 	"log"
 	"os"
 	"os/signal"
+	"reflect"
 	"regexp"
 	"strings"
 	"syscall"
@@ -46,6 +47,7 @@ var DefaultSettings = CheckSettings{
 }
 
 type PluginLoader func() (Plugin, error)
+type CheckListener func(*ScheduledCheck, Result)
 
 type Plum struct {
 	Alerts           map[string]Alert
@@ -54,16 +56,22 @@ type Plum struct {
 	loadedPlugins    map[string]Plugin
 	checkDefaults    CheckSettings
 	scheduled        chan *ScheduledCheck
+	checkListeners   map[reflect.Value]CheckListener
 }
 
 func NewPlum() *Plum {
-	return &Plum{
+	plum := &Plum{
 		availablePlugins: make(map[string]PluginLoader),
 		loadedPlugins:    make(map[string]Plugin),
 		Alerts:           make(map[string]Alert),
 		checkDefaults:    DefaultSettings,
 		scheduled:        make(chan *ScheduledCheck, 100),
+		checkListeners:   make(map[reflect.Value]CheckListener),
 	}
+
+	plum.AddCheckListener(plum.updateStatus)
+
+	return plum
 }
 
 func (p *Plum) RegisterPlugins(plugins map[string]PluginLoader) {
@@ -88,7 +96,7 @@ func (p *Plum) ReadConfig(path string) error {
 		return fmt.Errorf("unable to parse config file %s: %v", path, err)
 	}
 
-	if err := p.decodeSettings(&parser.DefaultSettings, &p.checkDefaults); err != nil {
+	if err := internal.DecodeSettings(&parser.DefaultSettings, &p.checkDefaults); err != nil {
 		return fmt.Errorf("unable to merge default settings from %s: %v", path, err)
 	}
 
@@ -129,12 +137,8 @@ func (p *Plum) addAlerts(alerts []*config.Block) error {
 			return fmt.Errorf("invalid alert %s in plugin %s", parts[1], parts[0])
 		}
 
-		if err := p.decodeSettings(&alerts[i].Settings, &alert); err != nil {
-			return fmt.Errorf("error merging alert config: %v", err)
-		}
-
-		for k := range alerts[i].Settings {
-			return fmt.Errorf("invalid configuration key in alert %s: %s", alerts[i].Name, k)
+		if err := internal.DecodeSettings(&alerts[i].Settings, &alert); err != nil {
+			return fmt.Errorf("error configuring alert %s: %v", alerts[i].Name, err)
 		}
 
 		if v, ok := alert.(Validator); ok {
@@ -159,21 +163,12 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 
 		check := plugin.Check(parts[1])
 		if check == nil {
-			fmt.Printf("%#v\n", plugin)
 			return fmt.Errorf("invalid check %s in plugin %s", parts[1], parts[0])
 		}
 
-		if err := p.decodeSettings(&checks[i].Settings, &check); err != nil {
-			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
-		}
-
 		settings := p.checkDefaults.Copy()
-		if err := p.decodeSettings(&checks[i].Settings, &settings); err != nil {
+		if err := internal.DecodeSettings(&checks[i].Settings, &check, &settings); err != nil {
 			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
-		}
-
-		for k := range checks[i].Settings {
-			return fmt.Errorf("invalid configuration key in check %s: %s", checks[i].Name, k)
 		}
 
 		if v, ok := check.(Validator); ok {
@@ -188,39 +183,6 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 			Config: &settings,
 			Check:  check,
 		})
-	}
-
-	return nil
-}
-
-func (p *Plum) decodeSettings(src *map[string]interface{}, dst interface{}) error {
-	metadata := mapstructure.Metadata{}
-	dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		TagName:          "config",
-		Metadata:         &metadata,
-		Result:           dst,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	if err := dec.Decode(*src); err != nil {
-		return err
-	}
-
-	for key := range *src {
-		unused := false
-		for _, val := range metadata.Unused {
-			if val == key {
-				unused = true
-				break
-			}
-		}
-		if !unused {
-			delete(*src, key)
-		}
 	}
 
 	return nil
@@ -297,6 +259,12 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 	c.AddResult(&result)
 	c.LastRun = time.Now()
 
+	for _, listener := range p.checkListeners {
+		listener(c, result)
+	}
+}
+
+func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
 	oldState := c.State
 	newState := c.History.State(map[CheckState]int{
 		StateFailing: c.Config.FailingThreshold,
@@ -345,6 +313,14 @@ func (p *Plum) AlertsMatching(names []string) []Alert {
 		}
 	}
 	return res
+}
+
+func (p *Plum) AddCheckListener(listener CheckListener) {
+	p.checkListeners[reflect.ValueOf(listener)] = listener
+}
+
+func (p *Plum) RemoveCheckListener(listener CheckListener) {
+	delete(p.checkListeners, reflect.ValueOf(listener))
 }
 
 // regexpForWildcards converts a set of names containing '*' characters as wildcards into a single regex that will

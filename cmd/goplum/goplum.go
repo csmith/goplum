@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/csmith/goplum"
-	"github.com/csmith/goplum/internal"
 	"github.com/kouhin/envflag"
 	"log"
 )
@@ -18,7 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	plugins, err := internal.FindPlugins(*pluginsPattern)
+	plugins, err := FindPlugins(*pluginsPattern)
 	if err != nil {
 		panic(err)
 	}
