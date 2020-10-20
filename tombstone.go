@@ -24,7 +24,7 @@ type CheckTombStone struct {
 	History ResultHistory
 }
 
-func NewTombStone(checks []*ScheduledCheck) *TombStone {
+func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
 	ts := &TombStone{
 		Time:   time.Now(),
 		Checks: make(map[string]CheckTombStone),
@@ -66,7 +66,7 @@ func (ts *TombStone) Save() error {
 	return json.NewEncoder(f).Encode(ts)
 }
 
-func (ts *TombStone) Restore(checks []*ScheduledCheck) error {
+func (ts *TombStone) Restore(checks map[string]*ScheduledCheck) error {
 	if time.Now().Sub(ts.Time) >= maxTombStoneAge {
 		return fmt.Errorf("tombstone too old: %s", ts.Time)
 	}

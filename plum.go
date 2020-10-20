@@ -56,7 +56,7 @@ type CheckListener func(*ScheduledCheck, Result)
 
 type Plum struct {
 	Alerts           map[string]Alert
-	Checks           []*ScheduledCheck
+	Checks           map[string]*ScheduledCheck
 	availablePlugins map[string]PluginLoader
 	loadedPlugins    map[string]Plugin
 	checkDefaults    CheckSettings
@@ -69,6 +69,7 @@ func NewPlum() *Plum {
 		availablePlugins: make(map[string]PluginLoader),
 		loadedPlugins:    make(map[string]Plugin),
 		Alerts:           make(map[string]Alert),
+		Checks:           make(map[string]*ScheduledCheck),
 		checkDefaults:    DefaultSettings,
 		scheduled:        make(chan *ScheduledCheck, 100),
 		checkListeners:   make(map[reflect.Value]CheckListener),
@@ -132,6 +133,10 @@ func (p *Plum) SaveState() error {
 
 func (p *Plum) addAlerts(alerts []*config.Block) error {
 	for i := range alerts {
+		if _, ok := p.Alerts[alerts[i].Name]; ok {
+			return fmt.Errorf("alert defined multiple times: %s", alerts[i].Name)
+		}
+
 		parts := strings.SplitN(alerts[i].Type, ".", 2)
 		plugin, err := p.plugin(parts[0])
 		if err != nil {
@@ -161,6 +166,10 @@ func (p *Plum) addAlerts(alerts []*config.Block) error {
 
 func (p *Plum) addChecks(checks []*config.Block) error {
 	for i := range checks {
+		if _, ok := p.Checks[checks[i].Name]; ok {
+			return fmt.Errorf("check defined multiple times: %s", checks[i].Name)
+		}
+
 		parts := strings.SplitN(checks[i].Type, ".", 2)
 		plugin, err := p.plugin(parts[0])
 		if err != nil {
@@ -183,12 +192,12 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 			}
 		}
 
-		p.Checks = append(p.Checks, &ScheduledCheck{
+		p.Checks[checks[i].Name] = &ScheduledCheck{
 			Name:   checks[i].Name,
 			Type:   checks[i].Type,
 			Config: &settings,
 			Check:  check,
-		})
+		}
 	}
 
 	return nil

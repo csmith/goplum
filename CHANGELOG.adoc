@@ -13,6 +13,8 @@
 === Changes
 
 * Small improvement to error messages for invalid config keys
+* GoPlum now errors if checks or alerts have duplicate names
+  (this was previously documented but not enforced)
 
 == v0.3.0
 
