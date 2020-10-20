@@ -1,7 +1,49 @@
 = Flags
+:toc:
 
 The following flags are available to customise Goplum's behaviour. They can be
-either passed on the command-line, or set as environment variables:
+either passed on the command-line, or set as environment variables.
+
+== api-port
+
+[source,shell script]
+----
+# Command line
+goplum --api-port 1234
+
+# Environment variable
+API_PORT=1234 goplum
+----
+
+Sets the port that GoPlum will listen on for API clients.
+
+For more information on the GoPlum API see the link:api.adoc[API documentation].
+
+Default: `7586`.
+
+== ca-cert, cert and key
+
+[source,shell script]
+----
+# Command line
+goplum --ca-cert /etc/ssl/authority.crt \
+  --cert /home/goplum/server.crt \
+  --key /home/goplum/server.key
+
+# Environment variable
+CA_CERT=/etc/ssl/authority.crt \
+CERT=/home/goplum/server.crt \
+KEY=/home/goplum/server.key goplum
+----
+
+Sets the path for the certificate authority's public certificate, GoPlum's public
+certificate, and GoPlum's private key, for use with the GoPlum API.
+
+For information on how to generate these see the link:api.adoc[API documentation].
+
+Defaults: `ca.crt`, `goplum.crt` and `goplum.key`, respectively.
+
+Note: if all three files are not found, GoPlum's API will not be enabled.
 
 == config
 

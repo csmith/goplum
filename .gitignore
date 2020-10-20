@@ -1,3 +1,7 @@
 .idea
 *.so
+*.crt
+*.key
+*.crl
+*.csr
 /*.conf

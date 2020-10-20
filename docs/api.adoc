@@ -1,0 +1,108 @@
+= API
+
+GoPlum features an API for extending its functionality in various ways.
+The API uses https://grpc.io/[gRPC], and requires mutual TLS authentication.
+
+== Certificate management
+
+GoPlum's API requires mutual TLS authentication: that is, clients and servers
+both present certificates and very that the peer certificates are issued by
+a trusted CA.
+
+[WARNING]
+====
+You should not use certificates issued by a public Certificate Authority
+such as Let's Encrypt, as this would allow anyone else with a
+Let's-Encrypt-issued certificate to use the API.
+====
+
+This guide will assume that you will create a new CA exclusively for
+use with GoPlum's API. The quickest way to accomplish this is by using
+https://github.com/square/certstrap[certstrap].
+
+First, create a new certificate authority. You should supply a strong
+passphrase to protect the CA's private key.
+
+[source,shell script]
+----
+$ certstrap init --common-name "ca"
+Enter passphrase (empty for no passphrase): *********
+Enter same passphrase again: *********
+Created out/ca.key (encrypted by passphrase)
+Created out/ca.crt
+Created out/ca.crl
+----
+
+Now create and sign a certificate request for the GoPlum server. We won't
+use a passphrase as we need to supply the private key to GoPlum (and passing
+a passphrase into software tends to lead to the passphrase sitting in a config
+file next to the key it's protecting, which is pointless).
+
+[source,shell script]
+----
+$ certstrap request-cert --passphrase "" --common-name "goplum" --domain "goplum.example.com" --ip "192.168.1.1"
+Created out/goplum.key
+Created out/goplum.csr
+
+$ certstrap sign "goplum" --CA "ca"
+Enter passphrase for CA key (empty for no passphrase): *********
+Created out/goplum.crt from out/goplum.csr signed by out/ca.key
+----
+
+The common name can be set to any name you like but you must supply the domain or IP
+address that GoPlum will be accessed on. You can add as many domains or IPs as required.
+
+For each client that needs to connect to the API you also need to create a signing
+request and sign it:
+
+[source,shell script]
+----
+$ certstrap request-cert --common-name "Client1"
+Created out/Client1.key
+Created out/Client1.csr
+
+$ certstrap sign "Client1" --CA "ca"
+Created out/Client1.crt from out/Client1.csr signed by out/ca.key
+----
+
+Note that clients do not need to specify IP addresses or domains.
+
+[TIP]
+====
+You should keep all `.key` files, and in particular the certificate authority's
+key file (`out/CertAuth.key` in the example above), private. You should consider
+adding a passphrase to the certificate authority's private key using
+certstrap's `--passphrase` flag.
+====
+
+== Configuration
+
+In order to run the API server, GoPlum must be provided with:
+
+* The CA's public certificate (`out/ca.crt`)
+* Its own public certificate (`out/goplum.crt`)
+* The corresponding private key (`out/goplum.key`)
+
+By default, GoPlum will look for files named `ca.crt`, `goplum.crt` and `goplum.key`
+in its working directory. You can change these by providing the appropriate paths
+as a flag or environment variable - see the link:flags.adoc[flags documentation] for
+more information.
+
+If any of the files are missing, or if the private key is group or world readable,
+GoPlum will not enable its API and will report the error in its log file.
+
+Clients will also require the CA certificate, and their own certificate and private
+key. Clients based on the GoPlum codebase will use the same flags and default settings
+as GoPlum; other clients may vary in how they accept these.
+
+== Methods
+
+The API is currently in development and may change in incompatible ways.
+You can find the protocol definition in the link:../api/goplum.proto[proto file].
+The currently supported methods are:
+
+=== Results
+
+Provides a stream of check results as they are received. This includes all checks,
+whether they result in the status of a service changing or not (i.e., this is
+a much finer granularity than alerts).

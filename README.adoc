@@ -4,7 +4,7 @@ image::logo.png?raw=true[Goplum logo,role="right"]
 
 Goplum is an extensible monitoring and alerting daemon designed for
 personal infrastructure and small businesses. It can monitor
-websites and APIs, and send alerts by text message if they go down.
+websites and APIs, and send alerts by a variety of means if they go down.
 
 == Getting started
 
@@ -128,3 +128,10 @@ mount custom folders if you wish to supply your own plugins.
 
 Note that the Go plugin loader does not work on Windows. For Windows-based development,
 the `goplumdev` command hardcodes plugins, skipping the loader.
+
+== gRPC API
+
+In addition to allowing plugins to define new checks and alerts, GoPlum provides a gRPC
+API to enable development of custom tooling and facilitate use cases not supported by
+GoPlum itself (e.g. persisting check history indefinitely). The API is currently in
+development; more information can be found in the link:docs/api.adoc[API documentation].

@@ -6,6 +6,9 @@
 
 * Verbose logging can now be suppressed with the quiet flag
   (https://github.com/csmith/goplum/issues/29[#29])
+* GoPlum now exposes a gRPC API to allow for custom tooling
+  and integration with other services
+  (https://github.com/csmith/goplum/issues/30[#30])
 
 === Changes
 

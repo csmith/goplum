@@ -1,0 +1,23 @@
+syntax = "proto3";
+package api;
+option go_package = "github.com/csmith/goplum/api";
+
+enum Status {
+    INDETERMINATE = 0;
+    GOOD = 1;
+    FAILING = 2;
+}
+
+message Result {
+    string check = 1;
+    int64 time = 2;
+    Status result = 3;
+    string detail = 4;
+}
+
+message Empty {
+}
+
+service GoPlum {
+    rpc Results (Empty) returns (stream Result);
+}

@@ -431,6 +431,9 @@ func Run(plugins map[string]PluginLoader, configPath string) {
 		log.Printf("Unable to restore state from tombstone: %v", err)
 	}
 
+	api := NewGrpcServer(p)
+
+	go api.Start()
 	go p.Run()
 
 	c := make(chan os.Signal, 1)
@@ -439,6 +442,7 @@ func Run(plugins map[string]PluginLoader, configPath string) {
 
 	<-c
 
+	api.Stop()
 	if err := p.SaveState(); err != nil {
 		log.Printf("Unable to save state to tombstone: %v", err)
 	}
