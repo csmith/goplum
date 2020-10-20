@@ -10,7 +10,9 @@ require (
 	github.com/mitchellh/mapstructure v1.3.3
 	github.com/nelkinda/health-go v0.0.1
 	github.com/sebdah/goldie/v2 v2.5.1
+	github.com/spf13/cobra v0.0.3
 	github.com/stretchr/testify v1.6.1 // indirect
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.23.0
+	gopkg.in/yaml.v2 v2.3.0
 )

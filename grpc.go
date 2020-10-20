@@ -14,6 +14,9 @@ import (
 
 var (
 	apiPort = flag.Int("api-port", 7586, "Port to use for the GoPlum API")
+	caCert    = flag.String("ca-cert", "ca.crt", "Path to the certificate of the certificate authority for the API")
+	localCert = flag.String("cert", "goplum.crt", "Path to the certificate to use for the API")
+	localKey  = flag.String("key", "goplum.key", "Path to the key to use for the API")
 )
 
 type GrpcServer struct {
@@ -28,7 +31,7 @@ func NewGrpcServer(plum *Plum) *GrpcServer {
 }
 
 func (s *GrpcServer) Start() {
-	certs, pool, err := api.LoadCertificates()
+	certs, pool, err := api.LoadCertificates(*localCert, *localKey, *caCert)
 	if err != nil {
 		log.Printf("Not starting API: unable to load certificates: %v", err)
 		return
