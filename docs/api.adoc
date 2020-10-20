@@ -101,8 +101,27 @@ The API is currently in development and may change in incompatible ways.
 You can find the protocol definition in the link:../api/goplum.proto[proto file].
 The currently supported methods are:
 
-=== Results
+=== Results(Empty): stream Result
 
 Provides a stream of check results as they are received. This includes all checks,
 whether they result in the status of a service changing or not (i.e., this is
 a much finer granularity than alerts).
+
+=== GetChecks(Empty): CheckList
+
+Returns a list of all checks known to GoPlum and their current states
+
+=== GetCheck(CheckName): Check
+
+Returns a single check with the given name, or an error if that check is not found.
+
+=== SuspendCheck(CheckName): Check
+
+Suspends the check with the given name, and returns the updated check (or an error
+if the check was not found). Suspended checks will not be executed until they are
+unsuspended.
+
+=== ResumeCheck(CheckName): Check
+
+Resumes a previously suspended check with the given name, and returns the updated check
+(or an error if the check was not found).

@@ -231,6 +231,15 @@ func (p *Plum) Run() {
 		min := time.Now().Add(time.Hour)
 		for i := range p.Checks {
 			c := p.Checks[i]
+
+			if c.Suspended {
+				// If a check is suspended, don't wait more than a minute before we check again.
+				if next := time.Now().Add(time.Minute); next.Before(min) {
+					min = next
+				}
+				continue
+			}
+
 			remaining := c.Remaining()
 			if remaining <= 0 {
 				c.Scheduled = true
@@ -238,8 +247,7 @@ func (p *Plum) Run() {
 				remaining = c.Remaining()
 			}
 
-			next := time.Now().Add(remaining)
-			if next.Before(min) {
+			if next := time.Now().Add(remaining); next.Before(min) {
 				min = next
 			}
 		}
@@ -342,6 +350,28 @@ func (p *Plum) RemoveCheckListener(listener CheckListener) {
 	delete(p.checkListeners, reflect.ValueOf(listener))
 }
 
+// Suspend sets the check with the given name to be suspended (i.e., it won't run until unsuspended).
+// Returns the modified check, or nil if the check didn't exist.
+func (p *Plum) Suspend(checkName string) *ScheduledCheck {
+	if check, ok := p.Checks[checkName]; ok {
+		log.Printf("Check %s has been suspended", checkName)
+		check.Suspended = true
+		return check
+	}
+	return nil
+}
+
+// Unsuspend sets the check with the given name to be resumed (i.e., it will run normally).
+// Returns the modified check, or nil if the check didn't exist.
+func (p *Plum) Unsuspend(checkName string) *ScheduledCheck {
+	if check, ok := p.Checks[checkName]; ok {
+		log.Printf("Check %s has been unsuspended", checkName)
+		check.Suspended = false
+		return check
+	}
+	return nil
+}
+
 // regexpForWildcards converts a set of names containing '*' characters as wildcards into a single regex that will
 // match any of them.
 //
@@ -377,6 +407,7 @@ type ScheduledCheck struct {
 	Scheduled bool
 	Settled   bool
 	State     CheckState
+	Suspended bool
 	History   ResultHistory
 }
 

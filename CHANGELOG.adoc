@@ -9,6 +9,9 @@
 * GoPlum now exposes a gRPC API to allow for custom tooling
   and integration with other services
   (https://github.com/csmith/goplum/issues/30[#30])
+* Checks can now be suspended and resumed (via the API), for
+  e.g. planned maintenance
+  (https://github.com/csmith/goplum/issues/31[#31])
 
 === Changes
 

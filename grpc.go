@@ -1,6 +1,7 @@
 package goplum
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -80,6 +81,64 @@ func (s *GrpcServer) Results(_ *api.Empty, rs api.GoPlum_ResultsServer) error {
 	s.plum.AddCheckListener(l)
 
 	return <-c
+}
+
+func (s *GrpcServer) GetChecks(_ context.Context, _ *api.Empty) (*api.CheckList, error) {
+	var checks []*api.Check
+	for i := range s.plum.Checks {
+		checks = append(checks, s.convertCheck(s.plum.Checks[i]))
+	}
+	return &api.CheckList{Checks: checks}, nil
+}
+
+func (s *GrpcServer) GetCheck(_ context.Context, name *api.CheckName) (*api.Check, error) {
+	if name == nil || len(name.Name) == 0 {
+		return nil, fmt.Errorf("no name specified")
+	}
+
+	check, ok := s.plum.Checks[name.Name]
+	if ok {
+		return s.convertCheck(check), nil
+	}
+
+	return nil, fmt.Errorf("no check found with name: %s", name.Name)
+}
+
+func (s *GrpcServer) SuspendCheck(_ context.Context, name *api.CheckName) (*api.Check, error) {
+	if name == nil || len(name.Name) == 0 {
+		return nil, fmt.Errorf("no name specified")
+	}
+
+	check := s.plum.Suspend(name.Name)
+	if check == nil {
+		return nil, fmt.Errorf("no check found with name: %s", name.Name)
+	} else {
+		return s.convertCheck(check), nil
+	}
+}
+
+func (s *GrpcServer) ResumeCheck(_ context.Context, name *api.CheckName) (*api.Check, error) {
+	if name == nil || len(name.Name) == 0 {
+		return nil, fmt.Errorf("no name specified")
+	}
+
+	check := s.plum.Unsuspend(name.Name)
+	if check == nil {
+		return nil, fmt.Errorf("no check found with name: %s", name.Name)
+	} else {
+		return s.convertCheck(check), nil
+	}
+}
+
+func (s *GrpcServer) convertCheck(check *ScheduledCheck) *api.Check {
+	return &api.Check{
+		Name:      check.Name,
+		Type:      check.Type,
+		LastRun:   check.LastRun.Unix(),
+		Settled:   check.Settled,
+		State:     s.convertState(check.State),
+		Suspended: check.Suspended,
+	}
 }
 
 func (s *GrpcServer) convertState(state CheckState) api.Status {

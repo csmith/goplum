@@ -78,6 +78,187 @@ func (Status) EnumDescriptor() ([]byte, []int) {
 	return file_goplum_proto_rawDescGZIP(), []int{0}
 }
 
+type CheckName struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *CheckName) Reset() {
+	*x = CheckName{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_goplum_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *CheckName) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckName) ProtoMessage() {}
+
+func (x *CheckName) ProtoReflect() protoreflect.Message {
+	mi := &file_goplum_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckName.ProtoReflect.Descriptor instead.
+func (*CheckName) Descriptor() ([]byte, []int) {
+	return file_goplum_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *CheckName) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type CheckList struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Checks []*Check `protobuf:"bytes,1,rep,name=checks,proto3" json:"checks,omitempty"`
+}
+
+func (x *CheckList) Reset() {
+	*x = CheckList{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_goplum_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *CheckList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckList) ProtoMessage() {}
+
+func (x *CheckList) ProtoReflect() protoreflect.Message {
+	mi := &file_goplum_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckList.ProtoReflect.Descriptor instead.
+func (*CheckList) Descriptor() ([]byte, []int) {
+	return file_goplum_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CheckList) GetChecks() []*Check {
+	if x != nil {
+		return x.Checks
+	}
+	return nil
+}
+
+type Check struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name      string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type      string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	LastRun   int64  `protobuf:"varint,3,opt,name=last_run,json=lastRun,proto3" json:"last_run,omitempty"`
+	Settled   bool   `protobuf:"varint,4,opt,name=settled,proto3" json:"settled,omitempty"`
+	State     Status `protobuf:"varint,5,opt,name=state,proto3,enum=api.Status" json:"state,omitempty"`
+	Suspended bool   `protobuf:"varint,6,opt,name=suspended,proto3" json:"suspended,omitempty"`
+}
+
+func (x *Check) Reset() {
+	*x = Check{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_goplum_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Check) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Check) ProtoMessage() {}
+
+func (x *Check) ProtoReflect() protoreflect.Message {
+	mi := &file_goplum_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Check.ProtoReflect.Descriptor instead.
+func (*Check) Descriptor() ([]byte, []int) {
+	return file_goplum_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Check) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Check) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *Check) GetLastRun() int64 {
+	if x != nil {
+		return x.LastRun
+	}
+	return 0
+}
+
+func (x *Check) GetSettled() bool {
+	if x != nil {
+		return x.Settled
+	}
+	return false
+}
+
+func (x *Check) GetState() Status {
+	if x != nil {
+		return x.State
+	}
+	return Status_INDETERMINATE
+}
+
+func (x *Check) GetSuspended() bool {
+	if x != nil {
+		return x.Suspended
+	}
+	return false
+}
+
 type Result struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -92,7 +273,7 @@ type Result struct {
 func (x *Result) Reset() {
 	*x = Result{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_goplum_proto_msgTypes[0]
+		mi := &file_goplum_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -105,7 +286,7 @@ func (x *Result) String() string {
 func (*Result) ProtoMessage() {}
 
 func (x *Result) ProtoReflect() protoreflect.Message {
-	mi := &file_goplum_proto_msgTypes[0]
+	mi := &file_goplum_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -118,7 +299,7 @@ func (x *Result) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Result.ProtoReflect.Descriptor instead.
 func (*Result) Descriptor() ([]byte, []int) {
-	return file_goplum_proto_rawDescGZIP(), []int{0}
+	return file_goplum_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Result) GetCheck() string {
@@ -158,7 +339,7 @@ type Empty struct {
 func (x *Empty) Reset() {
 	*x = Empty{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_goplum_proto_msgTypes[1]
+		mi := &file_goplum_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -171,7 +352,7 @@ func (x *Empty) String() string {
 func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_goplum_proto_msgTypes[1]
+	mi := &file_goplum_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -184,30 +365,56 @@ func (x *Empty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Empty.ProtoReflect.Descriptor instead.
 func (*Empty) Descriptor() ([]byte, []int) {
-	return file_goplum_proto_rawDescGZIP(), []int{1}
+	return file_goplum_proto_rawDescGZIP(), []int{4}
 }
 
 var File_goplum_proto protoreflect.FileDescriptor
 
 var file_goplum_proto_rawDesc = []byte{
 	0x0a, 0x0c, 0x67, 0x6f, 0x70, 0x6c, 0x75, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x03,
-	0x61, 0x70, 0x69, 0x22, 0x6f, 0x0a, 0x06, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x14, 0x0a,
-	0x05, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x63, 0x68,
-	0x65, 0x63, 0x6b, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x03, 0x52, 0x04, 0x74, 0x69, 0x6d, 0x65, 0x12, 0x23, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c,
-	0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0b, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x53, 0x74,
-	0x61, 0x74, 0x75, 0x73, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x16, 0x0a, 0x06,
-	0x64, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x64, 0x65,
-	0x74, 0x61, 0x69, 0x6c, 0x22, 0x07, 0x0a, 0x05, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x2a, 0x32, 0x0a,
-	0x06, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x11, 0x0a, 0x0d, 0x49, 0x4e, 0x44, 0x45, 0x54,
-	0x45, 0x52, 0x4d, 0x49, 0x4e, 0x41, 0x54, 0x45, 0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x47, 0x4f,
-	0x4f, 0x44, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x46, 0x41, 0x49, 0x4c, 0x49, 0x4e, 0x47, 0x10,
-	0x02, 0x32, 0x2e, 0x0a, 0x06, 0x47, 0x6f, 0x50, 0x6c, 0x75, 0x6d, 0x12, 0x24, 0x0a, 0x07, 0x52,
-	0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x12, 0x0a, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x45, 0x6d, 0x70,
-	0x74, 0x79, 0x1a, 0x0b, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x30,
-	0x01, 0x42, 0x1e, 0x5a, 0x1c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
-	0x63, 0x73, 0x6d, 0x69, 0x74, 0x68, 0x2f, 0x67, 0x6f, 0x70, 0x6c, 0x75, 0x6d, 0x2f, 0x61, 0x70,
-	0x69, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x70, 0x69, 0x22, 0x1f, 0x0a, 0x09, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x4e, 0x61, 0x6d, 0x65,
+	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x22, 0x2f, 0x0a, 0x09, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x4c, 0x69, 0x73,
+	0x74, 0x12, 0x22, 0x0a, 0x06, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x0a, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x06, 0x63,
+	0x68, 0x65, 0x63, 0x6b, 0x73, 0x22, 0xa5, 0x01, 0x0a, 0x05, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x12,
+	0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e,
+	0x61, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x6c, 0x61, 0x73, 0x74, 0x5f,
+	0x72, 0x75, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x07, 0x6c, 0x61, 0x73, 0x74, 0x52,
+	0x75, 0x6e, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x65, 0x74, 0x74, 0x6c, 0x65, 0x64, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x65, 0x74, 0x74, 0x6c, 0x65, 0x64, 0x12, 0x21, 0x0a, 0x05,
+	0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0b, 0x2e, 0x61, 0x70,
+	0x69, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x12,
+	0x1c, 0x0a, 0x09, 0x73, 0x75, 0x73, 0x70, 0x65, 0x6e, 0x64, 0x65, 0x64, 0x18, 0x06, 0x20, 0x01,
+	0x28, 0x08, 0x52, 0x09, 0x73, 0x75, 0x73, 0x70, 0x65, 0x6e, 0x64, 0x65, 0x64, 0x22, 0x6f, 0x0a,
+	0x06, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x63, 0x68, 0x65, 0x63, 0x6b,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x12, 0x12, 0x0a,
+	0x04, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x74, 0x69, 0x6d,
+	0x65, 0x12, 0x23, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x0e, 0x32, 0x0b, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x06,
+	0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x64, 0x65, 0x74, 0x61, 0x69, 0x6c,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x64, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x22, 0x07,
+	0x0a, 0x05, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x2a, 0x32, 0x0a, 0x06, 0x53, 0x74, 0x61, 0x74, 0x75,
+	0x73, 0x12, 0x11, 0x0a, 0x0d, 0x49, 0x4e, 0x44, 0x45, 0x54, 0x45, 0x52, 0x4d, 0x49, 0x4e, 0x41,
+	0x54, 0x45, 0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x47, 0x4f, 0x4f, 0x44, 0x10, 0x01, 0x12, 0x0b,
+	0x0a, 0x07, 0x46, 0x41, 0x49, 0x4c, 0x49, 0x4e, 0x47, 0x10, 0x02, 0x32, 0xd6, 0x01, 0x0a, 0x06,
+	0x47, 0x6f, 0x50, 0x6c, 0x75, 0x6d, 0x12, 0x24, 0x0a, 0x07, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74,
+	0x73, 0x12, 0x0a, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x0b, 0x2e,
+	0x61, 0x70, 0x69, 0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x30, 0x01, 0x12, 0x27, 0x0a, 0x09,
+	0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x73, 0x12, 0x0a, 0x2e, 0x61, 0x70, 0x69, 0x2e,
+	0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x0e, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x43, 0x68, 0x65, 0x63,
+	0x6b, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x26, 0x0a, 0x08, 0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63,
+	0x6b, 0x12, 0x0e, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x4e, 0x61, 0x6d,
+	0x65, 0x1a, 0x0a, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x12, 0x2a, 0x0a,
+	0x0c, 0x53, 0x75, 0x73, 0x70, 0x65, 0x6e, 0x64, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x12, 0x0e, 0x2e,
+	0x61, 0x70, 0x69, 0x2e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x4e, 0x61, 0x6d, 0x65, 0x1a, 0x0a, 0x2e,
+	0x61, 0x70, 0x69, 0x2e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x12, 0x29, 0x0a, 0x0b, 0x52, 0x65, 0x73,
+	0x75, 0x6d, 0x65, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x12, 0x0e, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x43,
+	0x68, 0x65, 0x63, 0x6b, 0x4e, 0x61, 0x6d, 0x65, 0x1a, 0x0a, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x43,
+	0x68, 0x65, 0x63, 0x6b, 0x42, 0x1e, 0x5a, 0x1c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
+	0x6f, 0x6d, 0x2f, 0x63, 0x73, 0x6d, 0x69, 0x74, 0x68, 0x2f, 0x67, 0x6f, 0x70, 0x6c, 0x75, 0x6d,
+	0x2f, 0x61, 0x70, 0x69, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -223,21 +430,34 @@ func file_goplum_proto_rawDescGZIP() []byte {
 }
 
 var file_goplum_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_goplum_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_goplum_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_goplum_proto_goTypes = []interface{}{
-	(Status)(0),    // 0: api.Status
-	(*Result)(nil), // 1: api.Result
-	(*Empty)(nil),  // 2: api.Empty
+	(Status)(0),       // 0: api.Status
+	(*CheckName)(nil), // 1: api.CheckName
+	(*CheckList)(nil), // 2: api.CheckList
+	(*Check)(nil),     // 3: api.Check
+	(*Result)(nil),    // 4: api.Result
+	(*Empty)(nil),     // 5: api.Empty
 }
 var file_goplum_proto_depIdxs = []int32{
-	0, // 0: api.Result.result:type_name -> api.Status
-	2, // 1: api.GoPlum.Results:input_type -> api.Empty
-	1, // 2: api.GoPlum.Results:output_type -> api.Result
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	3, // 0: api.CheckList.checks:type_name -> api.Check
+	0, // 1: api.Check.state:type_name -> api.Status
+	0, // 2: api.Result.result:type_name -> api.Status
+	5, // 3: api.GoPlum.Results:input_type -> api.Empty
+	5, // 4: api.GoPlum.GetChecks:input_type -> api.Empty
+	1, // 5: api.GoPlum.GetCheck:input_type -> api.CheckName
+	1, // 6: api.GoPlum.SuspendCheck:input_type -> api.CheckName
+	1, // 7: api.GoPlum.ResumeCheck:input_type -> api.CheckName
+	4, // 8: api.GoPlum.Results:output_type -> api.Result
+	2, // 9: api.GoPlum.GetChecks:output_type -> api.CheckList
+	3, // 10: api.GoPlum.GetCheck:output_type -> api.Check
+	3, // 11: api.GoPlum.SuspendCheck:output_type -> api.Check
+	3, // 12: api.GoPlum.ResumeCheck:output_type -> api.Check
+	8, // [8:13] is the sub-list for method output_type
+	3, // [3:8] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_goplum_proto_init() }
@@ -247,7 +467,7 @@ func file_goplum_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_goplum_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Result); i {
+			switch v := v.(*CheckName); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -259,6 +479,42 @@ func file_goplum_proto_init() {
 			}
 		}
 		file_goplum_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CheckList); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_goplum_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Check); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_goplum_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Result); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_goplum_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Empty); i {
 			case 0:
 				return &v.state
@@ -277,7 +533,7 @@ func file_goplum_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_goplum_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -305,6 +561,10 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type GoPlumClient interface {
 	Results(ctx context.Context, in *Empty, opts ...grpc.CallOption) (GoPlum_ResultsClient, error)
+	GetChecks(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CheckList, error)
+	GetCheck(ctx context.Context, in *CheckName, opts ...grpc.CallOption) (*Check, error)
+	SuspendCheck(ctx context.Context, in *CheckName, opts ...grpc.CallOption) (*Check, error)
+	ResumeCheck(ctx context.Context, in *CheckName, opts ...grpc.CallOption) (*Check, error)
 }
 
 type goPlumClient struct {
@@ -347,9 +607,49 @@ func (x *goPlumResultsClient) Recv() (*Result, error) {
 	return m, nil
 }
 
+func (c *goPlumClient) GetChecks(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CheckList, error) {
+	out := new(CheckList)
+	err := c.cc.Invoke(ctx, "/api.GoPlum/GetChecks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *goPlumClient) GetCheck(ctx context.Context, in *CheckName, opts ...grpc.CallOption) (*Check, error) {
+	out := new(Check)
+	err := c.cc.Invoke(ctx, "/api.GoPlum/GetCheck", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *goPlumClient) SuspendCheck(ctx context.Context, in *CheckName, opts ...grpc.CallOption) (*Check, error) {
+	out := new(Check)
+	err := c.cc.Invoke(ctx, "/api.GoPlum/SuspendCheck", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *goPlumClient) ResumeCheck(ctx context.Context, in *CheckName, opts ...grpc.CallOption) (*Check, error) {
+	out := new(Check)
+	err := c.cc.Invoke(ctx, "/api.GoPlum/ResumeCheck", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GoPlumServer is the server API for GoPlum service.
 type GoPlumServer interface {
 	Results(*Empty, GoPlum_ResultsServer) error
+	GetChecks(context.Context, *Empty) (*CheckList, error)
+	GetCheck(context.Context, *CheckName) (*Check, error)
+	SuspendCheck(context.Context, *CheckName) (*Check, error)
+	ResumeCheck(context.Context, *CheckName) (*Check, error)
 }
 
 // UnimplementedGoPlumServer can be embedded to have forward compatible implementations.
@@ -358,6 +658,18 @@ type UnimplementedGoPlumServer struct {
 
 func (*UnimplementedGoPlumServer) Results(*Empty, GoPlum_ResultsServer) error {
 	return status.Errorf(codes.Unimplemented, "method Results not implemented")
+}
+func (*UnimplementedGoPlumServer) GetChecks(context.Context, *Empty) (*CheckList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetChecks not implemented")
+}
+func (*UnimplementedGoPlumServer) GetCheck(context.Context, *CheckName) (*Check, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCheck not implemented")
+}
+func (*UnimplementedGoPlumServer) SuspendCheck(context.Context, *CheckName) (*Check, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SuspendCheck not implemented")
+}
+func (*UnimplementedGoPlumServer) ResumeCheck(context.Context, *CheckName) (*Check, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResumeCheck not implemented")
 }
 
 func RegisterGoPlumServer(s *grpc.Server, srv GoPlumServer) {
@@ -385,10 +697,99 @@ func (x *goPlumResultsServer) Send(m *Result) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _GoPlum_GetChecks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoPlumServer).GetChecks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.GoPlum/GetChecks",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoPlumServer).GetChecks(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GoPlum_GetCheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckName)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoPlumServer).GetCheck(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.GoPlum/GetCheck",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoPlumServer).GetCheck(ctx, req.(*CheckName))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GoPlum_SuspendCheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckName)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoPlumServer).SuspendCheck(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.GoPlum/SuspendCheck",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoPlumServer).SuspendCheck(ctx, req.(*CheckName))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GoPlum_ResumeCheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckName)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoPlumServer).ResumeCheck(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.GoPlum/ResumeCheck",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoPlumServer).ResumeCheck(ctx, req.(*CheckName))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _GoPlum_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "api.GoPlum",
 	HandlerType: (*GoPlumServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetChecks",
+			Handler:    _GoPlum_GetChecks_Handler,
+		},
+		{
+			MethodName: "GetCheck",
+			Handler:    _GoPlum_GetCheck_Handler,
+		},
+		{
+			MethodName: "SuspendCheck",
+			Handler:    _GoPlum_SuspendCheck_Handler,
+		},
+		{
+			MethodName: "ResumeCheck",
+			Handler:    _GoPlum_ResumeCheck_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Results",

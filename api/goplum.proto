@@ -8,6 +8,23 @@ enum Status {
     FAILING = 2;
 }
 
+message CheckName {
+    string name = 1;
+}
+
+message CheckList {
+    repeated Check checks = 1;
+}
+
+message Check {
+    string name = 1;
+    string type = 2;
+    int64 last_run = 3;
+    bool settled = 4;
+    Status state = 5;
+    bool suspended = 6;
+}
+
 message Result {
     string check = 1;
     int64 time = 2;
@@ -20,4 +37,9 @@ message Empty {
 
 service GoPlum {
     rpc Results (Empty) returns (stream Result);
+
+    rpc GetChecks (Empty) returns (CheckList);
+    rpc GetCheck (CheckName) returns (Check);
+    rpc SuspendCheck (CheckName) returns (Check);
+    rpc ResumeCheck (CheckName) returns (Check);
 }

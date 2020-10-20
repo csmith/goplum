@@ -20,6 +20,7 @@
       "Scheduled": false,
       "Settled": false,
       "State": "indeterminate",
+      "Suspended": false,
       "History": [
         null,
         null,
@@ -52,6 +53,7 @@
       "Scheduled": false,
       "Settled": false,
       "State": "indeterminate",
+      "Suspended": false,
       "History": [
         null,
         null,
@@ -84,6 +86,7 @@
       "Scheduled": false,
       "Settled": false,
       "State": "indeterminate",
+      "Suspended": false,
       "History": [
         null,
         null,

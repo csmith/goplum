@@ -18,10 +18,11 @@ type TombStone struct {
 }
 
 type CheckTombStone struct {
-	LastRun time.Time
-	Settled bool
-	State   CheckState
-	History ResultHistory
+	LastRun   time.Time
+	Settled   bool
+	State     CheckState
+	Suspended bool
+	History   ResultHistory
 }
 
 func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
@@ -33,10 +34,11 @@ func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
 	for i := range checks {
 		check := checks[i]
 		ts.Checks[check.Name] = CheckTombStone{
-			LastRun: check.LastRun,
-			Settled: check.Settled,
-			State:   check.State,
-			History: check.History,
+			LastRun:   check.LastRun,
+			Settled:   check.Settled,
+			State:     check.State,
+			Suspended: check.Suspended,
+			History:   check.History,
 		}
 	}
 
@@ -77,6 +79,7 @@ func (ts *TombStone) Restore(checks map[string]*ScheduledCheck) error {
 			check.LastRun = saved.LastRun
 			check.Settled = saved.Settled
 			check.State = saved.State
+			check.Suspended = saved.Suspended
 			check.History = saved.History
 		}
 	}
