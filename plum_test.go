@@ -20,7 +20,16 @@ var plugins = map[string]goplum.PluginLoader{
 }
 
 func TestReadConfig_GoldenData(t *testing.T) {
-	tests := []string{"defaults"}
+	tests := []string{
+		"defaults",
+		"duplicate-alert",
+		"duplicate-check",
+		"unknown-alert",
+		"unknown-check",
+		"unknown-field",
+		"unknown-plugin",
+		"validation-error",
+	}
 	gold := goldie.New(t)
 
 	for i := range tests {
@@ -28,12 +37,16 @@ func TestReadConfig_GoldenData(t *testing.T) {
 			plum := goplum.NewPlum()
 
 			plum.RegisterPlugins(plugins)
+			err := plum.ReadConfig(path.Join("testdata", fmt.Sprintf("%s.conf", tests[i])))
 
-			if err := plum.ReadConfig(path.Join("testdata", fmt.Sprintf("%s.conf", tests[i]))); err != nil {
-				t.Errorf("Error reading config: %v", err)
+			var actual interface{}
+			if err == nil {
+				actual = plum
+			} else {
+				actual = err.Error()
 			}
 
-			gold.AssertJson(t, tests[i], plum)
+			gold.AssertJson(t, tests[i], actual)
 		})
 	}
 }

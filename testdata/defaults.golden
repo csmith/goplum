@@ -1,7 +1,39 @@
 {
   "Alerts": {},
-  "Checks": [
-    {
+  "Checks": {
+    "defaults": {
+      "Name": "defaults",
+      "Type": "debug.random",
+      "Config": {
+        "Alerts": [
+          "text"
+        ],
+        "Interval": 90000000000,
+        "Timeout": 20000000000,
+        "GoodThreshold": 3,
+        "FailingThreshold": 2
+      },
+      "Check": {
+        "PercentGood": 0.5
+      },
+      "LastRun": "0001-01-01T00:00:00Z",
+      "Scheduled": false,
+      "Settled": false,
+      "State": "indeterminate",
+      "History": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "override1": {
       "Name": "override1",
       "Type": "debug.random",
       "Config": {
@@ -33,7 +65,7 @@
         null
       ]
     },
-    {
+    "override2": {
       "Name": "override2",
       "Type": "debug.random",
       "Config": {
@@ -64,38 +96,6 @@
         null,
         null
       ]
-    },
-    {
-      "Name": "defaults",
-      "Type": "debug.random",
-      "Config": {
-        "Alerts": [
-          "text"
-        ],
-        "Interval": 90000000000,
-        "Timeout": 20000000000,
-        "GoodThreshold": 3,
-        "FailingThreshold": 2
-      },
-      "Check": {
-        "PercentGood": 0.5
-      },
-      "LastRun": "0001-01-01T00:00:00Z",
-      "Scheduled": false,
-      "Settled": false,
-      "State": "indeterminate",
-      "History": [
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
-      ]
     }
-  ]
+  }
 }
