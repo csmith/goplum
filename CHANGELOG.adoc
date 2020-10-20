@@ -17,12 +17,17 @@
   interact with a GoPlum instance.
   See the link:docs/plumctl.adoc[plumctl docs] for further
   information.
+* The configuration file now supports plugin-specific
+  config via `plugin <identifier> {}` blocks.
+  (https://github.com/csmith/goplum/issues/33[#33])
 
 === Changes
 
 * Small improvement to error messages for invalid config keys
 * GoPlum now errors if checks or alerts have duplicate names
   (this was previously documented but not enforced)
+* Plugins can now implement the Validator interface to check
+  their own configuration in the same way as Alerts and Checks
 
 == v0.3.0
 

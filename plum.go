@@ -115,6 +115,10 @@ func (p *Plum) ReadConfig(path string) error {
 		return err
 	}
 
+	if err := p.configurePlugins(parser.PluginSettings); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -197,6 +201,35 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 			Type:   checks[i].Type,
 			Config: &settings,
 			Check:  check,
+		}
+	}
+
+	return nil
+}
+
+func (p *Plum) configurePlugins(blocks []*config.Block) error {
+	for i := range blocks {
+		name := blocks[i].Type
+		loaded, ok := p.loadedPlugins[name]
+		if ok {
+			if err := internal.DecodeSettings(&blocks[i].Settings, &loaded); err != nil {
+				return fmt.Errorf("error configuring plugin %s: %v", name, err)
+			}
+			continue
+		}
+
+		if _, ok := p.availablePlugins[name]; ok {
+			log.Printf("Config for plugin %s ignored as it is not loaded", name)
+		} else {
+			return fmt.Errorf("unable to configure plugin %s: no such plugin", name)
+		}
+	}
+
+	for name := range p.loadedPlugins {
+		if v, ok := p.loadedPlugins[name].(Validator); ok {
+			if err := v.Validate(); err != nil {
+				return fmt.Errorf("error configuring plugin %s: %v", name, err)
+			}
 		}
 	}
 

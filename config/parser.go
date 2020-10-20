@@ -21,6 +21,7 @@ type Parser struct {
 	DefaultSettings map[string]interface{}
 	AlertBlocks     []*Block
 	CheckBlocks     []*Block
+	PluginSettings  []*Block
 }
 
 func NewParser(reader io.Reader) *Parser {
@@ -34,7 +35,7 @@ func (p *Parser) Parse() error {
 	go p.lexer.Lex()
 
 	for {
-		t, err := p.take(tokenEOF, tokenError, tokenDefaults, tokenAlert, tokenCheck)
+		t, err := p.take(tokenEOF, tokenError, tokenDefaults, tokenAlert, tokenCheck, tokenPlugin)
 		if err != nil {
 			return err
 		}
@@ -60,6 +61,12 @@ func (p *Parser) Parse() error {
 				return err
 			}
 			p.CheckBlocks = append(p.CheckBlocks, block)
+		case tokenPlugin:
+			block, err := p.parseTypedBlock()
+			if err != nil {
+				return err
+			}
+			p.PluginSettings = append(p.PluginSettings, block)
 		case tokenError:
 			return errors.New(t.Value.(string))
 		case tokenEOF:
@@ -83,6 +90,21 @@ func (p *Parser) parseNamedBlock() (*Block, error) {
 	}
 	return &Block{
 		Name:     name.Value.(string),
+		Type:     kind.Value.(string),
+		Settings: val,
+	}, nil
+}
+
+func (p *Parser) parseTypedBlock() (*Block, error) {
+	kind, err := p.take(tokenIdentifier)
+	if err != nil {
+		return nil, err
+	}
+	val, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+	return &Block{
 		Type:     kind.Value.(string),
 		Settings: val,
 	}, nil

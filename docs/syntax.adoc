@@ -50,6 +50,19 @@ alert or check, including the plugin name) and a name. The name must
 be unique for the type of block (check/alert). They can exist only at
 the top-level of the configuration file.
 
+==== Typed blocks (plugins)
+
+[source,goplum]
+----
+plugin <identifier> {
+  # <Assignments>
+}
+----
+
+The plugin block requires an <<Identifier>> that identifies the plugin
+being configured. They can exist only at the top-level of the
+configuration file.
+
 === Assignments
 
 ==== Simple assignment

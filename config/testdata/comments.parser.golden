@@ -1,0 +1,25 @@
+{
+  "DefaultSettings": {
+    "alerts": [
+      "text",
+      "foo",
+      "bar"
+    ],
+    "good_threshold": 3,
+    "interval": 90000000000
+  },
+  "AlertBlocks": [
+    {
+      "Name": "text",
+      "Type": "twilio.message",
+      "Settings": {
+        "from": "+44 ...",
+        "sid": "xxx",
+        "to": "+44 ....",
+        "token": "yyy"
+      }
+    }
+  ],
+  "CheckBlocks": null,
+  "PluginSettings": null
+}

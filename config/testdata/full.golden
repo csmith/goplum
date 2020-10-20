@@ -282,8 +282,50 @@
     "Value": 125
   },
   {
+    "Class": 19,
+    "Line": 19,
+    "Column": 0,
+    "Value": "plugin"
+  },
+  {
+    "Class": 4,
+    "Line": 19,
+    "Column": 7,
+    "Value": "http"
+  },
+  {
+    "Class": 2,
+    "Line": 19,
+    "Column": 12,
+    "Value": 123
+  },
+  {
+    "Class": 4,
+    "Line": 20,
+    "Column": 4,
+    "Value": "foo"
+  },
+  {
+    "Class": 5,
+    "Line": 20,
+    "Column": 8,
+    "Value": 61
+  },
+  {
+    "Class": 6,
+    "Line": 20,
+    "Column": 10,
+    "Value": "bar"
+  },
+  {
+    "Class": 3,
+    "Line": 21,
+    "Column": 0,
+    "Value": 125
+  },
+  {
     "Class": 1,
-    "Line": 18,
+    "Line": 22,
     "Column": 0,
     "Value": null
   }

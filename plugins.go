@@ -125,6 +125,7 @@ type Alert interface {
 	Send(details AlertDetails) error
 }
 
+// Validator is implemented by checks, alerts and plugins that wish to validate their own config.
 type Validator interface {
 	// Validate checks the configuration of the object and returns any errors.
 	Validate() error
