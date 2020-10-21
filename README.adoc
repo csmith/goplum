@@ -111,6 +111,7 @@ this repository and are available by default in the Docker image:
 
 * link:plugins/http[http] - checks for HTTP services, and alerting via webhooks
 * link:plugins/network[network] - low level checks for network services
+* link:plugins/heartbeat[heartbeat] - checks for periodic notifications (e.g. cron jobs)
 * link:plugins/pushover[pushover] - sends alerts via Pushover
 * link:plugins/slack[slack] - sends alerts via Slack
 * link:plugins/twilio[twilio] - sends SMS alerts via Twilio

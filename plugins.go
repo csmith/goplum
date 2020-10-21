@@ -90,6 +90,15 @@ func GoodResult() Result {
 	}
 }
 
+// IndeterminateResult creates a new result indicating the check wasn't able to compute a state.
+func IndeterminateResult(format string, a ...interface{}) Result {
+	return Result{
+		State:  StateIndeterminate,
+		Time:   time.Now(),
+		Detail: fmt.Sprintf(format, a...),
+	}
+}
+
 // FailingResult creates a new result indicating the service is in a bad state.
 func FailingResult(format string, a ...interface{}) Result {
 	return Result{
@@ -129,4 +138,10 @@ type Alert interface {
 type Validator interface {
 	// Validate checks the configuration of the object and returns any errors.
 	Validate() error
+}
+
+// Stateful is implemented by checks that keep local state that should be persisted across restarts.
+type Stateful interface {
+	Save() interface{}
+	Restore(func(interface{}))
 }

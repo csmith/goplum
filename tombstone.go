@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"time"
 )
@@ -18,11 +19,12 @@ type TombStone struct {
 }
 
 type CheckTombStone struct {
-	LastRun   time.Time
-	Settled   bool
-	State     CheckState
-	Suspended bool
-	History   ResultHistory
+	LastRun     time.Time
+	Settled     bool
+	State       CheckState
+	Suspended   bool
+	History     ResultHistory
+	PluginState json.RawMessage `json:"plugin_state,omitempty"`
 }
 
 func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
@@ -32,13 +34,24 @@ func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
 	}
 
 	for i := range checks {
+		var state []byte
 		check := checks[i]
+
+		if stateful, ok := check.Check.(Stateful); ok {
+			var err error
+			state, err = json.Marshal(stateful.Save())
+			if err != nil {
+				log.Printf("Unable to save state of check %s: %v", check.Name, err)
+			}
+		}
+
 		ts.Checks[check.Name] = CheckTombStone{
-			LastRun:   check.LastRun,
-			Settled:   check.Settled,
-			State:     check.State,
-			Suspended: check.Suspended,
-			History:   check.History,
+			LastRun:     check.LastRun,
+			Settled:     check.Settled,
+			State:       check.State,
+			Suspended:   check.Suspended,
+			History:     check.History,
+			PluginState: state,
 		}
 	}
 
@@ -81,6 +94,14 @@ func (ts *TombStone) Restore(checks map[string]*ScheduledCheck) error {
 			check.State = saved.State
 			check.Suspended = saved.Suspended
 			check.History = saved.History
+
+			if stateful, ok := check.Check.(Stateful); ok && saved.PluginState != nil {
+				stateful.Restore(func(i interface{}) {
+					if err := json.Unmarshal(saved.PluginState, i); err != nil {
+						log.Printf("Unable to restore state of check %s: %v", check.Name, err)
+					}
+				})
+			}
 		}
 	}
 

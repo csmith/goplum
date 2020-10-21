@@ -20,6 +20,10 @@
 * The configuration file now supports plugin-specific
   config via `plugin <identifier> {}` blocks.
   (https://github.com/csmith/goplum/issues/33[#33])
+* Added a `heartbeat` plugin to enable monitoring or periodic/offline
+  tasks such as cron jobs. See the
+  link:plugins/heartbeat[heartbeat documentation] for more information.
+  (https://github.com/csmith/goplum/issues/32[#32])
 
 === Changes
 
@@ -28,6 +32,8 @@
   (this was previously documented but not enforced)
 * Plugins can now implement the Validator interface to check
   their own configuration in the same way as Alerts and Checks
+* Checks can now implement the Stateful interface to backup
+  and restore their internal state
 
 == v0.3.0
 
