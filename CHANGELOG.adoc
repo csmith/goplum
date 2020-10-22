@@ -2,6 +2,8 @@
 
 == vNext
 
+== v0.4.0
+
 === Features
 
 * Verbose logging can now be suppressed with the quiet flag
