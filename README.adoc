@@ -18,7 +18,7 @@ for integration with other services and tools.
 **Get alerts anywhere**: Goplum supports a variety of ways to
 alert you out-of-the-box:
 
-[cols=3]
+[width="100%",cols="3",frame="none",grid="none"]
 |=====
 | image:.images/alerts/mail.png[Mail icon] E-mail
 | image:.images/alerts/phone.png[Phone icon] Phone call (via Twilio)
