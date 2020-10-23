@@ -7,6 +7,7 @@ import (
 	"github.com/csmith/goplum/plugins/exec"
 	"github.com/csmith/goplum/plugins/heartbeat"
 	"github.com/csmith/goplum/plugins/http"
+	"github.com/csmith/goplum/plugins/msteams"
 	"github.com/csmith/goplum/plugins/network"
 	"github.com/csmith/goplum/plugins/pushover"
 	"github.com/csmith/goplum/plugins/slack"
@@ -28,6 +29,9 @@ var plugins = map[string]goplum.PluginLoader{
 	},
 	"http": func() (goplum.Plugin, error) {
 		return http.Plugin{}, nil
+	},
+	"msteams": func() (goplum.Plugin, error) {
+		return msteams.Plugin{}, nil
 	},
 	"network": func() (goplum.Plugin, error) {
 		return network.Plugin{}, nil

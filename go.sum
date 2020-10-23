@@ -18,6 +18,8 @@ github.com/cucumber/godog v0.9.0/go.mod h1:roWCHkpeK6UTOyIRRl7IR+fgfBeZ4vZR7OSq2
 github.com/cucumber/messages-go/v10 v10.0.1/go.mod h1:kA5T38CBlBbYLU12TIrJ4fk4wSkVVOgyh7Enyy8WnSg=
 github.com/cucumber/messages-go/v10 v10.0.3 h1:m/9SD/K/A15WP7i1aemIv7cwvUw+viS51Ui5HBw1cdE=
 github.com/cucumber/messages-go/v10 v10.0.3/go.mod h1:9jMZ2Y8ZxjLY6TG2+x344nt5rXstVVDYSdS5ySfI1WY=
+github.com/dasrick/go-teams-notify/v2 v2.1.0 h1:CSleKfkvrw2O9QmSY/LMHcg5hotuYnV+fftlHk8llRo=
+github.com/dasrick/go-teams-notify/v2 v2.1.0/go.mod h1:6TLarJg4hBXOybLxZpBvKIqeZiUZqUOM5SS2DLtUjTM=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

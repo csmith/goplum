@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/bmatcuk/doublestar/v2 v2.0.1
+	github.com/dasrick/go-teams-notify/v2 v2.1.0
 	github.com/golang/protobuf v1.4.2
 	github.com/imdario/mergo v0.3.11
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649

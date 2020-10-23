@@ -6,6 +6,8 @@
 
 * Added `smtp` plugin to send alerts by e-mail
   (https://github.com/csmith/goplum/issues/4[#4])
+* Added `msteams` plugin for sending messages to
+  Microsoft Teams.
 
 === Changes
 
