@@ -343,6 +343,7 @@ func (p *Plum) logCheck(c *ScheduledCheck, result Result) {
 func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 	details := AlertDetails{
 		Name:          c.Name,
+		Config:        c.Check,
 		Type:          c.Type,
 		LastResult:    c.LastResult(),
 		PreviousState: previousState,

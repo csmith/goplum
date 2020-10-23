@@ -20,12 +20,12 @@ alert you out-of-the-box:
 
 [cols=3]
 |=====
+| image:.images/alerts/mail.png[Mail icon] E-mail
 | image:.images/alerts/phone.png[Phone icon] Phone call (via Twilio)
 | image:.images/alerts/pushover.png[Pushover logo] Pushover
 | image:.images/alerts/slack.png[Slack logo] Slack
 | image:.images/alerts/sms.png[SMS icon] SMS (via Twilio)
 | image:.images/alerts/webhook.png[Webhook logo] Webhook
-|
 |=====
 
 **Lightweight**: Goplum has a small resource footprint, and all
@@ -179,6 +179,10 @@ documentation, that explains how its checks and alerts need to be configured.
 | link:plugins/slack[slack]
 | -
 | message
+
+| link:plugins/smtp[smtp]
+| -
+| send
 
 | link:plugins/twilio[twilio]
 | -

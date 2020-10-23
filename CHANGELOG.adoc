@@ -2,6 +2,18 @@
 
 == vNext
 
+=== Features
+
+* Added `smtp` plugin to send alerts by e-mail
+  (https://github.com/csmith/goplum/issues/4[#4])
+
+=== Changes
+
+* Docker images now include a `/notices` directory containing
+  copyright information for all compiled code.
+* The `Config` field in the `AlertDetails` struct passed to
+  alerts is now correctly populated.
+
 == v0.4.0
 
 === Features
