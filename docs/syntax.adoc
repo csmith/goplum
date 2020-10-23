@@ -14,9 +14,10 @@ flexible and readable.
 }
 ----
 
-A block is a group of <<Assignments>>, contained within braces. Two
-types of special blocks exist: <<Defaults>>, and <<Named blocks (checks and alerts)>>.
-These have keywords to identify them, and checks/alerts have some
+A block is a group of <<Assignments>>, contained within braces. Three
+types of special blocks exist: <<Defaults>>, <<Named blocks (checks and alerts)>>,
+and <<Typed blocks (plugins)>>.
+These have keywords to identify them, and checks/alerts/plugins have some
 additional metadata prior to the block opening.
 
 ==== Defaults
@@ -111,6 +112,7 @@ are:
 * `defaults`
 * `alert`
 * `check`
+* `plugin`
 * `yes`
 * `no`
 * `on`
