@@ -1,56 +1,6 @@
-= Installing Goplum
+= Installing Goplum without Docker
 
-== Using Docker
-
-The easiest way to run Goplum is via Docker. It doesn't require any
-special privileges or settings you just need to provide a config file
-to it at `/goplum.conf`, and optionally give it a persistent directory
-to store data in across restarts.
-
-Running it via the command line:
-
-[source]
-----
-docker run -d --restart always \
-   -v /path/to/my/goplum.conf:/goplum.conf \
-   -v /tmp/goplum:/tmp \
-   csmith/goplum
-----
-
-Or using Docker Compose:
-
-[source,yaml]
-----
-version: "3.8"
-
-services:
-  goplum:
-    image: csmith/goplum
-    volumes:
-      - ./goplum.conf:/goplum.conf
-      - /tmp/goplum:/tmp
-    restart: always
-----
-
-In these examples we are mounting a folder on the host - `/tmp/goplum` - at `/tmp`
-within the container. Goplum by default tries to save its state to `/tmp/goplum.tomb` when it
-is being stopped, so that it can be restored if it's restarted again shortly thereafter.
-This prevents alerts from being missed if the services change state around the time of a
-Goplum restart/upgrade.
-
-Instead of mounting a directory from the host's /tmpfs you could create a docker volume,
-or create an empty `goplum.tomb` file and bind mount that directly to `/tmp/goplum.tomb`.
-If you don't provide a way for goplum to persist this file, it will operate normally but
-will not be able to preserve check states across restarts.
-
-You can tweak some of Goplum's behaviour using environment variables. See
-link:flags.adoc[the flags documentation] for more information.
-
-== Manual installation
-
-Alternatively, you can manually compile Goplum and manually configure your system to run it.
-
-=== Compiling
+== Compiling
 
 You must have https://golang.org/[Go 1.15] or newer installed.
 
@@ -67,7 +17,7 @@ done
 
 This will produce a `goplum` binary, and a number of plugin libraries in the current directory.
 
-=== Paths
+== Paths
 
 By default, Goplum will look for a config file named `goplum.conf` in its working directory
 and recursively scan for plugins starting at the `plugins` folder in its working directory.
@@ -87,7 +37,7 @@ goplum --plugins /path/to/plugins/**.so --config /path/to/goplum.conf --tombston
 PLUGINS=/path/to/plugins/**.so CONFIG=/path/to/goplum.conf TOMBSTONE=/var/run/goplum.tomb goplum
 ----
 
-=== Execution
+== Execution
 
 The goplum binary does not fork, and does not require any special privileges, so it should
 be easy enough to integrate with most init systems.

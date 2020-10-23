@@ -1,25 +1,126 @@
-= Goplum
+:toc:
+:toc-placement!:
 
-image::logo.png?raw=true[Goplum logo,role="right"]
+image::.images/banner.png?raw=true[Goplum]
 
 Goplum is an extensible monitoring and alerting daemon designed for
 personal infrastructure and small businesses. It can monitor
 websites and APIs, and send alerts by a variety of means if they go down.
 
+toc::[]
+
+== Features
+
+**Highly extensible**: Goplum supports plugins written in Go
+to define new monitoring rules and alert types, and it has an API
+for integration with other services and tools.
+
+**Get alerts anywhere**: Goplum supports a variety of ways to
+alert you out-of-the-box:
+
+[cols=3]
+|=====
+| image:.images/alerts/phone.png[Phone icon] Phone call (via Twilio)
+| image:.images/alerts/pushover.png[Pushover logo] Pushover
+| image:.images/alerts/slack.png[Slack logo] Slack
+| image:.images/alerts/sms.png[SMS icon] SMS (via Twilio)
+| image:.images/alerts/webhook.png[Webhook logo] Webhook
+|
+|=====
+
+**Lightweight**: Goplum has a small resource footprint, and all
+checks are purpose-written in Go. No need to worry about chains
+of interdependent scripts being executed.
+
+**Heartbeat monitoring**: Have an offline service or a cron job
+that you want to monitor? Have it send a heartbeat to Goplum
+periodically and get alerted if it stops.
+
+**Simple to get started**: If you're set up to run services in
+containers, you can get Goplum up and running in a couple of minutes.
+
 == Getting started
 
-The easiest way to run Goplum is via Docker. It doesn't require any
-special privileges or settings you just need to provide a config file
-to it at `/goplum.conf`, and optionally give it a persistent directory
-to store data in across restarts.
+=== Basic configuration
 
-Running it via the command line:
+Goplum works by running a number of _checks_ (which test to see
+if a service is working or not), and when they change state running
+an _alert_ that notifies you about the problem.
+
+Checks and alerts are both defined in Goplum's config file. A
+minimal example looks like this:
 
 [source]
 ----
+check http.get "example.com" { <1>
+  url = "https://example.com/" <2>
+}
+
+alert twilio.sms "Text Bob" { <3>
+  sid = "sid"
+  token = "token"
+  from = "+01 867 5309"
+  to = "+01 867 5309" <4>
+}
+----
+<1> Goplum's configuration consists of "blocks". The contents
+    of the blocks are placed within braces (`{}`). This is
+    a "check block"; these will likely make up the bulk of your
+    configuration.
+    * `http.get` is the type of check we want to execute. The
+      `http` part indicates it comes from the HTTP plugin, while
+      the `get` part is the type of check.
+    * All checks (and alerts) have a unique name, in this case
+      we've called it "example.com". If a check starts to fail,
+      the alert you receive will contain the check name.
+<2> Parameters for the check are specified as `key = value`
+    pairs within the body of the check. The documentation for
+    each check and alert will explain what parameters are available,
+    and whether they're required or not.
+<3> Like checks, alerts have both a type and a name. Here we're
+    using the `sms` alert from the `twilio` plugin, and we've
+    named it `Text Bob`.
+<4> The `twilio.sms` alert has a number of required parameters
+    that define the account you wish to use and the phone numbers
+    involved. These are all just given as `key = value` pairs.
+
+This simple example will try to retrieve \https://example.com/
+every thirty seconds. If it fails three times in a row, a text
+message will be sent using Twilio. Then if it consistently starts
+passing again another message will be sent saying it has recovered.
+Don't worry - these numbers are all configurable: see the
+<<Default Settings>> section.
+
+In this example we used the `http.get` check and the `twilio.sms`
+alert. See the <<Available checks and alerts>> section for details
+of the other types available by default.
+
+There is a complete link:docs/syntax.adoc[syntax guide] available
+in the `docs` folder if you need to look up a specific aspect of
+the configuration syntax.
+
+=== Docker
+
+The easiest way to run Goplum is using Docker. Goplum doesn't require
+any privileges, settings, or ports exposed to get a basic setup
+running. It just needs the configuration file, and optionally a
+persistent file it can use to persist data across restarts:
+
+Running it via the command line:
+
+[source, shell script]
+----
+# Create a configuration file
+vi goplum.config
+
+# Make a 'tombstone' file that Goplum's unprivileged user can write
+touch goplum.tomb
+chown 65532:65532 goplum.tomb
+
+# Start goplum
 docker run -d --restart always \
-   -v /path/to/my/goplum.conf:/goplum.conf \
-   -v /tmp/goplum:/tmp \
+   -v $(PWD)/goplum.conf:/goplum.conf:ro \
+   -v $(PWD)/goplum.tomb:/tmp/goplum.tomb \
    csmith/goplum
 ----
 
@@ -34,42 +135,91 @@ services:
     image: csmith/goplum
     volumes:
       - ./goplum.conf:/goplum.conf
-      - /tmp/goplum:/tmp
+      - ./goplum.tomb:/tmp/goplum.tomb
     restart: always
 ----
 
-For more information and alternative installation methods see
-link:docs/install.adoc[the installation documentation].
+The `latest` tag points to the latest stable release of Goplum, if
+you wish to run the very latest build from this repository you can
+use the `dev` tag.
 
-== Configuration
+=== Without Docker
 
-Goplum's configuration contains an optional defaults section, a list of alerts, and
-a list of checks. A simple example might look like this:
+While Docker is the easiest way to run Goplum, it's not that hard to run it
+directly on a host without containerisation. See the
+link:docs/baremetal.adoc[installing without Docker] guide for more information.
 
-[source,goplum]
+== Usage
+
+=== Available checks and alerts
+
+All checks and alerts in Goplum are implemented as plugins. The following are maintained in
+this repository and are available by default in the Docker image. Each plugin has its own
+documentation, that explains how its checks and alerts need to be configured.
+
+|====
+| Plugin | checks | alerts
+
+| link:plugins/http[http]
+| get, healthcheck
+| webhook
+
+| link:plugins/network[network]
+| connect
+| -
+
+| link:plugins/heartbeat[heartbeat]
+| received
+| -
+
+| link:plugins/pushover[pushover]
+| -
+| message
+
+| link:plugins/slack[slack]
+| -
+| message
+
+| link:plugins/twilio[twilio]
+| -
+| call, sms
+
+| link:plugins/debug[debug]
+| random
+| sysout
+
+| link:plugins/exec[exec]
+| command
+| -
+|====
+
+The `docs` folder contains link:docs/example.conf[an example configuration file]
+that contains an example of every check and alert fully configured.
+
+=== Settling and thresholds
+
+When Goplum first starts, it is not aware of the current state of your services.
+To avoid immediately sending alerts when the state is determined, Goplum waits for
+each check to **settle** into a state, and then only alerts when that state
+subsequently changes.
+
+Goplum uses **thresholds** to decide how many times a check result must happen in
+a row before it's considered settled. By default, this the threshold is two "good"
+results or two "failing" results, but this can be changed - see <<Default Settings>>.
+
+For example:
+
 ----
-defaults {
-  # Change the default interval for all checks to 10 second, rather than
-  # Goplum's normal default of 30 seconds:
-  interval = 10s
-}
-
-# An alert named 'text' that will send an SMS message via Twilio:
-alert twilio.sms "text" {
-  sid = "sid"
-  token = "token"
-  from = "+01 867 5309"
-  to = "+01 867 5309"
-}
-
-# A check named 'Example' that checks a webpage is accessible:
-check http.get "Example" {
-  url = "https://www.example.com/"
-}
+ Goplum                    Failing            Recovery
+ starts                     Alert               Alert
+   ↓                          ↓                   ↓
+    ✓ ✓ ✓ ✓ ✓ ✓ ✓ 🗙 ✓ ✓ ✓ 🗙 🗙 🗙 🗙 🗙 ✓ 🗙 ✓ 🗙 ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ …
+       ↑                      ↑                   ↑
+  State settles          State becomes       State becomes
+    as "good"              "failing"            "good"
 ----
 
-This defines one check and one alert. You can add as many of both as you want; by default
-all alerts will be triggered when a check changes status.
+=== Default Settings
 
 All checks have a number of additional settings to control how they work. These can be
 specified for each check, or changed globally by putting them in the "defaults" section.
@@ -100,25 +250,30 @@ If they're not specified then Goplum's built-in defaults will be used.
 |`2`
 |===
 
-An link:docs/example.conf[extended example] and a
-link:docs/syntax.adoc[detailed guide to configuration syntax] are available in
-the docs folder.
+For example, to change the `interval` and `timeout` for all checks:
 
-== Bundled plugins
+[source,goplum]
+----
+defaults {
+  interval = 2m
+  timeout = 30s
+}
+----
 
-All checks and alerts in Goplum are implemented as plugins. The following are maintained in
-this repository and are available by default in the Docker image:
+Or to specify a custom timeout and alerts for one check:
 
-* link:plugins/http[http] - checks for HTTP services, and alerting via webhooks
-* link:plugins/network[network] - low level checks for network services
-* link:plugins/heartbeat[heartbeat] - checks for periodic notifications (e.g. cron jobs)
-* link:plugins/pushover[pushover] - sends alerts via Pushover
-* link:plugins/slack[slack] - sends alerts via Slack
-* link:plugins/twilio[twilio] - sends SMS alerts via Twilio
-* link:plugins/debug[debug] - provides tools for building and testing Goplum
-* link:plugins/exec[exec] - allows executing arbitrary commands
+[source,goplum]
+----
+check http.get "get" {
+  url = "https://www.example.com/"
+  timeout = 60s
+  alerts = ["Text Bob"]
+}
+----
 
-== Plugin API
+== Advanced topics
+
+=== Creating new plugins
 
 Goplum is designed to be easily extensible. Plugins must have a main package which contains
 a function named "Plum" that returns an implementation of `goplum.Plugin`. They are then
@@ -130,9 +285,28 @@ mount custom folders if you wish to supply your own plugins.
 Note that the Go plugin loader does not work on Windows. For Windows-based development,
 the `goplumdev` command hardcodes plugins, skipping the loader.
 
-== gRPC API
+=== gRPC API
 
 In addition to allowing plugins to define new checks and alerts, GoPlum provides a gRPC
 API to enable development of custom tooling and facilitate use cases not supported by
 GoPlum itself (e.g. persisting check history indefinitely). The API is currently in
 development; more information can be found in the link:docs/api.adoc[API documentation].
+
+=== plumctl command-line tool
+
+Goplum comes with `plumctl`, a command-line interface to inspect the state of Goplum
+as well as perform certain operations such as pausing and resuming a check. `plumctl`
+uses the <<gRPC API>>. For more information see the
+link:docs/plumctl.adoc[plumctl documentation].
+
+== Licence and credits
+
+Goplum is licensed under the MIT licence. A full copy of the licence is available in
+the link:LICENCE[LICENCE] file.
+
+Some icons in this README are modifications of the Material Design icons created by Google
+and released under the https://www.apache.org/licenses/LICENSE-2.0.html[Apache 2.0 licence].
+
+Goplum makes use of a number of third-party libraries. See the link:go.mod[go.mod] file
+for a list of direct dependencies. Users of the docker image will find a copy of the
+relevant licence and notice files under the `/notices` directory in the image.
