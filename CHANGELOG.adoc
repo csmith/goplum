@@ -10,6 +10,8 @@
   Microsoft Teams.
 * Added `discord` plugin to send alerts to Discord
   (https://github.com/csmith/goplum/issues/16[#16])
+* Added `snmp` plugin to check values from SNMP
+  (https://github.com/csmith/goplum/issues/26[#26])
 
 === Changes
 

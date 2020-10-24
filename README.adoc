@@ -195,6 +195,10 @@ documentation, that explains how its checks and alerts need to be configured.
 | -
 | send
 
+| link:plugins/snmp[snmp]
+| int, string
+| -
+
 | link:plugins/twilio[twilio]
 | -
 | call, sms

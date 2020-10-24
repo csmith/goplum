@@ -1,0 +1,48 @@
+= SNMP plugin
+:toc: macro
+
+The SNMP plugin provides checks that query SNMP.
+
+== Checks
+
+=== snmp.int
+
+[source,goplum]
+----
+check snmp.int "example" {
+  agent = "192.168.1.1"
+  port = 161
+  community = "public"
+  oid = [".1.3.6.1.4.1.2021.4.11.0", ".1.3.6.1.4.1.2021.4.4"]
+  at_least = 10000
+  at_most = 90000
+}
+----
+
+Queries one or more SNMP OIDs, and checks that the (integer) value is in the given range.
+
+Port and community are optional, defaulting to `161` and `public`.
+
+Only one of `at_least` and `at_most` needs to be specified, but both can be.
+
+=== snmp.string
+
+[source,goplum]
+----
+check snmp.string "example" {
+  agent = "192.168.1.1"
+  port = 161
+  community = "public"
+  oid = ".1.3.6.1.4.1.2021.9.1.2"
+  content = "HDD"
+  content_expected = true
+}
+----
+
+Queries one or more SNMP OIDs, and checks that the (string) value contains
+(or doesn't contain) the given content.
+
+Port and community are optional, defaulting to `161` and `public`.
+
+Content_expected is optional and defaults to `true`, if set to `false` then
+the check will fail if the given content *is* found in the returned value.
