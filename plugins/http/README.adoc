@@ -11,9 +11,15 @@ The HTTP plugin provides checks for HTTP services, and HTTP-based alerts.
 ----
 check http.get "example" {
   url = "https://www.example.com/"
+
   content = "Example Domain"
   content_expected = true
+
+  min_status_code = 200
+  max_status_code = 399
+
   certificate_validity = 10d
+
   auth {
     username = "acidburn"
     password = "HackThePlanet"
@@ -21,8 +27,13 @@ check http.get "example" {
 }
 ----
 
-Sends an HTTP GET request to the given URL. The check passes if a response is received with
-an error code less than 400.
+Sends an HTTP GET request to the given URL.
+
+The `min_status_code` and `max_status_code` parameter specify the allowed range for the
+response's HTTP status code. These default to `100` and `399` (i.e., any non-error response).
+If you wish to test a URL denies access to unauthenticated users, for example, you can use
+`min_status_code=401` `max_status_code=403`; to check for a single status code the two parameters
+can be the same, e.g. `min_status_code=418` `max_status_code=418`
 
 If the `content` parameter is specified then the response body is checked for the exact string.
 By default the string must be present, and the check will fail if it is not. If `content_expected`

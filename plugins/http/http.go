@@ -38,6 +38,8 @@ func (p Plugin) Check(kind string) goplum.Check {
 	case "get":
 		return GetCheck{
 			ContentExpected: true,
+			MinStatusCode:   100,
+			MaxStatusCode:   399,
 		}
 	case "healthcheck":
 		return HealthCheck{}
@@ -61,6 +63,8 @@ type GetCheck struct {
 	Content             string
 	ContentExpected     bool          `config:"content_expected"`
 	CertificateValidity time.Duration `config:"certificate_validity"`
+	MinStatusCode       int           `config:"min_status_code"`
+	MaxStatusCode       int           `config:"max_status_code"`
 }
 
 func (g GetCheck) Execute(ctx context.Context) goplum.Result {
@@ -77,7 +81,7 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 
 	if err != nil {
 		return goplum.FailingResult("Error making request: %v", err)
-	} else if r.StatusCode >= 400 {
+	} else if r.StatusCode < g.MinStatusCode || r.StatusCode > g.MaxStatusCode {
 		return goplum.FailingResult("Bad status code: %d", r.StatusCode)
 	}
 

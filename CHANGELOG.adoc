@@ -12,6 +12,9 @@
   (https://github.com/csmith/goplum/issues/16[#16])
 * Added `snmp` plugin to check values from SNMP
   (https://github.com/csmith/goplum/issues/26[#26])
+* The `http.get` check now allows you to specify a range of
+  acceptable status codes, which lets you check that a URL
+  returns an error.
 
 === Changes
 
