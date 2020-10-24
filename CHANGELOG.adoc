@@ -8,6 +8,8 @@
   (https://github.com/csmith/goplum/issues/4[#4])
 * Added `msteams` plugin for sending messages to
   Microsoft Teams.
+* Added `discord` plugin to send alerts to Discord
+  (https://github.com/csmith/goplum/issues/16[#16])
 
 === Changes
 

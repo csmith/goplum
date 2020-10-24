@@ -20,6 +20,7 @@ alert you out-of-the-box:
 
 [width="100%",cols="3",frame="none",grid="none"]
 |=====
+| image:.images/alerts/discord.png[Discord logo] Discord
 | image:.images/alerts/mail.png[Mail icon] E-mail
 | image:.images/alerts/msteams.png[Microsoft Teams icon] Microsoft Teams
 | image:.images/alerts/phone.png[Phone icon] Phone call (via Twilio)
@@ -27,7 +28,6 @@ alert you out-of-the-box:
 | image:.images/alerts/slack.png[Slack logo] Slack
 | image:.images/alerts/sms.png[SMS icon] SMS (via Twilio)
 | image:.images/alerts/webhook.png[Webhook logo] Webhook
-|
 |
 |=====
 
@@ -162,6 +162,10 @@ documentation, that explains how its checks and alerts need to be configured.
 
 |====
 | Plugin | checks | alerts
+
+| link:plugins/discord[discord]
+| -
+| message
 
 | link:plugins/http[http]
 | get, healthcheck

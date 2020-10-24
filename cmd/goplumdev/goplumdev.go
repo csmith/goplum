@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/csmith/goplum"
 	"github.com/csmith/goplum/plugins/debug"
+	"github.com/csmith/goplum/plugins/discord"
 	"github.com/csmith/goplum/plugins/exec"
 	"github.com/csmith/goplum/plugins/heartbeat"
 	"github.com/csmith/goplum/plugins/http"
@@ -21,6 +22,9 @@ var (
 )
 
 var plugins = map[string]goplum.PluginLoader{
+	"discord": func() (goplum.Plugin, error) {
+		return discord.Plugin{}, nil
+	},
 	"exec": func() (goplum.Plugin, error) {
 		return exec.Plugin{}, nil
 	},
