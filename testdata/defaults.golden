@@ -1,5 +1,8 @@
 {
-  "Alerts": {},
+  "Alerts": {
+    "foo": {},
+    "text": {}
+  },
   "Checks": {
     "defaults": {
       "Name": "defaults",

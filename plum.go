@@ -4,8 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/csmith/goplum/config"
-	"github.com/csmith/goplum/internal"
 	"log"
 	"os"
 	"os/signal"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/csmith/goplum/config"
+	"github.com/csmith/goplum/internal"
 )
 
 var (
@@ -70,7 +71,7 @@ func NewPlum() *Plum {
 		loadedPlugins:    make(map[string]Plugin),
 		Alerts:           make(map[string]Alert),
 		Checks:           make(map[string]*ScheduledCheck),
-		checkDefaults:    DefaultSettings,
+		checkDefaults:    DefaultSettings.Copy(),
 		scheduled:        make(chan *ScheduledCheck, 100),
 		checkListeners:   make(map[reflect.Value]CheckListener),
 	}
@@ -107,11 +108,11 @@ func (p *Plum) ReadConfig(path string) error {
 		return fmt.Errorf("unable to merge default settings from %s: %v", path, err)
 	}
 
-	if err := p.addChecks(parser.CheckBlocks); err != nil {
+	if err := p.addAlerts(parser.AlertBlocks); err != nil {
 		return err
 	}
 
-	if err := p.addAlerts(parser.AlertBlocks); err != nil {
+	if err := p.addChecks(parser.CheckBlocks); err != nil {
 		return err
 	}
 
@@ -193,6 +194,12 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 		if v, ok := check.(Validator); ok {
 			if err := v.Validate(); err != nil {
 				return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
+			}
+		}
+
+		for a := range settings.Alerts {
+			if settings.Alerts[a] != "-" && len(p.AlertsMatching(settings.Alerts[a:a+1])) == 0 {
+				return fmt.Errorf("error configuring check %s: no alerts match '%s'", checks[i].Name, settings.Alerts[a])
 			}
 		}
 

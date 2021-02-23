@@ -2,12 +2,13 @@ package goplum_test
 
 import (
 	"fmt"
+	"path"
+	"testing"
+
 	"github.com/csmith/goplum"
 	"github.com/csmith/goplum/plugins/debug"
 	"github.com/csmith/goplum/plugins/http"
 	"github.com/sebdah/goldie/v2"
-	"path"
-	"testing"
 )
 
 var plugins = map[string]goplum.PluginLoader{
@@ -28,6 +29,9 @@ func TestReadConfig_GoldenData(t *testing.T) {
 		"unknown-check",
 		"unknown-field",
 		"unknown-plugin",
+		"unrecognised-alert-multiple",
+		"unrecognised-alert-single",
+		"unrecognised-alert-wildcard",
 		"validation-error",
 	}
 	gold := goldie.New(t)
