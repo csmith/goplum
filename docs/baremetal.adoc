@@ -2,7 +2,7 @@
 
 == Compiling
 
-You must have https://golang.org/[Go 1.15] or newer installed.
+You must have https://golang.org/[Go 1.16] or newer installed.
 
 [source,shell script]
 ----
