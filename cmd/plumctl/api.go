@@ -3,11 +3,12 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
+
 	"github.com/csmith/goplum/api"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"net"
 )
 
 var client api.GoPlumClient
@@ -35,6 +36,7 @@ func ConnectToApi(_ *cobra.Command, _ []string) error {
 		ServerName:   host,
 		Certificates: certs,
 		RootCAs:      pool,
+		MinVersion:   tls.VersionTLS13,
 	})
 	conn, err := grpc.Dial(config.Server, grpc.WithTransportCredentials(transportCreds))
 	if err != nil {

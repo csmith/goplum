@@ -22,6 +22,8 @@
   copyright information for all compiled code.
 * The `Config` field in the `AlertDetails` struct passed to
   alerts is now correctly populated.
+* The gRPC API and the `plumctl` client now only support
+  TLS 1.3 or greater.
 
 == v0.4.0
 

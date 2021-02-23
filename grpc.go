@@ -5,15 +5,16 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"log"
+	"net"
+
 	"github.com/csmith/goplum/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"log"
-	"net"
 )
 
 var (
-	apiPort = flag.Int("api-port", 7586, "Port to use for the GoPlum API")
+	apiPort   = flag.Int("api-port", 7586, "Port to use for the GoPlum API")
 	caCert    = flag.String("ca-cert", "ca.crt", "Path to the certificate of the certificate authority for the API")
 	localCert = flag.String("cert", "goplum.crt", "Path to the certificate to use for the API")
 	localKey  = flag.String("key", "goplum.key", "Path to the key to use for the API")
@@ -47,6 +48,7 @@ func (s *GrpcServer) Start() {
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 		Certificates: certs,
 		ClientCAs:    pool,
+		MinVersion:   tls.VersionTLS13,
 	})))
 	s.server.RegisterService(api.ServiceDesc, s)
 	if err := s.server.Serve(lis); err != nil {
