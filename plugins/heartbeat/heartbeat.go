@@ -79,13 +79,13 @@ type ReceivedCheck struct {
 func (g *ReceivedCheck) Execute(_ context.Context) goplum.Result {
 	if g.received.IsZero() {
 		// We've not received a heartbeat since we started
-		if delta := time.Now().Sub(g.created); delta > g.Within {
+		if delta := time.Since(g.created); delta > g.Within {
 			return goplum.FailingResult("No heartbeat received in %s", delta)
 		}
 		return goplum.IndeterminateResult("No heartbeat received since monitoring started at %s", g.created)
 	}
 
-	if delta := time.Now().Sub(g.received); delta > g.Within {
+	if delta := time.Since(g.received); delta > g.Within {
 		return goplum.FailingResult("No heartbeat received in %s", delta)
 	}
 	return goplum.GoodResult()

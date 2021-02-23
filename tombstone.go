@@ -82,7 +82,7 @@ func (ts *TombStone) Save() error {
 }
 
 func (ts *TombStone) Restore(checks map[string]*ScheduledCheck) error {
-	if time.Now().Sub(ts.Time) >= maxTombStoneAge {
+	if time.Since(ts.Time) >= maxTombStoneAge {
 		return fmt.Errorf("tombstone too old: %s", ts.Time)
 	}
 

@@ -8,9 +8,9 @@ import (
 )
 
 var resultsCommand = &cobra.Command{
-	Use: "results",
-	Short: "Streams check results from the server",
-	Args: cobra.NoArgs,
+	Use:     "results",
+	Short:   "Streams check results from the server",
+	Args:    cobra.NoArgs,
 	PreRunE: ConnectToApi,
 	Run: func(cmd *cobra.Command, args []string) {
 		resultClient, err := client.Results(context.Background(), &api.Empty{})

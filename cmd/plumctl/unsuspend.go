@@ -8,9 +8,9 @@ import (
 )
 
 var unsuspendCommand = &cobra.Command{
-	Use: "unsuspend <name>",
-	Short: "Unsuspend (resume) a check",
-	Args: cobra.ExactArgs(1),
+	Use:     "unsuspend <name>",
+	Short:   "Unsuspend (resume) a check",
+	Args:    cobra.ExactArgs(1),
 	PreRunE: ConnectToApi,
 	Run: func(cmd *cobra.Command, args []string) {
 		check, err := client.ResumeCheck(context.Background(), &api.CheckName{Name: args[0]})

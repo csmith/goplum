@@ -36,6 +36,9 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 	}{
 		details.Text,
 	})
+	if err != nil {
+		return err
+	}
 
 	req, err := http.NewRequest(http.MethodPost, m.Url, bytes.NewReader(payload))
 	if err != nil {

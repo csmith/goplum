@@ -8,9 +8,9 @@ import (
 )
 
 var suspendCommand = &cobra.Command{
-	Use: "suspend <name>",
-	Short: "Suspend a check",
-	Args: cobra.ExactArgs(1),
+	Use:     "suspend <name>",
+	Short:   "Suspend a check",
+	Args:    cobra.ExactArgs(1),
 	PreRunE: ConnectToApi,
 	Run: func(cmd *cobra.Command, args []string) {
 		check, err := client.SuspendCheck(context.Background(), &api.CheckName{Name: args[0]})

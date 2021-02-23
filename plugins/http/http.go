@@ -108,7 +108,7 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 			return goplum.FailingResult("Connection did not use TLS")
 		}
 
-		remaining := r.TLS.PeerCertificates[0].NotAfter.Sub(time.Now())
+		remaining := time.Until(r.TLS.PeerCertificates[0].NotAfter)
 		if remaining < g.CertificateValidity {
 			return goplum.FailingResult("Certificate expires in %s", remaining)
 		}

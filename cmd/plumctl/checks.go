@@ -9,9 +9,9 @@ import (
 )
 
 var checksCommand = &cobra.Command{
-	Use: "checks",
-	Short: "Lists all known checks",
-	Args: cobra.NoArgs,
+	Use:     "checks",
+	Short:   "Lists all known checks",
+	Args:    cobra.NoArgs,
 	PreRunE: ConnectToApi,
 	Run: func(cmd *cobra.Command, args []string) {
 		checks, err := client.GetChecks(context.Background(), &api.Empty{})

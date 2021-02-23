@@ -8,9 +8,9 @@ import (
 )
 
 var initCommand = &cobra.Command{
-	Use: "init <host:port>",
+	Use:   "init <host:port>",
 	Short: "Initialise plumctl for use with a remote instance of GoPlum",
-	Args: cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		_, _, err := net.SplitHostPort(args[0])
 		if err != nil {

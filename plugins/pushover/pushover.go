@@ -79,6 +79,9 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 	}
 
 	payload, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
 
 	req, err := http.NewRequest(http.MethodPost, "https://api.pushover.net/1/messages.json", bytes.NewReader(payload))
 	if err != nil {

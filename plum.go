@@ -285,7 +285,7 @@ func (p *Plum) Run() {
 			}
 		}
 
-		time.Sleep(min.Sub(time.Now()))
+		time.Sleep(time.Until(min))
 	}
 }
 
@@ -449,7 +449,7 @@ func (c *ScheduledCheck) Remaining() time.Duration {
 	if c.Scheduled {
 		return c.Config.Interval
 	} else {
-		return c.LastRun.Add(c.Config.Interval).Sub(time.Now())
+		return time.Until(c.LastRun.Add(c.Config.Interval))
 	}
 }
 

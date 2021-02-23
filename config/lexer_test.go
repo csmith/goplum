@@ -20,7 +20,7 @@ func TestLexer_GoldenData(t *testing.T) {
 			go lexer.Lex()
 
 			var actual []token
-			for token := range lexer.Output() {
+			for token := range lexer.output {
 				actual = append(actual, token)
 			}
 

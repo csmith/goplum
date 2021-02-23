@@ -130,10 +130,6 @@ func NewLexer(reader io.Reader) *Lexer {
 	}
 }
 
-func (l *Lexer) Output() <-chan token {
-	return l.output
-}
-
 func (l *Lexer) next() rune {
 	r, _, err := l.reader.ReadRune()
 	if err != nil {
@@ -247,7 +243,7 @@ func lexString(lexer *Lexer) stateFunc {
 	for {
 		r := lexer.next()
 		if r == eof || r == '\n' {
-			lexer.emit(tokenError, width, fmt.Sprintf("unterminated string literal"))
+			lexer.emit(tokenError, width, "unterminated string literal")
 			return nil
 		} else if escaped {
 			width++
