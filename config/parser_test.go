@@ -2,14 +2,15 @@ package config
 
 import (
 	"fmt"
-	"github.com/sebdah/goldie/v2"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/sebdah/goldie/v2"
 )
 
 func TestParser_GoldenData(t *testing.T) {
-	tests := []string{"full", "comments"}
+	tests := []string{"full", "comments", "duplicate_defaults"}
 	gold := goldie.New(t)
 
 	for i := range tests {
@@ -18,12 +19,15 @@ func TestParser_GoldenData(t *testing.T) {
 			defer f.Close()
 
 			parser := NewParser(f)
-			err := parser.Parse()
-			if err != nil {
-				t.Fatalf("Unable to parse test file: %v", err)
+
+			var expected interface{}
+			if err := parser.Parse(); err != nil {
+				expected = err.Error()
+			} else {
+				expected = parser
 			}
 
-			gold.AssertJson(t, fmt.Sprintf("%s.parser", tests[i]), parser)
+			gold.AssertJson(t, fmt.Sprintf("%s.parser", tests[i]), expected)
 		})
 	}
 }

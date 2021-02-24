@@ -3,9 +3,10 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/imdario/mergo"
 	"io"
 	"strings"
+
+	"github.com/imdario/mergo"
 )
 
 type Block struct {
@@ -18,6 +19,7 @@ type Parser struct {
 	lexer           *Lexer
 	saved           *token
 	last            *token
+	hasDefaults     bool
 	DefaultSettings map[string]interface{}
 	AlertBlocks     []*Block
 	CheckBlocks     []*Block
@@ -42,6 +44,10 @@ func (p *Parser) Parse() error {
 
 		switch t.Class {
 		case tokenDefaults:
+			if p.hasDefaults {
+				return fmt.Errorf("duplicate defaults block declared at line %d", t.Line)
+			}
+			p.hasDefaults = true
 			val, err := p.parseBlock()
 			if err != nil {
 				return err
