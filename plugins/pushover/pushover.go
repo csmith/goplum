@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/csmith/goplum"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/csmith/goplum"
 )
 
 var client = http.Client{Timeout: 20 * time.Second}
@@ -98,7 +99,7 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 
 	if res.StatusCode >= 400 && res.StatusCode < 500 {
 		m.errored = true
-		body, _ := ioutil.ReadAll(res.Body)
+		body, _ := io.ReadAll(res.Body)
 		return fmt.Errorf("error response from pushover, disabling alert: HTTP %d (%s)", res.StatusCode, body)
 	} else if res.StatusCode >= 500 {
 		return fmt.Errorf("bad response from pushover: HTTP %d", res.StatusCode)
@@ -128,11 +129,11 @@ func (m MessageAlert) validateSettings(settings PushSettings) error {
 		return fmt.Errorf("priority must be in range -2..+2")
 	}
 
-	if settings.Retry != 0 && settings.Retry < 30 * time.Second {
+	if settings.Retry != 0 && settings.Retry < 30*time.Second {
 		return fmt.Errorf("retry must be at least 30 seconds")
 	}
 
-	if settings.Expire > 10800 * time.Second {
+	if settings.Expire > 10800*time.Second {
 		return fmt.Errorf("expire must be at most 10800 seconds (3 hours)")
 	}
 

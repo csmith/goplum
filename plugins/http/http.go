@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/csmith/goplum"
-	"github.com/nelkinda/health-go"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/csmith/goplum"
+	"github.com/nelkinda/health-go"
 )
 
 var client = http.Client{
@@ -88,7 +89,7 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 	defer r.Body.Close()
 
 	if len(g.Content) > 0 {
-		content, err := ioutil.ReadAll(r.Body)
+		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			return goplum.FailingResult("Error reading response body: %v", err)
 		}

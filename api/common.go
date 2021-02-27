@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"os"
 )
 
 var (
@@ -18,7 +18,7 @@ func LoadCertificates(localCert, localKey, caCert string) ([]tls.Certificate, *x
 	}
 
 	certPool := x509.NewCertPool()
-	bs, err := ioutil.ReadFile(caCert)
+	bs, err := os.ReadFile(caCert)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read ca cert: %v", err)
 	}
