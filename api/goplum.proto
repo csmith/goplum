@@ -25,11 +25,20 @@ message Check {
     bool suspended = 6;
 }
 
+message Fact {
+    string name = 1;
+    oneof value {
+        int64 int = 2;
+        string str = 3;
+    }
+}
+
 message Result {
     string check = 1;
     int64 time = 2;
     Status result = 3;
     string detail = 4;
+    repeated Fact facts = 5;
 }
 
 message Empty {

@@ -74,6 +74,7 @@ func (s *GrpcServer) Results(_ *api.Empty, rs api.GoPlum_ResultsServer) error {
 			Time:   check.LastRun.Unix(),
 			Result: s.convertState(result.State),
 			Detail: result.Detail,
+			Facts:  s.convertFacts(result.Facts),
 		})
 		if err != nil {
 			s.plum.RemoveCheckListener(l)
@@ -157,4 +158,25 @@ func (s *GrpcServer) convertState(state CheckState) api.Status {
 	default:
 		return api.Status_INDETERMINATE
 	}
+}
+
+func (s *GrpcServer) convertFacts(facts map[Fact]interface{}) []*api.Fact {
+	res := make([]*api.Fact, 0, len(facts))
+	for i := range facts {
+		res = append(res, &api.Fact{
+			Name:  string(i),
+			Value: s.convertFactValue(facts[i]),
+		})
+	}
+	return res
+}
+
+func (s *GrpcServer) convertFactValue(i interface{}) api.FactValue {
+	if v, ok := i.(int64); ok {
+		return &api.Fact_Int{Int: v}
+	}
+	if v, ok := i.(string); ok {
+		return &api.Fact_Str{Str: v}
+	}
+	return nil
 }

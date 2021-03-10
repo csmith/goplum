@@ -2,6 +2,17 @@
 
 == vNext
 
+=== Features
+
+* Checks may now return "facts" as part of their results, for example server
+  response times or HTTP codes. These are not handled by Goplum itself but are
+  passed on to alerts and API clients.
+  (https://github.com/csmith/goplum/issues/34[#34])
+** All results will get a `check_time` fact by default, containing the time
+   the check took to execute.
+
+=== Changes
+
 == v0.5.0
 
 === Features

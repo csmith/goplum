@@ -72,6 +72,21 @@ func (c *CheckState) UnmarshalJSON(val []byte) error {
 	return nil
 }
 
+// Fact defines a type of information that may be returned in a Result.
+//
+// Fact names should consist of the package name that defines them, a '#' character, and
+// then a short, human-friendly name for the metric in `snake_case`.
+type Fact string
+
+var (
+	// ResponseTime denotes the length of time it took for a service to respond to a request.
+	// Its value should be a time.Duration.
+	ResponseTime Fact = "github.com/csmith/goplum#response_time"
+
+	// CheckTime indicates how long the entire check took to invoke. Its value should be a time.Duration.
+	CheckTime Fact = "github.com/csmith/goplum#check_time"
+)
+
 // Result contains information about a check that was performed.
 type Result struct {
 	// State gives the current state of the service.
@@ -80,6 +95,8 @@ type Result struct {
 	Time time.Time `json:"time"`
 	// Detail is an short, optional explanation of the current state.
 	Detail string `json:"detail,omitempty"`
+	// Facts provides details about the check and/or the remote service, such as the response time or version.
+	Facts map[Fact]interface{} `json:"facts,omitempty"`
 }
 
 // GoodResult creates a new result indicating the service is in a good state.

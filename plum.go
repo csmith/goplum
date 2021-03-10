@@ -304,6 +304,7 @@ func (p *Plum) processScheduledChecks() {
 }
 
 func (p *Plum) RunCheck(c *ScheduledCheck) {
+	start := time.Now()
 	result := func() (res Result) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -317,6 +318,11 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 		res = c.Check.Execute(ctx)
 		return
 	}()
+
+	if result.Facts == nil {
+		result.Facts = map[Fact]interface{}{}
+	}
+	result.Facts[CheckTime] = time.Since(start)
 
 	c.AddResult(&result)
 
