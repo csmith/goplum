@@ -11,7 +11,7 @@ require (
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/nelkinda/health-go v0.0.1
-	github.com/sebdah/goldie/v2 v2.5.1
+	github.com/sebdah/goldie/v2 v2.5.3
 	github.com/spf13/cobra v0.0.3
 	github.com/stretchr/testify v1.6.1 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
