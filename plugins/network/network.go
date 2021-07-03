@@ -3,8 +3,9 @@ package network
 import (
 	"context"
 	"fmt"
-	"github.com/csmith/goplum"
 	"net"
+
+	"github.com/csmith/goplum"
 )
 
 type Plugin struct{}

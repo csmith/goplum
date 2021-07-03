@@ -157,6 +157,13 @@ type Validator interface {
 	Validate() error
 }
 
+// LongRunning is implemented by checks that intentionally run for a long period of time. Checks that implement
+// this interface won't be subject to user-defined timeouts.
+type LongRunning interface {
+	// Timeout specifies the upper-bound for how long the check will take.
+	Timeout() time.Duration
+}
+
 // Stateful is implemented by checks that keep local state that should be persisted across restarts.
 type Stateful interface {
 	Save() interface{}

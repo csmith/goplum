@@ -312,7 +312,12 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 			}
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), c.Config.Timeout)
+		timeout := c.Config.Timeout
+		if longRunning, ok := c.Check.(LongRunning); ok {
+			timeout = longRunning.Timeout()
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		res = c.Check.Execute(ctx)
