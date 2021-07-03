@@ -131,7 +131,7 @@ readability and debugging purposes.
 
 Comments can exist at the top-level of the configuration file or within <<Blocks>>.
 Comments start with a `#` and run to the end of the line. Note that comments
-can't exist inside <<Assignments>> or <<Lists of strings>>.
+can't exist inside <<Assignments>>.
 
 == Data types
 
@@ -167,10 +167,15 @@ Sequence of digits in base 10 with exactly one decimal point e.g. `1.234`, `.1` 
 
 One of the keywords: `true`, `false`, `on`, `off`, or `yes`, `no`.
 
-=== Lists of strings
+=== Lists
 
-Individual strings contained in square brackets, separated by commas, e.g. `["foo", "bar"]`.
-A single trailing comma is allowed e.g. `["foo", "bar",]`.
+Individual elements contained in square brackets, separated by commas, e.g. `["foo", "bar"]`.
+A single trailing comma is allowed e.g. `[true, false,]`.
 
-If the list has a single item, it can be represented as a plain string instead
-(i.e., `["foo"]` can be simplified to just `"foo"`).
+Lists may contain strings, durations, integers, floats or booleans, but the types cannot
+be mixed. While goplum usually attempts to coerce types to match their target, this
+doesn't happen for list elements - a list of `[1, 2, 3.0]` is not valid as it contains two
+integers and a float.
+
+If the list has a single item, it can be represented as a single value instead
+(i.e., `[3.14159]` can be simplified to just `3.14159`).

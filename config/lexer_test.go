@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/sebdah/goldie/v2"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/sebdah/goldie/v2"
 )
 
 func TestLexer_GoldenData(t *testing.T) {

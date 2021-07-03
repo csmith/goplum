@@ -168,17 +168,24 @@ func (p *Parser) parseAssignment() (interface{}, error) {
 	}
 }
 
-func (p *Parser) parseSequence(start, end tokenClass) ([]string, error) {
+func (p *Parser) parseSequence(start, end tokenClass) ([]interface{}, error) {
 	if _, err := p.take(start); err != nil {
 		return nil, err
 	}
 
-	var values []string
-	var classes = []tokenClass{tokenString, tokenDelimiter}
-	var next = 0
+	var values []interface{}
+	var delim = false
+	var firstType = tokenError
 
 	for {
-		t, err := p.take(classes[next], end)
+		var wanted []tokenClass
+		if delim {
+			wanted = []tokenClass{tokenDelimiter, end}
+		} else {
+			wanted = []tokenClass{tokenBoolean, tokenDuration, tokenFloat, tokenInt, tokenString, end}
+		}
+
+		t, err := p.take(wanted...)
 		if err != nil {
 			return nil, err
 		}
@@ -186,11 +193,24 @@ func (p *Parser) parseSequence(start, end tokenClass) ([]string, error) {
 		switch t.Class {
 		case end:
 			return values, nil
-		case tokenString:
-			values = append(values, t.Value.(string))
+		case tokenDelimiter:
+			break
+		case firstType:
+			values = append(values, t.Value)
+		default:
+			if firstType == tokenError {
+				if t.Class == tokenBoolean || t.Class == tokenDuration || t.Class == tokenFloat || t.Class == tokenInt || t.Class == tokenString {
+					firstType = t.Class
+					values = append(values, t.Value)
+				} else {
+					return nil, unexpected(t, tokenBoolean, tokenDuration, tokenFloat, tokenInt, tokenString, end)
+				}
+			} else {
+				return nil, unexpected(t, firstType, end)
+			}
 		}
 
-		next = 1 - next
+		delim = !delim
 	}
 }
 

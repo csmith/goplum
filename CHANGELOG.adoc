@@ -16,6 +16,8 @@
 * Checks can implement the `LongRunning` interface if they intentionally run
   over long periods of time. This allows them to extend the default timeout
   based on their own unique configuration.
+* Arrays in goplum's config file can now contain types other than strings.
+  See the link:docs/syntax.adoc[syntax guide] for more details.
 
 == v0.5.0
 
