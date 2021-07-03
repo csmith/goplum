@@ -3,7 +3,7 @@ module github.com/csmith/goplum
 go 1.16
 
 require (
-	github.com/bmatcuk/doublestar/v2 v2.0.1
+	github.com/bmatcuk/doublestar/v2 v2.0.4
 	github.com/dasrick/go-teams-notify/v2 v2.1.0
 	github.com/golang/protobuf v1.5.2
 	github.com/gosnmp/gosnmp v1.28.0
