@@ -354,7 +354,7 @@ func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
 
 func (p *Plum) logCheck(c *ScheduledCheck, result Result) {
 	if !*quietLogging {
-		log.Printf("Check '%s' executed: %s (%s)\n", c.Name, result.State, result.Detail)
+		log.Printf("Check '%s' executed in %s: %s (%s)\n", c.Name, result.Facts[CheckTime], result.State, result.Detail)
 	}
 }
 
