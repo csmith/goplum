@@ -21,3 +21,33 @@ the form "host:port", "host%zone:port", "[host]:port" or "[host%zone]:port".
 By default, connection attempts will be made over TCP (IPv6 or IPv4 using Fast Fallback).
 If the `network` parameter is included then connection attempts will be limited to that
 network. Valid options are: "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6".
+
+=== network.portscan
+
+[source,goplum]
+----
+check network.portscan "example" {
+  address = "hostname"
+  network = "tcp6"
+
+  start = 1
+  end = 1024
+  allow = [80, 443]
+
+  concurrent_connections = 100
+  connection_timeout = 3s
+}
+----
+
+Performs a scan of all ports from `start` to `end` inclusive on the given
+address. Fails if any ports are open except those in the `allow` parameter.
+
+If the target does not respond, connection attempts will be terminated after
+the `connection_timeout` elapses and the port treated as closed.
+
+To improve speed, the check runs many connection attempts in parallel. This
+can be controlled with the `concurrent_connections` parameter.
+
+By default, connection attempts will be made over TCP (IPv6 or IPv4 using Fast Fallback).
+If the `network` parameter is included then connection attempts will be limited to that
+network. Valid options are: "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6".

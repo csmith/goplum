@@ -172,7 +172,7 @@ documentation, that explains how its checks and alerts need to be configured.
 | webhook
 
 | link:plugins/network[network]
-| connect
+| connect, portscan
 | -
 
 | link:plugins/heartbeat[heartbeat]

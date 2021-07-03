@@ -10,6 +10,8 @@
   (https://github.com/csmith/goplum/issues/34[#34])
 ** All results will get a `check_time` fact by default, containing the time
    the check took to execute.
+* Added `portscan` check to the `network` plugin, which fails if unpermitted
+  ports are found to be open.
 
 === Changes
 
