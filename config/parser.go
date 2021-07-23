@@ -253,7 +253,7 @@ func unexpected(token *token, expected ...tokenClass) error {
 	}
 
 	return fmt.Errorf(
-		"unexpected %s (%s) at line %d column %d, expecting one of: %s",
+		"unexpected %s (%v) at line %d column %d, expecting one of: %s",
 		tokenNames[token.Class],
 		token.Value,
 		token.Line,

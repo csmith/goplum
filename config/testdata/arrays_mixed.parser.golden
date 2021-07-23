@@ -1,1 +1,1 @@
-"unexpected boolean (%!s(bool=true)) at line 2 column 14, expecting one of: integer, end of array"
+"unexpected boolean (true) at line 2 column 14, expecting one of: integer, end of array"
