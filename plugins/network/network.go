@@ -77,8 +77,8 @@ type PortScanCheck struct {
 	End   int
 	Allow []int
 
-	ConcurrentConnections int
-	ConnectionTimeout     time.Duration
+	ConcurrentConnections int           `config:"concurrent_connections"`
+	ConnectionTimeout     time.Duration `config:"connection_timeout"`
 }
 
 func (c PortScanCheck) Timeout() time.Duration {
