@@ -1,6 +1,6 @@
 # Step 1: compile
 
-FROM golang:1.16 AS build
+FROM golang:1.17 AS build
 WORKDIR /go/src/app
 COPY . .
 
@@ -11,7 +11,7 @@ RUN for plugin in $(ls plugins); do go build -o $plugin.so -buildmode=plugin ./p
 RUN go install  ./cmd/goplum
 
 # Generate licence information
-RUN go get github.com/google/go-licenses && go-licenses save ./... --save_path=/notices
+RUN go run github.com/google/go-licenses@latest save ./... --save_path=/notices
 
 # Step 2: execute
 
