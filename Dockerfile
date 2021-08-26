@@ -15,7 +15,7 @@ RUN go run github.com/google/go-licenses@latest save ./... --save_path=/notices
 
 # Step 2: execute
 
-FROM gcr.io/distroless/base:nonroot@sha256:ccbc79c4fc35b92709d3987315cdb9e20b6e742546af7a7db10024641aa60572
+FROM gcr.io/distroless/base:nonroot@sha256:19d927c16ddb5415d5f6f529dbbeb13c460b84b304b97af886998d3fcf18ac81
 WORKDIR /
 COPY --from=build /go/bin/goplum /goplum
 COPY --from=build /go/src/app/*.so /plugins/
