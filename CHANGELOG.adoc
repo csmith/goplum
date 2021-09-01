@@ -23,6 +23,9 @@
 * Improved formatting of error messages when an unexpected token is found
   in the config file.
 * Update to Go 1.17
+* Official container images are how hosted on GitHub (`ghcr.io/csmith/goplum`)
+  rather than DockerHub. Changed base images to those from
+  https://github.com/csmith/dockerfiles[csmith/dockerfiles].
 
 == v0.5.0
 

@@ -124,7 +124,7 @@ chown 65532:65532 goplum.tomb
 docker run -d --restart always \
    -v $(PWD)/goplum.conf:/goplum.conf:ro \
    -v $(PWD)/goplum.tomb:/tmp/goplum.tomb \
-   csmith/goplum
+   ghcr.io/csmith/goplum
 ----
 
 Or using Docker Compose:
@@ -135,7 +135,7 @@ version: "3.8"
 
 services:
   goplum:
-    image: csmith/goplum
+    image: ghcr.io/csmith/goplum
     volumes:
       - ./goplum.conf:/goplum.conf
       - ./goplum.tomb:/tmp/goplum.tomb
