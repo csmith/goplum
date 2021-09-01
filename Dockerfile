@@ -1,6 +1,6 @@
 # Step 1: compile
 
-FROM golang:1.17 AS build
+FROM reg.c5h.io/golang AS build
 WORKDIR /go/src/app
 COPY . .
 
@@ -15,7 +15,7 @@ RUN go run github.com/google/go-licenses@latest save ./... --save_path=/notices
 
 # Step 2: execute
 
-FROM gcr.io/distroless/base:nonroot@sha256:a74f307185001c69bc362a40dbab7b67d410a872678132b187774fa21718fa13
+FROM reg.c5h.io/base@sha256:f7f27db7afb58bae23ad902072228f1b090b878af303d9f63bd2c1526b9b4f53
 WORKDIR /
 COPY --from=build /go/bin/goplum /goplum
 COPY --from=build /go/src/app/*.so /plugins/
