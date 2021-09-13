@@ -2,6 +2,8 @@
 
 == vNext
 
+== v0.6.0
+
 === Features
 
 * Checks may now return "facts" as part of their results, for example server
