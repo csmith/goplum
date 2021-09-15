@@ -22,7 +22,7 @@ jobs:
 
       - name: Build image
         id: build-image
-        uses: redhat-actions/buildah-build@v2.6.2
+        uses: redhat-actions/buildah-build@v2.7
         with:
           dockerfiles: Dockerfile
           image: ${{ github.repository }}
