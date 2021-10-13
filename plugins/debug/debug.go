@@ -2,9 +2,10 @@ package debug
 
 import (
 	"context"
-	"github.com/csmith/goplum"
 	"log"
 	"math/rand"
+
+	"github.com/csmith/goplum"
 )
 
 type Plugin struct{}

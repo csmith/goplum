@@ -3,12 +3,13 @@ package snmp
 import (
 	"context"
 	"fmt"
-	"github.com/csmith/goplum"
-	"github.com/gosnmp/gosnmp"
 	"math"
 	"math/big"
 	"strings"
 	"time"
+
+	"github.com/csmith/goplum"
+	"github.com/gosnmp/gosnmp"
 )
 
 type Plugin struct{}

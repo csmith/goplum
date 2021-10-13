@@ -3,8 +3,9 @@ package exec
 import (
 	"context"
 	"fmt"
-	"github.com/csmith/goplum"
 	"os/exec"
+
+	"github.com/csmith/goplum"
 )
 
 type Plugin struct{}
@@ -26,7 +27,7 @@ func (p Plugin) Check(kind string) goplum.Check {
 }
 
 type CommandCheck struct {
-	Name string
+	Name      string
 	Arguments []string
 }
 

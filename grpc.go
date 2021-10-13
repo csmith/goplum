@@ -118,9 +118,9 @@ func (s *GrpcServer) SuspendCheck(_ context.Context, name *api.CheckName) (*api.
 	check := s.plum.Suspend(name.Name)
 	if check == nil {
 		return nil, fmt.Errorf("no check found with name: %s", name.Name)
-	} else {
-		return s.convertCheck(check), nil
 	}
+
+	return s.convertCheck(check), nil
 }
 
 func (s *GrpcServer) ResumeCheck(_ context.Context, name *api.CheckName) (*api.Check, error) {
@@ -131,9 +131,9 @@ func (s *GrpcServer) ResumeCheck(_ context.Context, name *api.CheckName) (*api.C
 	check := s.plum.Unsuspend(name.Name)
 	if check == nil {
 		return nil, fmt.Errorf("no check found with name: %s", name.Name)
-	} else {
-		return s.convertCheck(check), nil
 	}
+
+	return s.convertCheck(check), nil
 }
 
 func (s *GrpcServer) convertCheck(check *ScheduledCheck) *api.Check {

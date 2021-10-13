@@ -2,14 +2,15 @@ package main
 
 import (
 	"flag"
+	"log"
+
 	"github.com/csmith/goplum"
 	"github.com/kouhin/envflag"
-	"log"
 )
 
 var (
 	pluginsPattern = flag.String("plugins", "plugins/**.so", "Glob pattern used to locate plugins")
-	configPath = flag.String("config", "goplum.conf", "Path to the config file")
+	configPath     = flag.String("config", "goplum.conf", "Path to the config file")
 )
 
 func main() {

@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/bmatcuk/doublestar/v2"
-	"github.com/csmith/goplum"
 	"path"
 	"plugin"
 	"strings"
+
+	"github.com/bmatcuk/doublestar/v2"
+	"github.com/csmith/goplum"
 )
 
 func FindPlugins(pattern string) (map[string]goplum.PluginLoader, error) {

@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"github.com/csmith/goplum"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/csmith/goplum"
 )
 
 var client = http.Client{Timeout: 20 * time.Second}

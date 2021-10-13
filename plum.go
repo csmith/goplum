@@ -466,9 +466,8 @@ type ScheduledCheck struct {
 func (c *ScheduledCheck) Remaining() time.Duration {
 	if c.Scheduled {
 		return c.Config.Interval
-	} else {
-		return time.Until(c.LastRun.Add(c.Config.Interval))
 	}
+	return time.Until(c.LastRun.Add(c.Config.Interval))
 }
 
 func (c *ScheduledCheck) AddResult(result *Result) ResultHistory {

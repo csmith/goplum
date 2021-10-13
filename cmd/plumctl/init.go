@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"net"
 	"path/filepath"
+
+	"github.com/spf13/cobra"
 )
 
 var initCommand = &cobra.Command{

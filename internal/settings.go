@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+
 	"github.com/mitchellh/mapstructure"
 )
 

@@ -2,12 +2,13 @@ package smtp
 
 import (
 	"fmt"
-	"github.com/csmith/goplum"
-	"github.com/mitchellh/mapstructure"
 	"net"
 	"net/smtp"
 	"regexp"
 	"strings"
+
+	"github.com/csmith/goplum"
+	"github.com/mitchellh/mapstructure"
 )
 
 type Plugin struct{}

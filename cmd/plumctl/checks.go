@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/csmith/goplum/api"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 var checksCommand = &cobra.Command{

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+
 	"github.com/csmith/goplum"
 	"github.com/csmith/goplum/plugins/debug"
 	"github.com/csmith/goplum/plugins/discord"

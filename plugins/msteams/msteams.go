@@ -2,9 +2,10 @@ package msteams
 
 import (
 	"fmt"
-	"github.com/csmith/goplum"
-	"github.com/dasrick/go-teams-notify/v2"
 	"regexp"
+
+	"github.com/csmith/goplum"
+	goteamsnotify "github.com/dasrick/go-teams-notify/v2"
 )
 
 type Plugin struct{}

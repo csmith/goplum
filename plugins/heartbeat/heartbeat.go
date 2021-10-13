@@ -3,13 +3,14 @@ package heartbeat
 import (
 	"context"
 	"fmt"
-	"github.com/csmith/goplum"
 	"log"
 	"net"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/csmith/goplum"
 )
 
 var checks = make(map[string]*ReceivedCheck)
