@@ -12,7 +12,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/nelkinda/health-go v0.0.1
 	github.com/sebdah/goldie/v2 v2.5.3
-	github.com/spf13/cobra v0.0.7
+	github.com/spf13/cobra v1.2.1
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	google.golang.org/genproto v0.0.0-20210701191553-46259e63a0a9 // indirect
@@ -26,6 +26,6 @@ require (
 	github.com/nelkinda/http-go v0.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
-	github.com/spf13/pflag v1.0.3 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/text v0.3.6 // indirect
 )
