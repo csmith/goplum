@@ -2,6 +2,11 @@
 
 == vNext
 
+=== Features
+
+* The number of runners used for concurrent checks is now configurable
+  via a command-line option.
+
 == v0.6.0
 
 === Features

@@ -119,6 +119,25 @@ executed.
 
 Default: `false`
 
+== runners
+
+[source,shell script]
+----
+# Command line
+goplum -runners 10
+
+# Environment variable
+RUNNERS=10 goplum
+----
+
+Configures the number of runners that will be used to execute checks
+concurrently. Running multiple checks at once increases throughput,
+but checks running in parallel can interfere with one another. On
+the other hand, not allowing any parallelism will cause long-running
+checks (e.g. those failing due to a timeout) to block other checks.
+
+Default: `4`
+
 == tombstone
 
 [source,shell script]

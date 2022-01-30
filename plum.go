@@ -19,9 +19,8 @@ import (
 
 var (
 	quietLogging = flag.Bool("quiet", false, "Reduce logging output from normal operations")
+	runners      = flag.Int("runners", 4, "Number of runners to use to execute checks concurrently")
 )
-
-const checkRunners = 4
 
 type CheckSettings struct {
 	Alerts           []string
@@ -263,7 +262,7 @@ func (p *Plum) plugin(name string) (Plugin, error) {
 }
 
 func (p *Plum) Run() {
-	for i := 0; i < checkRunners; i++ {
+	for i := 0; i < *runners; i++ {
 		go p.processScheduledChecks()
 	}
 
