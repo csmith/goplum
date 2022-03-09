@@ -507,7 +507,7 @@ func (h ResultHistory) State(thresholds map[CheckState]int) CheckState {
 }
 
 // Run creates a new instance of Plum, registers plugins and loads configuration, and starts the main loop.
-// Lists for interrupt and sigterm signals in order to save state and clean up. It is expected that flag.Parse
+// Listens for interrupt and sigterm signals in order to save state and clean up. It is expected that flag.Parse
 // has been called prior to calling this method.
 func Run(plugins map[string]PluginLoader, configPath string) {
 	p := NewPlum()
