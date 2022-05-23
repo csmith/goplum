@@ -6,7 +6,7 @@ require (
 	github.com/bmatcuk/doublestar/v2 v2.0.4
 	github.com/dasrick/go-teams-notify/v2 v2.1.0
 	github.com/golang/protobuf v1.5.2
-	github.com/gosnmp/gosnmp v1.34.0
+	github.com/gosnmp/gosnmp v1.35.0
 	github.com/imdario/mergo v0.3.12
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
 	github.com/mitchellh/mapstructure v1.4.3
@@ -21,7 +21,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require github.com/stretchr/testify v1.7.0
+require github.com/stretchr/testify v1.7.1
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
