@@ -12,7 +12,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nelkinda/health-go v0.0.1
 	github.com/sebdah/goldie/v2 v2.5.3
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
