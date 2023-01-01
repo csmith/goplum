@@ -19,6 +19,7 @@ jobs:
         with:
           separator: ' '
           fullname: 'false'
+          token: ${{ secrets.GITHUB_TOKEN }}            
 
       - name: Build image
         id: build-image
