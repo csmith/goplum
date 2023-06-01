@@ -1,6 +1,6 @@
 module github.com/csmith/goplum
 
-go 1.17
+go 1.20
 
 require (
 	github.com/bmatcuk/doublestar/v2 v2.0.4

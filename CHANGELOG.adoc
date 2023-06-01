@@ -7,6 +7,10 @@
 * The number of runners used for concurrent checks is now configurable
   via a command-line option.
 
+=== Changes
+
+* Update go Go 1.20
+
 == v0.6.0
 
 === Features
