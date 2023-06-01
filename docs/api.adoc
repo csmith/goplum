@@ -6,7 +6,7 @@ The API uses https://grpc.io/[gRPC], and requires mutual TLS authentication.
 == Certificate management
 
 GoPlum's API requires mutual TLS authentication: that is, clients and servers
-both present certificates and very that the peer certificates are issued by
+both present certificates and verify that the peer certificates are issued by
 a trusted CA.
 
 [WARNING]
