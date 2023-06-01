@@ -2,6 +2,8 @@
 
 == vNext
 
+== v0.7.0
+
 === Features
 
 * The number of runners used for concurrent checks is now configurable
@@ -9,7 +11,8 @@
 
 === Changes
 
-* Update go Go 1.20
+* Update to Go 1.20
+* Various dependency updates
 
 == v0.6.0
 
