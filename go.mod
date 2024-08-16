@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/bmatcuk/doublestar/v2 v2.0.4
 	github.com/dasrick/go-teams-notify/v2 v2.1.0
-	github.com/golang/protobuf v1.5.3
+	github.com/golang/protobuf v1.5.4
 	github.com/gosnmp/gosnmp v1.38.0
 	github.com/imdario/mergo v0.3.16
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
