@@ -1,6 +1,9 @@
 module github.com/csmith/goplum
 
-go 1.23
+go 1.23.0
+
+toolchain go1.24.1
+
 require (
 	github.com/bmatcuk/doublestar/v2 v2.0.4
 	github.com/dasrick/go-teams-notify/v2 v2.1.0
