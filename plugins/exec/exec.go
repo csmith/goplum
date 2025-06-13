@@ -34,7 +34,7 @@ type CommandCheck struct {
 func (c CommandCheck) Execute(ctx context.Context) goplum.Result {
 	cmd := exec.CommandContext(ctx, c.Name, c.Arguments...)
 	if err := cmd.Run(); err != nil {
-		return goplum.FailingResult(fmt.Sprintf("command failed: %v", err))
+		return goplum.FailingResult("command failed: %v", err)
 	}
 	return goplum.GoodResult()
 }
