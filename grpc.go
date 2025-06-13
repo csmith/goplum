@@ -21,6 +21,7 @@ var (
 )
 
 type GrpcServer struct {
+	api.UnimplementedGoPlumServer
 	plum   *Plum
 	server *grpc.Server
 }
@@ -50,7 +51,7 @@ func (s *GrpcServer) Start() {
 		ClientCAs:    pool,
 		MinVersion:   tls.VersionTLS13,
 	})))
-	s.server.RegisterService(api.ServiceDesc, s)
+	api.RegisterGoPlumServer(s.server, s)
 	if err := s.server.Serve(lis); err != nil {
 		log.Printf("Error serving API: %v", err)
 	}

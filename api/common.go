@@ -7,10 +7,6 @@ import (
 	"os"
 )
 
-var (
-	ServiceDesc = &_GoPlum_serviceDesc
-)
-
 type FactValue = isFact_Value
 
 func LoadCertificates(localCert, localKey, caCert string) ([]tls.Certificate, *x509.CertPool, error) {

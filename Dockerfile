@@ -15,7 +15,7 @@ RUN go run github.com/google/go-licenses@latest save ./... --save_path=/notices
 
 # Step 2: execute
 
-FROM reg.c5h.io/base
+FROM ghcr.io/greboid/dockerbase/nonroot:1.20250326.0
 WORKDIR /
 COPY --from=build /go/bin/goplum /goplum
 COPY --from=build /go/src/app/*.so /plugins/

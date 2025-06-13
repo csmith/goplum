@@ -1,13 +1,10 @@
 module github.com/csmith/goplum
 
-go 1.23.0
-
-toolchain go1.24.1
+go 1.24.4
 
 require (
 	github.com/bmatcuk/doublestar/v2 v2.0.4
 	github.com/dasrick/go-teams-notify/v2 v2.1.0
-	github.com/golang/protobuf v1.5.4
 	github.com/gosnmp/gosnmp v1.40.0
 	github.com/imdario/mergo v0.3.16
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
