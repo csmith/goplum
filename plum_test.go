@@ -25,14 +25,20 @@ func TestReadConfig_GoldenData(t *testing.T) {
 		"defaults",
 		"duplicate-alert",
 		"duplicate-check",
+		"duplicate-group",
 		"unknown-alert",
 		"unknown-check",
 		"unknown-field",
 		"unknown-plugin",
+		"unknown-group",
 		"unrecognised-alert-multiple",
 		"unrecognised-alert-single",
 		"unrecognised-alert-wildcard",
 		"validation-error",
+		"valid-group",
+		"group-defaults-inheritance",
+		"multiple-groups-inheritance",
+		"groups-in-defaults",
 	}
 	gold := goldie.New(t)
 

@@ -42,6 +42,10 @@ periodically and get alerted if it stops.
 **Simple to get started**: If you're set up to run services in
 containers, you can get Goplum up and running in a couple of minutes.
 
+**Alert storm prevention**: Group related checks together and set
+limits on how many alerts can be sent from a group within a time
+window, preventing notification overload when multiple services fail.
+
 == Getting started
 
 === Basic configuration
@@ -260,6 +264,10 @@ If they're not specified then Goplum's built-in defaults will be used.
  Supports '*' as a wildcard.
 |`["*"]`
 
+|`groups`
+|A list of group names this check belongs to.
+|`[]`
+
 |`failing_threshold`
 |The number of checks that must fail in a row before a failure alert is raised.
 |`2`
@@ -289,6 +297,51 @@ check http.get "get" {
   alerts = ["Text Bob"]
 }
 ----
+
+=== Groups and Alert Storm Prevention
+
+When multiple services fail simultaneously (e.g., when a server goes down), 
+you might receive dozens of alerts at once. Groups help prevent this alert 
+storm by limiting how many alerts can be sent within a time window.
+
+To create a group:
+
+[source,goplum]
+----
+group "webservices" {
+  alert_limit = 3           # Maximum 3 alerts from this group
+  alert_window = 10m        # Within a 10 minute window
+  
+  defaults {
+    interval = 30s          # Default settings for checks in this group
+    timeout = 10s
+  }
+}
+----
+
+Then add checks to the group:
+
+[source,goplum]
+----
+check http.get "website" {
+  url = "https://example.com/"
+  groups = ["webservices"]
+}
+
+# ... other checks ...
+
+check http.get "api" {
+  url = "https://api.example.com/"
+  groups = ["webservices"]
+}
+----
+
+With this configuration, if all the websites fail when their server crashes,
+you'll receive at most 3 alerts in any 10-minute period.
+
+Checks can belong to multiple groups, and groups can have their own default
+settings that override the global defaults but can be overridden by individual
+check settings.
 
 == Advanced topics
 

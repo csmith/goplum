@@ -33,7 +33,7 @@ The defaults block allows you to set default values for common check
 settings. The defaults block can only exist at the top-level of the
 configuration file.
 
-==== Named blocks (checks and alerts)
+==== Named blocks (checks, alerts, and groups)
 
 [source,goplum]
 ----
@@ -44,12 +44,25 @@ alert <identifier> "<name>" {
 check <identifier> "<name>" {
   # <Assignments>
 }
+
+group "<name>" {
+  # <Assignments>
+  # Optional nested defaults block
+  defaults {
+    # <Assignments>
+  }
+}
 ----
 
 The alert and check blocks require an <<Identifier>> (the type of the
 alert or check, including the plugin name) and a name. The name must
-be unique for the type of block (check/alert). They can exist only at
-the top-level of the configuration file.
+be unique for the type of block (check/alert).
+
+The group block requires only a name and is used for organizing checks
+and preventing alert storms. Groups can contain a nested defaults block
+that applies to all checks within the group.
+
+All named blocks can exist only at the top-level of the configuration file.
 
 ==== Typed blocks (plugins)
 
@@ -113,6 +126,7 @@ are:
 * `alert`
 * `check`
 * `plugin`
+* `group`
 * `yes`
 * `no`
 * `on`

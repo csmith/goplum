@@ -11,6 +11,7 @@
         "Alerts": [
           "text"
         ],
+        "Groups": [],
         "Interval": 90000000000,
         "Timeout": 20000000000,
         "GoodThreshold": 3,
@@ -44,6 +45,7 @@
         "Alerts": [
           "foo"
         ],
+        "Groups": [],
         "Interval": 2000000000,
         "Timeout": 20000000000,
         "GoodThreshold": 3,
@@ -77,6 +79,7 @@
         "Alerts": [
           "text"
         ],
+        "Groups": [],
         "Interval": 3000000000,
         "Timeout": 20000000000,
         "GoodThreshold": 5,
@@ -103,5 +106,6 @@
         null
       ]
     }
-  }
+  },
+  "Groups": {}
 }

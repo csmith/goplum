@@ -21,5 +21,6 @@
     }
   ],
   "CheckBlocks": null,
-  "PluginSettings": null
+  "PluginSettings": null,
+  "GroupBlocks": null
 }

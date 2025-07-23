@@ -10,11 +10,13 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/csmith/goplum/config"
 	"github.com/csmith/goplum/internal"
+	"github.com/imdario/mergo"
 )
 
 var (
@@ -24,18 +26,105 @@ var (
 
 type CheckSettings struct {
 	Alerts           []string
+	Groups           []string
 	Interval         time.Duration
 	Timeout          time.Duration
 	GoodThreshold    int `config:"good_threshold"`
 	FailingThreshold int `config:"failing_threshold"`
 }
 
+type Group struct {
+	Name        string
+	AlertLimit  int           `config:"alert_limit"`
+	AlertWindow time.Duration `config:"alert_window"`
+	Defaults    *CheckSettings
+
+	// Alert state tracking for limiting
+	alertHistory []time.Time
+	mu           sync.RWMutex
+}
+
+// canSendAlert checks if an alert can be sent for this group within the alert window.
+// Returns (canSend, isLastAlert) where isLastAlert indicates this would be the final alert before throttling.
+func (g *Group) canSendAlert() (bool, bool) {
+	if g.AlertLimit <= 0 {
+		return true, false // No limit configured
+	}
+
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	now := time.Now()
+	windowStart := now.Add(-g.AlertWindow)
+
+	// Remove alerts outside the window
+	validAlerts := g.alertHistory[:0]
+	for _, alertTime := range g.alertHistory {
+		if alertTime.After(windowStart) {
+			validAlerts = append(validAlerts, alertTime)
+		}
+	}
+	g.alertHistory = validAlerts
+
+	currentCount := len(g.alertHistory)
+	if currentCount >= g.AlertLimit {
+		return false, false // Already at limit
+	}
+
+	// Record this alert
+	g.alertHistory = append(g.alertHistory, now)
+
+	// Check if this is the last alert we'll send before throttling
+	isLastAlert := currentCount+1 == g.AlertLimit
+
+	return true, isLastAlert
+}
+
+// shouldSendAlert checks all groups for a check and determines if an alert should be sent.
+// Returns (shouldSend, suppressionWarning, suppressingGroup) where suppressionWarning contains text to append if this is the last alert.
+func (p *Plum) shouldSendAlert(groupNames []string) (bool, string, string) {
+	if len(groupNames) == 0 {
+		return true, "", "" // No groups, no limits
+	}
+
+	var warnings []string
+
+	// Check each group - if ANY group forbids sending, we don't send
+	for _, groupName := range groupNames {
+		group, exists := p.Groups[groupName]
+		if !exists {
+			continue // Group doesn't exist, skip (this would be caught in validation)
+		}
+
+		canSend, isLast := group.canSendAlert()
+		if !canSend {
+			return false, "", groupName // Suppressed by this group
+		}
+
+		if isLast && group.AlertLimit > 0 {
+			warnings = append(warnings, fmt.Sprintf("[GROUP ALERT LIMIT REACHED: %s]", groupName))
+		}
+	}
+
+	// Combine all suppression warnings
+	var warning string
+	if len(warnings) > 0 {
+		warning = " " + strings.Join(warnings, " ")
+	}
+
+	return true, warning, ""
+}
+
 func (c CheckSettings) Copy() CheckSettings {
 	alerts := make([]string, len(c.Alerts))
 	copy(alerts, c.Alerts)
 
+	groups := make([]string, len(c.Groups))
+	copy(groups, c.Groups)
+
 	return CheckSettings{
 		Alerts:           alerts,
+		Groups:           groups,
 		Interval:         c.Interval,
 		Timeout:          c.Timeout,
 		GoodThreshold:    c.GoodThreshold,
@@ -57,6 +146,7 @@ type CheckListener func(*ScheduledCheck, Result)
 type Plum struct {
 	Alerts           map[string]Alert
 	Checks           map[string]*ScheduledCheck
+	Groups           map[string]*Group
 	availablePlugins map[string]PluginLoader
 	loadedPlugins    map[string]Plugin
 	checkDefaults    CheckSettings
@@ -70,6 +160,7 @@ func NewPlum() *Plum {
 		loadedPlugins:    make(map[string]Plugin),
 		Alerts:           make(map[string]Alert),
 		Checks:           make(map[string]*ScheduledCheck),
+		Groups:           make(map[string]*Group),
 		checkDefaults:    DefaultSettings.Copy(),
 		scheduled:        make(chan *ScheduledCheck, 100),
 		checkListeners:   make(map[reflect.Value]CheckListener),
@@ -108,6 +199,10 @@ func (p *Plum) ReadConfig(path string) error {
 	}
 
 	if err := p.addAlerts(parser.AlertBlocks); err != nil {
+		return err
+	}
+
+	if err := p.addGroups(parser.GroupBlocks); err != nil {
 		return err
 	}
 
@@ -168,6 +263,37 @@ func (p *Plum) addAlerts(alerts []*config.Block) error {
 	return nil
 }
 
+func (p *Plum) addGroups(groups []*config.Block) error {
+	for i := range groups {
+		if _, ok := p.Groups[groups[i].Name]; ok {
+			return fmt.Errorf("group defined multiple times: %s", groups[i].Name)
+		}
+
+		group := &Group{
+			Name: groups[i].Name,
+		}
+
+		// Extract defaults from settings if present
+		if defaults, ok := groups[i].Settings["defaults"].(map[string]interface{}); ok {
+			group.Defaults = &CheckSettings{}
+			if err := internal.DecodeSettings(&defaults, group.Defaults); err != nil {
+				return fmt.Errorf("error configuring defaults for group %s: %v", groups[i].Name, err)
+			}
+			// Remove defaults from settings so it doesn't interfere with decoding other fields
+			delete(groups[i].Settings, "defaults")
+		}
+
+		// Decode the rest of the group settings
+		if err := internal.DecodeSettings(&groups[i].Settings, group); err != nil {
+			return fmt.Errorf("error configuring group %s: %v", groups[i].Name, err)
+		}
+
+		p.Groups[groups[i].Name] = group
+	}
+
+	return nil
+}
+
 func (p *Plum) addChecks(checks []*config.Block) error {
 	for i := range checks {
 		if _, ok := p.Checks[checks[i].Name]; ok {
@@ -185,7 +311,32 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 			return fmt.Errorf("invalid check %s in plugin %s", parts[1], parts[0])
 		}
 
+		// First, decode to get the groups list for validation
+		tempSettings := CheckSettings{}
+		if err := internal.DecodeSettings(&checks[i].Settings, &tempSettings); err != nil {
+			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
+		}
+
+		// Validate that all referenced groups exist
+		for g := range tempSettings.Groups {
+			if _, ok := p.Groups[tempSettings.Groups[g]]; !ok {
+				return fmt.Errorf("error configuring check %s: no group named '%s'", checks[i].Name, tempSettings.Groups[g])
+			}
+		}
+
+		// Start with global defaults
 		settings := p.checkDefaults.Copy()
+
+		// Apply group defaults in order
+		for g := range tempSettings.Groups {
+			if group := p.Groups[tempSettings.Groups[g]]; group != nil && group.Defaults != nil {
+				if err := mergo.Merge(&settings, group.Defaults, mergo.WithOverride); err != nil {
+					return fmt.Errorf("error applying group defaults from %s to check %s: %v", tempSettings.Groups[g], checks[i].Name, err)
+				}
+			}
+		}
+
+		// Finally, apply check-specific settings
 		if err := internal.DecodeSettings(&checks[i].Settings, &check, &settings); err != nil {
 			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
 		}
@@ -371,6 +522,18 @@ func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 		details.Text = fmt.Sprintf("Check '%s' is now %s (%s), was %s.", details.Name, details.NewState, details.LastResult.Detail, details.PreviousState)
 	} else {
 		details.Text = fmt.Sprintf("Check '%s' is now %s, was %s.", details.Name, details.NewState, details.PreviousState)
+	}
+
+	// Check group limits for all groups this check belongs to
+	shouldSend, suppressionWarning, suppressingGroup := p.shouldSendAlert(c.Config.Groups)
+	if !shouldSend {
+		log.Printf("Alert for %s suppressed due to group limit (group: %s)\n", c.Name, suppressingGroup)
+		return
+	}
+
+	// Add suppression warning if this is the last alert before throttling
+	if suppressionWarning != "" {
+		details.Text += suppressionWarning
 	}
 
 	alerts := p.AlertsMatching(c.Config.Alerts)

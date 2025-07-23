@@ -24,6 +24,7 @@ type Parser struct {
 	AlertBlocks     []*Block
 	CheckBlocks     []*Block
 	PluginSettings  []*Block
+	GroupBlocks     []*Block
 }
 
 func NewParser(reader io.Reader) *Parser {
@@ -37,7 +38,7 @@ func (p *Parser) Parse() error {
 	go p.lexer.Lex()
 
 	for {
-		t, err := p.take(tokenEOF, tokenError, tokenDefaults, tokenAlert, tokenCheck, tokenPlugin)
+		t, err := p.take(tokenEOF, tokenError, tokenDefaults, tokenAlert, tokenCheck, tokenPlugin, tokenGroup)
 		if err != nil {
 			return err
 		}
@@ -48,7 +49,7 @@ func (p *Parser) Parse() error {
 				return fmt.Errorf("duplicate defaults block declared at line %d", t.Line)
 			}
 			p.hasDefaults = true
-			val, err := p.parseBlock()
+			val, err := p.parseBlock(false)
 			if err != nil {
 				return err
 			}
@@ -56,23 +57,29 @@ func (p *Parser) Parse() error {
 				return err
 			}
 		case tokenAlert:
-			block, err := p.parseNamedBlock()
+			block, err := p.parseBlockWithTypeAndName(false)
 			if err != nil {
 				return err
 			}
 			p.AlertBlocks = append(p.AlertBlocks, block)
 		case tokenCheck:
-			block, err := p.parseNamedBlock()
+			block, err := p.parseBlockWithTypeAndName(false)
 			if err != nil {
 				return err
 			}
 			p.CheckBlocks = append(p.CheckBlocks, block)
 		case tokenPlugin:
-			block, err := p.parseTypedBlock()
+			block, err := p.parseBlockWithType(false)
 			if err != nil {
 				return err
 			}
 			p.PluginSettings = append(p.PluginSettings, block)
+		case tokenGroup:
+			block, err := p.parseBlockWithName(true)
+			if err != nil {
+				return err
+			}
+			p.GroupBlocks = append(p.GroupBlocks, block)
 		case tokenError:
 			return errors.New(t.Value.(string))
 		case tokenEOF:
@@ -81,7 +88,7 @@ func (p *Parser) Parse() error {
 	}
 }
 
-func (p *Parser) parseNamedBlock() (*Block, error) {
+func (p *Parser) parseBlockWithTypeAndName(allowDefaults bool) (*Block, error) {
 	kind, err := p.take(tokenIdentifier)
 	if err != nil {
 		return nil, err
@@ -90,7 +97,7 @@ func (p *Parser) parseNamedBlock() (*Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	val, err := p.parseBlock()
+	val, err := p.parseBlock(allowDefaults)
 	if err != nil {
 		return nil, err
 	}
@@ -101,12 +108,12 @@ func (p *Parser) parseNamedBlock() (*Block, error) {
 	}, nil
 }
 
-func (p *Parser) parseTypedBlock() (*Block, error) {
+func (p *Parser) parseBlockWithType(allowDefaults bool) (*Block, error) {
 	kind, err := p.take(tokenIdentifier)
 	if err != nil {
 		return nil, err
 	}
-	val, err := p.parseBlock()
+	val, err := p.parseBlock(allowDefaults)
 	if err != nil {
 		return nil, err
 	}
@@ -116,14 +123,34 @@ func (p *Parser) parseTypedBlock() (*Block, error) {
 	}, nil
 }
 
-func (p *Parser) parseBlock() (map[string]interface{}, error) {
+func (p *Parser) parseBlockWithName(allowDefaults bool) (*Block, error) {
+	name, err := p.take(tokenString)
+	if err != nil {
+		return nil, err
+	}
+	val, err := p.parseBlock(allowDefaults)
+	if err != nil {
+		return nil, err
+	}
+	return &Block{
+		Name:     name.Value.(string),
+		Settings: val,
+	}, nil
+}
+
+func (p *Parser) parseBlock(allowDefaults bool) (map[string]interface{}, error) {
 	if _, err := p.take(tokenBlockStart); err != nil {
 		return nil, err
 	}
 
 	res := make(map[string]interface{})
 	for {
-		t, err := p.take(tokenBlockEnd, tokenIdentifier)
+		var wanted = []tokenClass{tokenBlockEnd, tokenIdentifier}
+		if allowDefaults {
+			wanted = append(wanted, tokenDefaults)
+		}
+
+		t, err := p.take(wanted...)
 		if err != nil {
 			return nil, err
 		}
@@ -131,6 +158,15 @@ func (p *Parser) parseBlock() (map[string]interface{}, error) {
 		switch t.Class {
 		case tokenBlockEnd:
 			return res, nil
+		case tokenDefaults:
+			if _, ok := res["defaults"]; ok {
+				return nil, fmt.Errorf("defaults block redeclared at line %d, column %d", t.Line, t.Column)
+			}
+			val, err := p.parseBlock(false)
+			if err != nil {
+				return nil, err
+			}
+			res["defaults"] = val
 		case tokenIdentifier:
 			name := t.Value.(string)
 			if _, ok := res[name]; ok {
@@ -152,7 +188,7 @@ func (p *Parser) parseAssignment() (interface{}, error) {
 	}
 	if s.Class == tokenBlockStart {
 		p.backup()
-		return p.parseBlock()
+		return p.parseBlock(false)
 	}
 
 	n, err := p.take(tokenString, tokenDuration, tokenInt, tokenFloat, tokenBoolean, tokenArrayStart)

@@ -10,7 +10,19 @@ import (
 )
 
 func TestParser_GoldenData(t *testing.T) {
-	tests := []string{"full", "comments", "duplicate_defaults", "arrays", "arrays_mixed", "unexpected_int"}
+	tests := []string{
+		"full",
+		"comments",
+		"duplicate_defaults",
+		"arrays",
+		"arrays_mixed",
+		"unexpected_int",
+		"defaults_in_defaults",
+		"defaults_in_check",
+		"defaults_in_alert",
+		"defaults_in_plugin",
+		"group_with_defaults",
+	}
 	gold := goldie.New(t)
 
 	for i := range tests {

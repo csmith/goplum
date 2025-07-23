@@ -1,0 +1,24 @@
+{
+  "DefaultSettings": {},
+  "AlertBlocks": null,
+  "CheckBlocks": null,
+  "PluginSettings": null,
+  "GroupBlocks": [
+    {
+      "Name": "production",
+      "Type": "",
+      "Settings": {
+        "alert_limit": 5,
+        "alert_window": 600000000000,
+        "defaults": {
+          "alerts": [
+            "pagerduty",
+            "email"
+          ],
+          "interval": 30000000000,
+          "timeout": 20000000000
+        }
+      }
+    }
+  ]
+}
