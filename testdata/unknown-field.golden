@@ -1,1 +1,1 @@
-"error configuring check check: unknown configuration key: bazinga"
+"error configuring check check: error decoding check settings: unknown configuration key: bazinga"

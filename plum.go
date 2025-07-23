@@ -294,50 +294,62 @@ func (p *Plum) addGroups(groups []*config.Block) error {
 	return nil
 }
 
+// createCheck constructs a Check and CheckSettings by merging global defaults, group defaults, and check-specific settings
+func (p *Plum) createCheck(checkBlock *config.Block, groups []string) (Check, CheckSettings, error) {
+	// Create the check object
+	parts := strings.SplitN(checkBlock.Type, ".", 2)
+	plugin, err := p.plugin(parts[0])
+	if err != nil {
+		return nil, CheckSettings{}, err
+	}
+
+	check := plugin.Check(parts[1])
+	if check == nil {
+		return nil, CheckSettings{}, fmt.Errorf("invalid check %s in plugin %s", parts[1], parts[0])
+	}
+
+	// Start with global defaults
+	settings := p.checkDefaults.Copy()
+
+	// Apply group defaults in order
+	for _, groupName := range groups {
+		if group := p.Groups[groupName]; group != nil && group.Defaults != nil {
+			if err := mergo.Merge(&settings, group.Defaults, mergo.WithOverride); err != nil {
+				return nil, CheckSettings{}, fmt.Errorf("error applying group defaults from %s: %v", groupName, err)
+			}
+		}
+	}
+
+	// Apply check-specific settings to both check and settings
+	if err := internal.DecodeSettings(&checkBlock.Settings, &check, &settings); err != nil {
+		return nil, CheckSettings{}, fmt.Errorf("error decoding check settings: %v", err)
+	}
+
+	return check, settings, nil
+}
+
 func (p *Plum) addChecks(checks []*config.Block) error {
 	for i := range checks {
 		if _, ok := p.Checks[checks[i].Name]; ok {
 			return fmt.Errorf("check defined multiple times: %s", checks[i].Name)
 		}
 
-		parts := strings.SplitN(checks[i].Type, ".", 2)
-		plugin, err := p.plugin(parts[0])
+		// First, get settings to extract groups for validation
+		_, tempSettings, err := p.createCheck(checks[i], nil)
 		if err != nil {
-			return err
-		}
-
-		check := plugin.Check(parts[1])
-		if check == nil {
-			return fmt.Errorf("invalid check %s in plugin %s", parts[1], parts[0])
-		}
-
-		// First, decode to get the groups list for validation
-		tempSettings := CheckSettings{}
-		if err := internal.DecodeSettings(&checks[i].Settings, &tempSettings); err != nil {
 			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
 		}
 
 		// Validate that all referenced groups exist
-		for g := range tempSettings.Groups {
-			if _, ok := p.Groups[tempSettings.Groups[g]]; !ok {
-				return fmt.Errorf("error configuring check %s: no group named '%s'", checks[i].Name, tempSettings.Groups[g])
+		for _, groupName := range tempSettings.Groups {
+			if _, ok := p.Groups[groupName]; !ok {
+				return fmt.Errorf("error configuring check %s: no group named '%s'", checks[i].Name, groupName)
 			}
 		}
 
-		// Start with global defaults
-		settings := p.checkDefaults.Copy()
-
-		// Apply group defaults in order
-		for g := range tempSettings.Groups {
-			if group := p.Groups[tempSettings.Groups[g]]; group != nil && group.Defaults != nil {
-				if err := mergo.Merge(&settings, group.Defaults, mergo.WithOverride); err != nil {
-					return fmt.Errorf("error applying group defaults from %s to check %s: %v", tempSettings.Groups[g], checks[i].Name, err)
-				}
-			}
-		}
-
-		// Finally, apply check-specific settings
-		if err := internal.DecodeSettings(&checks[i].Settings, &check, &settings); err != nil {
+		// Now create final check with validated groups
+		check, settings, err := p.createCheck(checks[i], tempSettings.Groups)
+		if err != nil {
 			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
 		}
 

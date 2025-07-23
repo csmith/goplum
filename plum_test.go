@@ -39,6 +39,8 @@ func TestReadConfig_GoldenData(t *testing.T) {
 		"group-defaults-inheritance",
 		"multiple-groups-inheritance",
 		"groups-in-defaults",
+		"http-get-keys",
+		"invalid-group-in-defaults",
 	}
 	gold := goldie.New(t)
 
