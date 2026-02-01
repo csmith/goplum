@@ -6,12 +6,12 @@ import (
 	"plugin"
 	"strings"
 
-	"github.com/bmatcuk/doublestar/v2"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/csmith/goplum"
 )
 
 func FindPlugins(pattern string) (map[string]goplum.PluginLoader, error) {
-	matches, err := doublestar.Glob(pattern)
+	matches, err := doublestar.FilepathGlob(pattern)
 	if err != nil {
 		return nil, err
 	}

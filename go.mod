@@ -4,7 +4,7 @@ go 1.24.4
 
 require (
 	dario.cat/mergo v1.0.2
-	github.com/bmatcuk/doublestar/v2 v2.0.4
+	github.com/bmatcuk/doublestar/v4 v4.9.1
 	github.com/dasrick/go-teams-notify/v2 v2.1.0
 	github.com/gosnmp/gosnmp v1.42.1
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
