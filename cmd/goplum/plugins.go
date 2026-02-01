@@ -6,7 +6,7 @@ import (
 	"plugin"
 	"strings"
 
-	"github.com/bmatcuk/doublestar/v2"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/csmith/goplum"
 )
 
