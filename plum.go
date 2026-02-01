@@ -16,7 +16,7 @@ import (
 
 	"github.com/csmith/goplum/config"
 	"github.com/csmith/goplum/internal"
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 )
 
 var (
