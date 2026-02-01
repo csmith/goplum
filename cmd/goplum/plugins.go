@@ -11,7 +11,7 @@ import (
 )
 
 func FindPlugins(pattern string) (map[string]goplum.PluginLoader, error) {
-	matches, err := doublestar.Glob(pattern)
+	matches, err := doublestar.FilepathGlob(pattern)
 	if err != nil {
 		return nil, err
 	}
