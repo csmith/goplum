@@ -4,7 +4,7 @@ go 1.24.4
 
 require (
 	dario.cat/mergo v1.0.2
-	github.com/bmatcuk/doublestar/v4 v4.9.2
+	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/gosnmp/gosnmp v1.43.2
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
 	github.com/mitchellh/mapstructure v1.5.0
