@@ -19,12 +19,13 @@ type TombStone struct {
 }
 
 type CheckTombStone struct {
-	LastRun     time.Time
-	Settled     bool
-	State       CheckState
-	Suspended   bool
-	History     ResultHistory
-	PluginState json.RawMessage `json:"plugin_state,omitempty"`
+	LastRun       time.Time
+	Settled       bool
+	State         CheckState
+	Suspended     bool
+	LastAlertTime time.Time `json:"last_alert_time,omitzero"`
+	History       ResultHistory
+	PluginState   json.RawMessage `json:"plugin_state,omitempty"`
 }
 
 func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
@@ -46,12 +47,13 @@ func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
 		}
 
 		ts.Checks[check.Name] = CheckTombStone{
-			LastRun:     check.LastRun,
-			Settled:     check.Settled,
-			State:       check.State,
-			Suspended:   check.Suspended,
-			History:     check.History,
-			PluginState: state,
+			LastRun:       check.LastRun,
+			Settled:       check.Settled,
+			State:         check.State,
+			Suspended:     check.Suspended,
+			LastAlertTime: check.LastAlertTime,
+			History:       check.History,
+			PluginState:   state,
 		}
 	}
 
@@ -93,6 +95,7 @@ func (ts *TombStone) Restore(checks map[string]*ScheduledCheck) error {
 			check.Settled = saved.Settled
 			check.State = saved.State
 			check.Suspended = saved.Suspended
+			check.LastAlertTime = saved.LastAlertTime
 			check.History = saved.History
 
 			if stateful, ok := check.Check.(Stateful); ok && saved.PluginState != nil {

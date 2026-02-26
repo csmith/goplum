@@ -13,6 +13,7 @@
         "Groups": [],
         "Interval": 30000000000,
         "Timeout": 20000000000,
+        "Reminder": 0,
         "GoodThreshold": 2,
         "FailingThreshold": 2
       },
@@ -29,6 +30,7 @@
         "MaxStatusCode": 499
       },
       "LastRun": "0001-01-01T00:00:00Z",
+      "LastAlertTime": "0001-01-01T00:00:00Z",
       "Scheduled": false,
       "Settled": false,
       "State": "indeterminate",

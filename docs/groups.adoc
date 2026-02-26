@@ -72,6 +72,7 @@ group "databases" {
   defaults {
     interval = 60s
     timeout = 30s
+    reminder = 10m
     alerts = ["sms", "email"]
     good_threshold = 3
     failing_threshold = 3

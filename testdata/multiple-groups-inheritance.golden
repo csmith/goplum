@@ -16,6 +16,7 @@
         ],
         "Interval": 45000000000,
         "Timeout": 15000000000,
+        "Reminder": 0,
         "GoodThreshold": 3,
         "FailingThreshold": 5
       },
@@ -23,6 +24,7 @@
         "PercentGood": 0.5
       },
       "LastRun": "0001-01-01T00:00:00Z",
+      "LastAlertTime": "0001-01-01T00:00:00Z",
       "Scheduled": false,
       "Settled": false,
       "State": "indeterminate",
@@ -53,6 +55,7 @@
         "Groups": null,
         "Interval": 0,
         "Timeout": 30000000000,
+        "Reminder": 0,
         "GoodThreshold": 3,
         "FailingThreshold": 0
       }
@@ -66,6 +69,7 @@
         "Groups": null,
         "Interval": 45000000000,
         "Timeout": 15000000000,
+        "Reminder": 0,
         "GoodThreshold": 0,
         "FailingThreshold": 5
       }

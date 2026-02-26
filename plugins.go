@@ -141,6 +141,8 @@ type AlertDetails struct {
 	PreviousState CheckState `json:"previous_state"`
 	// NewState is the state this check is now in.
 	NewState CheckState `json:"new_state"`
+	// IsReminder indicates that this alert is a periodic reminder for an ongoing failure, not a new state change.
+	IsReminder bool `json:"is_reminder"`
 }
 
 // Alert defines the method to inform the user of a change to a service - e.g. when it comes up or goes down.

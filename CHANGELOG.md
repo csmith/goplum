@@ -13,6 +13,8 @@
 * Add support for groups. These can provide default settings to checks,
   and rate limiting for alerts. Checks can be members of any number of groups,
   and alerts will be suppressed if any goes over the rate limit.
+* Add support for reminders. If set, a failing check will repeatedly emit
+  alerts with the given period.
 
 ## 0.8.0 - 2025-06-13
 

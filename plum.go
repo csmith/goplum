@@ -29,6 +29,7 @@ type CheckSettings struct {
 	Groups           []string
 	Interval         time.Duration
 	Timeout          time.Duration
+	Reminder         time.Duration
 	GoodThreshold    int `config:"good_threshold"`
 	FailingThreshold int `config:"failing_threshold"`
 }
@@ -127,6 +128,7 @@ func (c CheckSettings) Copy() CheckSettings {
 		Groups:           groups,
 		Interval:         c.Interval,
 		Timeout:          c.Timeout,
+		Reminder:         c.Reminder,
 		GoodThreshold:    c.GoodThreshold,
 		FailingThreshold: c.FailingThreshold,
 	}
@@ -507,10 +509,12 @@ func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
 	if newState != oldState {
 		c.State = newState
 		if c.Settled {
-			p.RaiseAlerts(c, oldState)
+			p.raiseAlerts(c, oldState, false)
 		} else {
 			c.Settled = true
 		}
+	} else if newState == StateFailing && c.Settled && c.Config.Reminder > 0 && time.Since(c.LastAlertTime) >= c.Config.Reminder {
+		p.raiseAlerts(c, oldState, true)
 	}
 }
 
@@ -521,6 +525,10 @@ func (p *Plum) logCheck(c *ScheduledCheck, result Result) {
 }
 
 func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
+	p.raiseAlerts(c, previousState, false)
+}
+
+func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isReminder bool) {
 	details := AlertDetails{
 		Name:          c.Name,
 		Config:        c.Check,
@@ -528,12 +536,21 @@ func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 		LastResult:    c.LastResult(),
 		PreviousState: previousState,
 		NewState:      c.State,
+		IsReminder:    isReminder,
 	}
 
-	if len(details.LastResult.Detail) > 0 {
-		details.Text = fmt.Sprintf("Check '%s' is now %s (%s), was %s.", details.Name, details.NewState, details.LastResult.Detail, details.PreviousState)
+	if isReminder {
+		if len(details.LastResult.Detail) > 0 {
+			details.Text = fmt.Sprintf("Check '%s' is still %s (%s).", details.Name, details.NewState, details.LastResult.Detail)
+		} else {
+			details.Text = fmt.Sprintf("Check '%s' is still %s.", details.Name, details.NewState)
+		}
 	} else {
-		details.Text = fmt.Sprintf("Check '%s' is now %s, was %s.", details.Name, details.NewState, details.PreviousState)
+		if len(details.LastResult.Detail) > 0 {
+			details.Text = fmt.Sprintf("Check '%s' is now %s (%s), was %s.", details.Name, details.NewState, details.LastResult.Detail, details.PreviousState)
+		} else {
+			details.Text = fmt.Sprintf("Check '%s' is now %s, was %s.", details.Name, details.NewState, details.PreviousState)
+		}
 	}
 
 	// Check group limits for all groups this check belongs to
@@ -555,6 +572,8 @@ func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 			log.Printf("Error sending alert: %v\n", err)
 		}
 	}
+
+	c.LastAlertTime = time.Now()
 }
 
 func (p *Plum) AlertsMatching(names []string) []Alert {
@@ -625,16 +644,17 @@ func regexpForWildcards(names []string) *regexp.Regexp {
 }
 
 type ScheduledCheck struct {
-	Name      string
-	Type      string
-	Config    *CheckSettings
-	Check     Check
-	LastRun   time.Time
-	Scheduled bool
-	Settled   bool
-	State     CheckState
-	Suspended bool
-	History   ResultHistory
+	Name          string
+	Type          string
+	Config        *CheckSettings
+	Check         Check
+	LastRun       time.Time
+	LastAlertTime time.Time
+	Scheduled     bool
+	Settled       bool
+	State         CheckState
+	Suspended     bool
+	History       ResultHistory
 }
 
 func (c *ScheduledCheck) Remaining() time.Duration {
