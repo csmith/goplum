@@ -1,23 +1,21 @@
-= Installing Goplum without Docker
+# Installing Goplum without Docker
 
-== Compiling
+## Compiling
 
-You must have https://golang.org/[Go 1.24] or newer installed.
+You must have [Go 1.24](https://golang.org/) or newer installed.
 
-[source,shell script]
-----
+```shell
 go build -o goplum ./cmd/goplum
-----
+```
 
 This will produce a `goplum` binary with all plugins included. You can disable
 individual plugins with build tags, e.g. to exclude the Discord and Slack plugins:
 
-[source,shell script]
-----
+```shell
 go build -tags "nodiscord,noslack" -o goplum ./cmd/goplum
-----
+```
 
-== Paths
+## Paths
 
 By default, Goplum will look for a config file named `goplum.conf` in its working directory.
 It will also try to persist data to `/tmp/goplum.tomb` when stopping, and read the same file
@@ -25,26 +23,24 @@ when it starts up. These are good defaults for Docker and for local development,
 aren't good for a system-wide install.
 
 These can be configured using either flags or environment variables. See
-link:flags.adoc[the flags documentation] for more information.
+[the flags documentation](flags.md) for more information.
 
-[source,shell script]
-----
+```shell
 # Flags
 goplum --config /path/to/goplum.conf --tombstone /var/run/goplum.tomb
 
 # Environment
 CONFIG=/path/to/goplum.conf TOMBSTONE=/var/run/goplum.tomb goplum
-----
+```
 
-== Execution
+## Execution
 
 The goplum binary does not fork, and does not require any special privileges, so it should
 be easy enough to integrate with most init systems.
 
 For example, with systemd:
 
-[source,systemd]
-----
+```systemd
 [Unit]
 Description=Goplum
 After=network.target
@@ -59,7 +55,7 @@ ExecStart=/usr/bin/goplum --config /etc/goplum.conf --tombstone /var/run/goplum.
 
 [Install]
 WantedBy=multi-user.target
-----
+```
 
 This assumes that:
 

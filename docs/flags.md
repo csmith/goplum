@@ -1,30 +1,27 @@
-= Flags
-:toc:
+# Flags
 
 The following flags are available to customise Goplum's behaviour. They can be
 either passed on the command-line, or set as environment variables.
 
-== api-port
+## api-port
 
-[source,shell script]
-----
+```shell
 # Command line
 goplum --api-port 1234
 
 # Environment variable
 API_PORT=1234 goplum
-----
+```
 
 Sets the port that GoPlum will listen on for API clients.
 
-For more information on the GoPlum API see the link:api.adoc[API documentation].
+For more information on the GoPlum API see the [API documentation](api.md).
 
 Default: `7586`.
 
-== ca-cert, cert and key
+## ca-cert, cert and key
 
-[source,shell script]
-----
+```shell
 # Command line
 goplum --ca-cert /etc/ssl/authority.crt \
   --cert /home/goplum/server.crt \
@@ -34,27 +31,26 @@ goplum --ca-cert /etc/ssl/authority.crt \
 CA_CERT=/etc/ssl/authority.crt \
 CERT=/home/goplum/server.crt \
 KEY=/home/goplum/server.key goplum
-----
+```
 
 Sets the path for the certificate authority's public certificate, GoPlum's public
 certificate, and GoPlum's private key, for use with the GoPlum API.
 
-For information on how to generate these see the link:api.adoc[API documentation].
+For information on how to generate these see the [API documentation](api.md).
 
 Defaults: `ca.crt`, `goplum.crt` and `goplum.key`, respectively.
 
 Note: if all three files are not found, GoPlum's API will not be enabled.
 
-== config
+## config
 
-[source,shell script]
-----
+```shell
 # Command line
 goplum -config /etc/goplum.conf
 
 # Environment variable
 CONFIG=/etc/goplum.conf goplum
-----
+```
 
 Sets the path to Goplum's configuration file.
 
@@ -62,32 +58,30 @@ If the path is relative it is interpreted with respect to Goplum's working direc
 
 Default: `goplum.conf`.
 
-== quiet
+## quiet
 
-[source,shell script]
-----
+```shell
 # Command line
 goplum -quiet
 
 # Environment variable
 QUIET=true goplum
-----
+```
 
 Reduces the amount of logging from normal operations, such as checks being
 executed.
 
 Default: `false`
 
-== runners
+## runners
 
-[source,shell script]
-----
+```shell
 # Command line
 goplum -runners 10
 
 # Environment variable
 RUNNERS=10 goplum
-----
+```
 
 Configures the number of runners that will be used to execute checks
 concurrently. Running multiple checks at once increases throughput,
@@ -97,16 +91,15 @@ checks (e.g. those failing due to a timeout) to block other checks.
 
 Default: `4`
 
-== tombstone
+## tombstone
 
-[source,shell script]
-----
+```shell
 # Command line
 goplum -tombstone /var/run/goplum.tomb
 
 # Environment variable
 TOMBSTONE=/var/run/goplum.tomb goplum
-----
+```
 
 The path to save and load Goplum's "tombstone" data. This is data saved when Goplum is
 shutting down, and reloaded if it starts up again within a short period of time.

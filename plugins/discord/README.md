@@ -1,18 +1,16 @@
-= Discord plugin
-:toc: macro
+# Discord plugin
 
 The discord plugin provides alerts that send messages to Discord channels.
 
-== Alerts
+## Alerts
 
-=== discord.message
+### discord.message
 
-[source,goplum]
-----
+```goplum
 alert discord.message "example" {
   url = "https://discord.com/api/webhooks/.../..."
 }
-----
+```
 
 Sends a Discord message via a webhook. To enable incoming webhooks go to
 Channel Settings → Integrations → Webhook → New Webhook.

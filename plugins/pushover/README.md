@@ -1,14 +1,12 @@
-= Pushover plugin
-:toc: macro
+# Pushover plugin
 
-The pushover plugin sends alerts as push notifications via https://pushover.net[Pushover].
+The pushover plugin sends alerts as push notifications via [Pushover](https://pushover.net).
 
-== Alerts
+## Alerts
 
-=== pushover.message
+### pushover.message
 
-[source,goplum]
-----
+```goplum
 alert pushover.message "example" {
   token = "application-token"
   key = "user-or-group-key"
@@ -24,7 +22,7 @@ alert pushover.message "example" {
     sound = "bugle"
   }
 }
-----
+```
 
 Sends a push notification via Pushover. The `token` and `key` values are required: `token`
 is an application key (you will need to create one for your goplum install via the Pushover

@@ -1,0 +1,20 @@
+# Exec plugin
+
+The exec plugin allows you to execute commands.
+
+> **Important:** The exec plugin should be used as a last resort. Using (or writing) a Goplum plugin
+> provides much more control around how the check runs, allows for standardised
+> configuration, avoids the need for external dependencies, and so on.
+
+## Checks
+
+### exec.command
+
+```goplum
+check exec.command "example" {
+  name = "/path/to/script.sh"
+  arguments = ["-c", "3", "--verbose"]
+}
+```
+
+Executes an arbitrary binary, passing if the exit code is 0, and failing otherwise.

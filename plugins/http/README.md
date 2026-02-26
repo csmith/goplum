@@ -1,14 +1,12 @@
-= HTTP plugin
-:toc: macro
+# HTTP plugin
 
 The HTTP plugin provides checks for HTTP services, and HTTP-based alerts.
 
-== Checks
+## Checks
 
-=== http.get
+### http.get
 
-[source,goplum]
-----
+```goplum
 check http.get "example" {
   url = "https://www.example.com/"
 
@@ -25,7 +23,7 @@ check http.get "example" {
     password = "HackThePlanet"
   }
 }
-----
+```
 
 Sends an HTTP GET request to the given URL.
 
@@ -46,10 +44,9 @@ from now. (An expired or untrusted certificate will cause a failure regardless o
 If the `auth` settings are provided, they will be sent in a Basic authentication header. Note
 that basic authentication isn't encrypted, so shouldn't be used over an insecure connection.
 
-=== http.healthcheck
+### http.healthcheck
 
-[source,goplum]
-----
+```goplum
 check http.healthcheck "example" {
   url = "https://www.example.com/health"
   check_components = true
@@ -58,11 +55,11 @@ check http.healthcheck "example" {
     password = "HackThePlanet"
   }
 }
-----
+```
 
 Retrieves the current status from a HTTP healthcheck endpoint. The endpoint is expected
 to return JSON in a manner compatible with
-https://tools.ietf.org/id/draft-inadarei-api-health-check-04.html[draft-inadarei-api-health-check-04].
+[draft-inadarei-api-health-check-04](https://tools.ietf.org/id/draft-inadarei-api-health-check-04.html).
 
 If the `check_components` setting is enabled, the state of each component/dependency
 reported in the healthcheck response will also be verified. This means if the overall service
@@ -71,21 +68,19 @@ status is `pass` but a component is `fail` then the Goplum check will fail.
 If the `auth` settings are provided, they will be sent in a Basic authentication header. Note
 that basic authentication isn't encrypted, so shouldn't be used over an insecure connection.
 
-== Alerts
+## Alerts
 
-=== http.webhook
+### http.webhook
 
-[source,goplum]
-----
+```goplum
 alert http.webhook "example" {
   url = "https://www.example.com/incoming"
 }
-----
+```
 
 Sends alerts as a POST request to the given webhook URL with a JSON payload:
 
-[source,json]
-----
+```json
 {
   "text": "Check 'Testing' is now good, was failing.",
   "name": "Testing",
@@ -101,4 +96,4 @@ Sends alerts as a POST request to the given webhook URL with a JSON payload:
   "previous_state": "failing",
   "new_state": "good"
 }
-----
+```

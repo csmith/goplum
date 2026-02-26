@@ -1,23 +1,21 @@
-= Microsoft Teams plugin
-:toc: macro
+# Microsoft Teams plugin
 
 The msteams plugin provides alerts that send messages to Microsoft Teams channels.
 
-== Alerts
+## Alerts
 
-=== msteams.message
+### msteams.message
 
-[source,goplum]
-----
+```goplum
 alert msteams.message "example" {
   url = "https://outlook.office.com/webhook/...../IncomingWebhook/....."
   title = "Service alert"
   theme = "#ff0000"
 }
-----
+```
 
 Sends a Teams message via an Incoming Webhook connector. See
-https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel[the Microsoft documentation]
+[the Microsoft documentation](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel)
 for how to add an Incoming Webhook connector.
 
 The `title` and `theme` parameters are optional. Title defaults to

@@ -1,14 +1,12 @@
-= SNMP plugin
-:toc: macro
+# SNMP plugin
 
 The SNMP plugin provides checks that query SNMP.
 
-== Checks
+## Checks
 
-=== snmp.int
+### snmp.int
 
-[source,goplum]
-----
+```goplum
 check snmp.int "example" {
   agent = "192.168.1.1"
   port = 161
@@ -17,7 +15,7 @@ check snmp.int "example" {
   at_least = 10000
   at_most = 90000
 }
-----
+```
 
 Queries one or more SNMP OIDs, and checks that the (integer) value is in the given range.
 
@@ -25,10 +23,9 @@ Port and community are optional, defaulting to `161` and `public`.
 
 Only one of `at_least` and `at_most` needs to be specified, but both can be.
 
-=== snmp.string
+### snmp.string
 
-[source,goplum]
-----
+```goplum
 check snmp.string "example" {
   agent = "192.168.1.1"
   port = 161
@@ -37,7 +34,7 @@ check snmp.string "example" {
   content = "HDD"
   content_expected = true
 }
-----
+```
 
 Queries one or more SNMP OIDs, and checks that the (string) value contains
 (or doesn't contain) the given content.

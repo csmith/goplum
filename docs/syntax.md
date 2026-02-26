@@ -1,42 +1,40 @@
-= Configuration syntax
+# Configuration syntax
 
 Goplum uses a custom configuration syntax, designed to be concise yet
 flexible and readable.
 
-== Components
+## Components
 
-=== Blocks
+### Blocks
 
-[source,goplum]
-----
+```goplum
 {
   # <Assignments>
 }
-----
+```
 
-A block is a group of <<Assignments>>, contained within braces. Three
-types of special blocks exist: <<Defaults>>, <<Named blocks (checks and alerts)>>,
-and <<Typed blocks (plugins)>>.
+A block is a group of [Assignments](#assignments), contained within braces. Three
+types of special blocks exist: [Defaults](#defaults),
+[Named blocks (checks and alerts)](#named-blocks-checks-alerts-and-groups),
+and [Typed blocks (plugins)](#typed-blocks-plugins).
 These have keywords to identify them, and checks/alerts/plugins have some
 additional metadata prior to the block opening.
 
-==== Defaults
+#### Defaults
 
-[source,goplum]
-----
+```goplum
 defaults {
   # <Assignments>
 }
-----
+```
 
 The defaults block allows you to set default values for common check
 settings. The defaults block can only exist at the top-level of the
 configuration file.
 
-==== Named blocks (checks, alerts, and groups)
+#### Named blocks (checks, alerts, and groups)
 
-[source,goplum]
-----
+```goplum
 alert <identifier> "<name>" {
   # <Assignments>
 }
@@ -52,9 +50,9 @@ group "<name>" {
     # <Assignments>
   }
 }
-----
+```
 
-The alert and check blocks require an <<Identifier>> (the type of the
+The alert and check blocks require an [Identifier](#identifier) (the type of the
 alert or check, including the plugin name) and a name. The name must
 be unique for the type of block (check/alert).
 
@@ -64,61 +62,58 @@ that applies to all checks within the group.
 
 All named blocks can exist only at the top-level of the configuration file.
 
-==== Typed blocks (plugins)
+#### Typed blocks (plugins)
 
-[source,goplum]
-----
+```goplum
 plugin <identifier> {
   # <Assignments>
 }
-----
+```
 
-The plugin block requires an <<Identifier>> that identifies the plugin
+The plugin block requires an [Identifier](#identifier) that identifies the plugin
 being configured. They can exist only at the top-level of the
 configuration file.
 
-=== Assignments
+### Assignments
 
-==== Simple assignment
+#### Simple assignment
 
-[source,goplum]
-----
+```goplum
 identifier = "value"
 identifier = 42
 identifier = 1.2345
 identifier = 3d2h1m
 identifier = true
 identifier = ["a", "b", "c", "d"]
-----
+```
 
-Simple assignments consist of an <<Identifier>>, the `=` symbol, and a value.
-The types of allowed values are explained in the <<Data types>> section.
+Simple assignments consist of an [Identifier](#identifier), the `=` symbol, and a value.
+The types of allowed values are explained in the [Data types](#data-types) section.
 
-==== Block assignment
+#### Block assignment
 
-[source,goplum]
-----
+```goplum
 identifier {
   # <Assignments>
 }
-----
+```
 
 More complex configuration may require nested blocks. This may be to group related
 options together, or when the same information has to be collected multiple times.
-These consist of the <<Identifier>> and then a simple block containing further
+These consist of the [Identifier](#identifier) and then a simple block containing further
 assignments. Block assignments can be infinitely nested but plugin authors should
 avoid requiring configuration to be layered too deeply.
 
-=== Miscellaneous
+### Miscellaneous
 
-==== Identifier
+#### Identifier
 
 Identifiers are unquoted strings consisting of letters, dots and underscores.
 They refer to variables and types provided by goplum plugins.
 
-==== Keywords
+#### Keywords
 
-A keyword is an <<Identifier>> with special meaning to the configuration
+A keyword is an [Identifier](#identifier) with special meaning to the configuration
 system. It may only be used where prescribed in this guide. Current keywords
 are:
 
@@ -134,30 +129,30 @@ are:
 * `true`
 * `false`
 
-==== Whitespace
+#### Whitespace
 
 The goplum configuration format ignores all whitespace except for
-terminating <<Comments>>, but it is strongly recommended to only have
+terminating [Comments](#comments), but it is strongly recommended to only have
 one assignment per line and to indent the content of blocks, for
 readability and debugging purposes.
 
-==== Comments
+#### Comments
 
-Comments can exist at the top-level of the configuration file or within <<Blocks>>.
+Comments can exist at the top-level of the configuration file or within [Blocks](#blocks).
 Comments start with a `#` and run to the end of the line. Note that comments
-can't exist inside <<Assignments>>.
+can't exist inside [Assignments](#assignments).
 
-== Data types
+## Data types
 
 The following data types can be used in config files:
 
-=== Strings
+### Strings
 
 Represented as double quoted text, e.g. `"This is a test"`.
 
 The character `\` may be used as an escape character, e.g.: `"Bob said:\n\t\"Hello\""`.
 
-=== Durations
+### Durations
 
 One or more integer numbers suffixed with units, e.g. `1d5h`.
 
@@ -169,19 +164,19 @@ Valid units are:
 * `d` - days (exactly 24 hours, regardless of calendar/DST changes)
 * `w` - week (exactly 7 days)
 
-=== Integers
+### Integers
 
 Sequence of digits in base 10, e.g. `123456`
 
-=== Floats
+### Floats
 
 Sequence of digits in base 10 with exactly one decimal point e.g. `1.234`, `.1` or `1.`
 
-=== Booleans
+### Booleans
 
 One of the keywords: `true`, `false`, `on`, `off`, or `yes`, `no`.
 
-=== Lists
+### Lists
 
 Individual elements contained in square brackets, separated by commas, e.g. `["foo", "bar"]`.
 A single trailing comma is allowed e.g. `[true, false,]`.

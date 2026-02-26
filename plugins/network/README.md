@@ -1,31 +1,28 @@
-= Network plugin
-:toc: macro
+# Network plugin
 
 The network plugin provides checks for low-level network services.
 
-== Checks
+## Checks
 
-=== network.connect
+### network.connect
 
-[source,goplum]
-----
+```goplum
 check network.connect "example" {
   address = "hostname:1234"
   network = "tcp6"
 }
-----
+```
 
 Attempts to open a network connection to the given address. Addresses must be in
-the form "host:port", "host%zone:port", "[host]:port" or "[host%zone]:port".
+the form "host:port", "host%zone:port", "\[host\]:port" or "\[host%zone\]:port".
 
 By default, connection attempts will be made over TCP (IPv6 or IPv4 using Fast Fallback).
 If the `network` parameter is included then connection attempts will be limited to that
 network. Valid options are: "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6".
 
-=== network.portscan
+### network.portscan
 
-[source,goplum]
-----
+```goplum
 check network.portscan "example" {
   address = "hostname"
   network = "tcp6"
@@ -37,7 +34,7 @@ check network.portscan "example" {
   concurrent_connections = 100
   connection_timeout = 3s
 }
-----
+```
 
 Performs a scan of all ports from `start` to `end` inclusive on the given
 address. Fails if any ports are open except those in the `allow` parameter.

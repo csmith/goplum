@@ -54,7 +54,7 @@
   over long periods of time. This allows them to extend the default timeout
   based on their own unique configuration.
 * Arrays in goplum's config file can now contain types other than strings.
-  See the [syntax guide](docs/syntax.adoc) for more details.
+  See the [syntax guide](docs/syntax.md) for more details.
 * Improved formatting of error messages when an unexpected token is found
   in the config file.
 * Update to Go 1.17
@@ -103,14 +103,14 @@
   ([#29](https://github.com/csmith/goplum/issues/29))
 * GoPlum now exposes a gRPC API to allow for custom tooling
   and integration with other services.
-  See the [API docs](docs/api.adoc) for further information.
+  See the [API docs](docs/api.md) for further information.
   ([#30](https://github.com/csmith/goplum/issues/30))
 * Checks can now be suspended and resumed (via the API), for
   e.g. planned maintenance
   ([#31](https://github.com/csmith/goplum/issues/31))
 * Added `plumctl` command line tool that uses the API to
   interact with a GoPlum instance.
-  See the [plumctl docs](docs/plumctl.adoc) for further
+  See the [plumctl docs](docs/plumctl.md) for further
   information.
 * The configuration file now supports plugin-specific
   config via `plugin <identifier> {}` blocks.
