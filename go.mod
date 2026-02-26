@@ -5,7 +5,6 @@ go 1.24.4
 require (
 	dario.cat/mergo v1.0.2
 	github.com/gosnmp/gosnmp v1.43.2
-	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/sebdah/goldie/v2 v2.8.0
 	github.com/spf13/cobra v1.10.2
@@ -16,6 +15,7 @@ require (
 )
 
 require (
+	github.com/csmith/envflag/v2 v2.0.0
 	github.com/dasrick/go-teams-notify/v2 v2.1.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/nelkinda/health-go v0.0.1

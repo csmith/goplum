@@ -8,6 +8,8 @@ github.com/christianhujer/assert v0.0.2 h1:j+nZAzx9h4su7L8hw0NGdd93J1BtjwnTyp8jd
 github.com/christianhujer/assert v0.0.2/go.mod h1:yszWvVhUvkosrPxaPy9FqnC6XH16zFoFs8+hPXKs4ZQ=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
+github.com/csmith/envflag/v2 v2.0.0 h1:jho28W/psEqJ02EdbUHmkmFpbc5HFhog6NzHRbgtIFg=
+github.com/csmith/envflag/v2 v2.0.0/go.mod h1:GNzzXvZ2bC3z6tdoO45mTrs7l4Uht2WfBKaF1KQu0Pk=
 github.com/cucumber/gherkin-go/v11 v11.0.0/go.mod h1:CX33k2XU2qog4e+TFjOValoq6mIUq0DmVccZs238R9w=
 github.com/cucumber/godog v0.9.0/go.mod h1:roWCHkpeK6UTOyIRRl7IR+fgfBeZ4vZR7OSq2J/NbM4=
 github.com/cucumber/messages-go/v10 v10.0.1/go.mod h1:kA5T38CBlBbYLU12TIrJ4fk4wSkVVOgyh7Enyy8WnSg=
@@ -74,8 +76,6 @@ github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+o
 github.com/klauspost/compress v1.9.5/go.mod h1:RyIbtBH6LamlWaDj8nUwkbUhJ87Yi3uG0guNDohfE1A=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.2/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
-github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649 h1:l95EUBxc0iMtMeam3pHFb9jko9ntaLYe2Nc+2evKElM=
-github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649/go.mod h1:BT0PpXv8Y4EL/WUsQmYsQ2FSB9HwQXIuvY+pElZVdFg=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.2.0/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=

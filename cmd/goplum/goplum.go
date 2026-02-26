@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"chameth.com/goplum"
-	"github.com/kouhin/envflag"
+	"github.com/csmith/envflag/v2"
 )
 
 var (
@@ -14,9 +14,7 @@ var (
 var plugins = map[string]goplum.PluginLoader{}
 
 func main() {
-	if err := envflag.Parse(); err != nil {
-		panic(err)
-	}
+	envflag.Parse()
 
 	goplum.Run(plugins, *configPath)
 }
