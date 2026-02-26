@@ -62,47 +62,6 @@ If the path is relative it is interpreted with respect to Goplum's working direc
 
 Default: `goplum.conf`.
 
-== plugins
-
-[source,shell script]
-----
-# Command line
-goplum -plugins /path/to/plugins/**.so
-
-# Environment variable
-PLUGINS=/path/to/plugins/**.so goplum
-----
-
-Sets the glob pattern that Goplum will use to find plugins. The glob pattern can contain
-the following special terms:
-
-[cols="1,4"]
-|==============================================================================
-|Term | Meaning
-
-|`*`
-|Matches any sequence of non-path-separators
-
-|`**`
-|Matches any sequence of characters, including path separators
-
-|`?`
-|Matches any single non-path-separator character
-
-|`[class]`
-|Matches any single non-path-separator from the class of characters
- (e.g. `[abc]`, `[a-z]`, or `[^def]`).
-
-|`{a,b,...}`
-|Matches a sequence of characters if one of the comma-separated alternatives match
-|==============================================================================
-
-These special terms can be escaped with a backslash.
-
-If the path is relative it is interpreted with respect to Goplum's working directory.
-
-Default: `plugins/**.so`.
-
 == quiet
 
 [source,shell script]

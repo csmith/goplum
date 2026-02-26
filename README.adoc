@@ -300,8 +300,8 @@ check http.get "get" {
 
 === Groups and Alert Storm Prevention
 
-When multiple services fail simultaneously (e.g., when a server goes down), 
-you might receive dozens of alerts at once. Groups help prevent this alert 
+When multiple services fail simultaneously (e.g., when a server goes down),
+you might receive dozens of alerts at once. Groups help prevent this alert
 storm by limiting how many alerts can be sent within a time window.
 
 To create a group:
@@ -311,7 +311,7 @@ To create a group:
 group "webservices" {
   alert_limit = 3           # Maximum 3 alerts from this group
   alert_window = 10m        # Within a 10 minute window
-  
+
   defaults {
     interval = 30s          # Default settings for checks in this group
     timeout = 10s
@@ -345,17 +345,16 @@ check settings.
 
 == Advanced topics
 
-=== Creating new plugins
+=== Selecting plugins
 
-Goplum is designed to be easily extensible. Plugins must have a main package which contains
-a function named "Plum" that returns an implementation of `goplum.Plugin`. They are then
-compiled with the `-buildtype=plugin` flag to create a shared library.
+By default all plugins in the source tree will be built when compiling Goplum.
+You can exclude plugins by setting the appropriate tag when building; for example,
+to exclude the Discord and Slack plugin:
 
-The Docker image loads plugins recursively from the `/plugins` directory, allowing you to
-mount custom folders if you wish to supply your own plugins.
-
-Note that the Go plugin loader does not work on Windows. For Windows-based development,
-the `goplumdev` command hardcodes plugins, skipping the loader.
+[source, shell script]
+----
+go build -tags "nodiscord,noslack" ./cmd/plugins
+----
 
 === gRPC API
 

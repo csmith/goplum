@@ -2,6 +2,12 @@
 
 ## unreleased
 
+### Breaking changes
+
+* Removed support for runtime plugins. Plugins are now selected at compile
+  time using build tags. The `plugins` option no longer exists. This should
+  be a transparent change for users of the Docker image.
+
 ### Features
 
 * Add support for groups. These can provide default settings to checks,

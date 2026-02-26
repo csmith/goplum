@@ -2,25 +2,24 @@
 
 == Compiling
 
-You must have https://golang.org/[Go 1.16] or newer installed.
+You must have https://golang.org/[Go 1.24] or newer installed.
 
 [source,shell script]
 ----
-# Compile the main goplum executable
 go build -o goplum ./cmd/goplum
-
-# Compile all of the bundled plugins
-for plugin in $(ls plugins); do
-    go build -o $plugin.so -buildmode=plugin ./plugins/$plugin/cmd;
-done
 ----
 
-This will produce a `goplum` binary, and a number of plugin libraries in the current directory.
+This will produce a `goplum` binary with all plugins included. You can disable
+individual plugins with build tags, e.g. to exclude the Discord and Slack plugins:
+
+[source,shell script]
+----
+go build -tags "nodiscord,noslack" -o goplum ./cmd/goplum
+----
 
 == Paths
 
-By default, Goplum will look for a config file named `goplum.conf` in its working directory
-and recursively scan for plugins starting at the `plugins` folder in its working directory.
+By default, Goplum will look for a config file named `goplum.conf` in its working directory.
 It will also try to persist data to `/tmp/goplum.tomb` when stopping, and read the same file
 when it starts up. These are good defaults for Docker and for local development, but probably
 aren't good for a system-wide install.
@@ -31,10 +30,10 @@ link:flags.adoc[the flags documentation] for more information.
 [source,shell script]
 ----
 # Flags
-goplum --plugins /path/to/plugins/**.so --config /path/to/goplum.conf --tombstone /var/run/goplum.tomb
+goplum --config /path/to/goplum.conf --tombstone /var/run/goplum.tomb
 
 # Environment
-PLUGINS=/path/to/plugins/**.so CONFIG=/path/to/goplum.conf TOMBSTONE=/var/run/goplum.tomb goplum
+CONFIG=/path/to/goplum.conf TOMBSTONE=/var/run/goplum.tomb goplum
 ----
 
 == Execution
@@ -56,7 +55,7 @@ Restart=always
 User=goplum
 Group=goplum
 WorkingDirectory=/tmp
-ExecStart=/usr/bin/goplum --config /etc/goplum.conf --plugins /usr/lib/goplum/**.so --tombstone /var/run/goplum.tomb
+ExecStart=/usr/bin/goplum --config /etc/goplum.conf --tombstone /var/run/goplum.tomb
 
 [Install]
 WantedBy=multi-user.target
@@ -65,7 +64,6 @@ WantedBy=multi-user.target
 This assumes that:
 
  * The `goplum` binary is in `/usr/bin/goplum`
- * Plugins are found under `/usr/lib/goplum/`
  * The config file is at `/etc/goplum.conf`
  * The tombstone will be created at `/var/run/goplum.tomb`
  * You have created a `goplum` user and group.

@@ -10,5 +10,3 @@ jobs:
   build:
     uses: meta/workflows/.forgejo/workflows/go-build.yml@master
     runs-on: docker
-    with:
-      package: ./cmd/...
