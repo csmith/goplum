@@ -1,4 +1,4 @@
-module github.com/csmith/goplum
+module chameth.com/goplum
 
 go 1.24.4
 

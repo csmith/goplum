@@ -1,6 +1,6 @@
 syntax = "proto3";
 package api;
-option go_package = "github.com/csmith/goplum/api";
+option go_package = "chameth.com/goplum/api";
 
 enum Status {
   INDETERMINATE = 0;

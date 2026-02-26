@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/csmith/goplum"
+	"chameth.com/goplum"
 	"github.com/kouhin/envflag"
 )
 

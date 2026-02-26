@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/csmith/goplum"
+	"chameth.com/goplum"
 )
 
 type Plugin struct{}

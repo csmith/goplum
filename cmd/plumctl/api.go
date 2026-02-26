@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/csmith/goplum/api"
+	"chameth.com/goplum/api"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

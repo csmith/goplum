@@ -7,6 +7,8 @@
 * Removed support for runtime plugins. Plugins are now selected at compile
   time using build tags. The `plugins` option no longer exists. This should
   be a transparent change for users of the Docker image.
+* Go package named changed from `github.com/csmith/goplum` to
+  `chameth.com/goplum`.
 
 ### Features
 
@@ -15,6 +17,11 @@
   and alerts will be suppressed if any goes over the rate limit.
 * Add support for reminders. If set, a failing check will repeatedly emit
   alerts with the given period.
+
+### Other changes
+
+* Various dependency updates
+* Converted documentation to markdown
 
 ## 0.8.0 - 2025-06-13
 

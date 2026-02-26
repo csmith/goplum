@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/csmith/goplum"
+	"chameth.com/goplum"
 	"github.com/mitchellh/mapstructure"
 )
 

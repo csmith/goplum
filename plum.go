@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"dario.cat/mergo"
-	"github.com/csmith/goplum/config"
-	"github.com/csmith/goplum/internal"
+	"chameth.com/goplum/config"
+	"chameth.com/goplum/internal"
 )
 
 var (

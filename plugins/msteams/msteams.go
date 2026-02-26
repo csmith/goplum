@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/csmith/goplum"
+	"chameth.com/goplum"
 	goteamsnotify "github.com/dasrick/go-teams-notify/v2"
 )
 

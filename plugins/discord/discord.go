@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/csmith/goplum"
+	"chameth.com/goplum"
 )
 
 var client = http.Client{Timeout: 20 * time.Second}

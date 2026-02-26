@@ -5,7 +5,7 @@ import (
 	"log"
 	"math/rand"
 
-	"github.com/csmith/goplum"
+	"chameth.com/goplum"
 )
 
 type Plugin struct{}

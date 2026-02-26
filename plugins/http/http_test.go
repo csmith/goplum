@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/csmith/goplum"
+	"chameth.com/goplum"
 	"github.com/stretchr/testify/assert"
 )
 

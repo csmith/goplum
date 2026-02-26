@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/csmith/goplum"
+	"chameth.com/goplum"
 	"github.com/nelkinda/health-go"
 )
 

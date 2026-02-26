@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/csmith/goplum/api"
+	"chameth.com/goplum/api"
 	"github.com/spf13/cobra"
 )
 

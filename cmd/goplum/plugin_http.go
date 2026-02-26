@@ -3,8 +3,8 @@
 package main
 
 import (
-	"github.com/csmith/goplum"
-	"github.com/csmith/goplum/plugins/http"
+	"chameth.com/goplum"
+	"chameth.com/goplum/plugins/http"
 )
 
 func init() {

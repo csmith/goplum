@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/csmith/goplum"
+	"chameth.com/goplum"
 )
 
 type Plugin struct{}

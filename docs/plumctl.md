@@ -8,7 +8,7 @@
 To install the latest version:
 
 ```
-$ go install github.com/csmith/goplum/cmd/plumctl
+$ go install chameth.com/goplum/cmd/plumctl
 ```
 
 Then to create a configuration file:

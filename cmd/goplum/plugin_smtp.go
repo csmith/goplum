@@ -3,8 +3,8 @@
 package main
 
 import (
-	"github.com/csmith/goplum"
-	"github.com/csmith/goplum/plugins/smtp"
+	"chameth.com/goplum"
+	"chameth.com/goplum/plugins/smtp"
 )
 
 func init() {

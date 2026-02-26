@@ -81,10 +81,10 @@ type Fact string
 var (
 	// ResponseTime denotes the length of time it took for a service to respond to a request.
 	// Its value should be a time.Duration.
-	ResponseTime Fact = "github.com/csmith/goplum#response_time"
+	ResponseTime Fact = "chameth.com/goplum#response_time"
 
 	// CheckTime indicates how long the entire check took to invoke. Its value should be a time.Duration.
-	CheckTime Fact = "github.com/csmith/goplum#check_time"
+	CheckTime Fact = "chameth.com/goplum#check_time"
 )
 
 // Result contains information about a check that was performed.
