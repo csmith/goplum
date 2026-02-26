@@ -48,7 +48,7 @@ func TestGroupAlertThrottling(t *testing.T) {
 		}
 
 		// First two alerts should be normal
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			canSend, isLast := group.canSendAlert()
 			if !canSend || isLast {
 				t.Errorf("Alert %d: Expected canSend=true, isLast=false, got %v, %v", i+1, canSend, isLast)

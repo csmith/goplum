@@ -20,7 +20,7 @@ func main() {
 	}
 }
 
-func bail(format string, args ...interface{}) {
+func bail(format string, args ...any) {
 	fmt.Printf(fmt.Sprintf("%s\n", format), args)
 	os.Exit(1)
 }

@@ -161,7 +161,7 @@ func (s *GrpcServer) convertState(state CheckState) api.Status {
 	}
 }
 
-func (s *GrpcServer) convertFacts(facts map[Fact]interface{}) []*api.Fact {
+func (s *GrpcServer) convertFacts(facts map[Fact]any) []*api.Fact {
 	res := make([]*api.Fact, 0, len(facts))
 	for i := range facts {
 		res = append(res, &api.Fact{
@@ -172,7 +172,7 @@ func (s *GrpcServer) convertFacts(facts map[Fact]interface{}) []*api.Fact {
 	return res
 }
 
-func (s *GrpcServer) convertFactValue(i interface{}) api.FactValue {
+func (s *GrpcServer) convertFactValue(i any) api.FactValue {
 	if v, ok := i.(int64); ok {
 		return &api.Fact_Int{Int: v}
 	}

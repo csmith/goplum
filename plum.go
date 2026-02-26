@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
+	"dario.cat/mergo"
 	"github.com/csmith/goplum/config"
 	"github.com/csmith/goplum/internal"
-	"dario.cat/mergo"
 )
 
 var (
@@ -274,7 +274,7 @@ func (p *Plum) addGroups(groups []*config.Block) error {
 		}
 
 		// Extract defaults from settings if present
-		if defaults, ok := groups[i].Settings["defaults"].(map[string]interface{}); ok {
+		if defaults, ok := groups[i].Settings["defaults"].(map[string]any); ok {
 			group.Defaults = &CheckSettings{}
 			if err := internal.DecodeSettings(&defaults, group.Defaults); err != nil {
 				return fmt.Errorf("error configuring defaults for group %s: %v", groups[i].Name, err)
@@ -487,7 +487,7 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 	}()
 
 	if result.Facts == nil {
-		result.Facts = map[Fact]interface{}{}
+		result.Facts = map[Fact]any{}
 	}
 	result.Facts[CheckTime] = time.Since(start)
 

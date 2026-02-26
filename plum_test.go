@@ -51,7 +51,7 @@ func TestReadConfig_GoldenData(t *testing.T) {
 			plum.RegisterPlugins(plugins)
 			err := plum.ReadConfig(path.Join("testdata", fmt.Sprintf("%s.conf", tests[i])))
 
-			var actual interface{}
+			var actual any
 			if err == nil {
 				actual = plum
 			} else {

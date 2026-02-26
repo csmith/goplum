@@ -96,7 +96,7 @@ func (ts *TombStone) Restore(checks map[string]*ScheduledCheck) error {
 			check.History = saved.History
 
 			if stateful, ok := check.Check.(Stateful); ok && saved.PluginState != nil {
-				stateful.Restore(func(i interface{}) {
+				stateful.Restore(func(i any) {
 					if err := json.Unmarshal(saved.PluginState, i); err != nil {
 						log.Printf("Unable to restore state of check %s: %v", check.Name, err)
 					}

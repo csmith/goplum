@@ -96,7 +96,7 @@ type Result struct {
 	// Detail is an short, optional explanation of the current state.
 	Detail string `json:"detail,omitempty"`
 	// Facts provides details about the check and/or the remote service, such as the response time or version.
-	Facts map[Fact]interface{} `json:"facts,omitempty"`
+	Facts map[Fact]any `json:"facts,omitempty"`
 }
 
 // GoodResult creates a new result indicating the service is in a good state.
@@ -108,7 +108,7 @@ func GoodResult() Result {
 }
 
 // IndeterminateResult creates a new result indicating the check wasn't able to compute a state.
-func IndeterminateResult(format string, a ...interface{}) Result {
+func IndeterminateResult(format string, a ...any) Result {
 	return Result{
 		State:  StateIndeterminate,
 		Time:   time.Now(),
@@ -117,7 +117,7 @@ func IndeterminateResult(format string, a ...interface{}) Result {
 }
 
 // FailingResult creates a new result indicating the service is in a bad state.
-func FailingResult(format string, a ...interface{}) Result {
+func FailingResult(format string, a ...any) Result {
 	return Result{
 		State:  StateFailing,
 		Time:   time.Now(),
@@ -134,7 +134,7 @@ type AlertDetails struct {
 	// Type is the type of check involved.
 	Type string `json:"type"`
 	// Config is the user-supplied parameters to the check.
-	Config interface{} `json:"config"`
+	Config any `json:"config"`
 	// LastResult is the most recent result that caused the transition.
 	LastResult *Result `json:"last_result"`
 	// PreviousState is the state this check was previously in.
@@ -166,6 +166,6 @@ type LongRunning interface {
 
 // Stateful is implemented by checks that keep local state that should be persisted across restarts.
 type Stateful interface {
-	Save() interface{}
-	Restore(func(interface{}))
+	Save() any
+	Restore(func(any))
 }

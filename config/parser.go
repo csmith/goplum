@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"dario.cat/mergo"
@@ -12,7 +13,7 @@ import (
 type Block struct {
 	Name     string
 	Type     string
-	Settings map[string]interface{}
+	Settings map[string]any
 }
 
 type Parser struct {
@@ -20,7 +21,7 @@ type Parser struct {
 	saved           *token
 	last            *token
 	hasDefaults     bool
-	DefaultSettings map[string]interface{}
+	DefaultSettings map[string]any
 	AlertBlocks     []*Block
 	CheckBlocks     []*Block
 	PluginSettings  []*Block
@@ -30,7 +31,7 @@ type Parser struct {
 func NewParser(reader io.Reader) *Parser {
 	return &Parser{
 		lexer:           NewLexer(reader),
-		DefaultSettings: make(map[string]interface{}),
+		DefaultSettings: make(map[string]any),
 	}
 }
 
@@ -138,12 +139,12 @@ func (p *Parser) parseBlockWithName(allowDefaults bool) (*Block, error) {
 	}, nil
 }
 
-func (p *Parser) parseBlock(allowDefaults bool) (map[string]interface{}, error) {
+func (p *Parser) parseBlock(allowDefaults bool) (map[string]any, error) {
 	if _, err := p.take(tokenBlockStart); err != nil {
 		return nil, err
 	}
 
-	res := make(map[string]interface{})
+	res := make(map[string]any)
 	for {
 		var wanted = []tokenClass{tokenBlockEnd, tokenIdentifier}
 		if allowDefaults {
@@ -181,7 +182,7 @@ func (p *Parser) parseBlock(allowDefaults bool) (map[string]interface{}, error) 
 	}
 }
 
-func (p *Parser) parseAssignment() (interface{}, error) {
+func (p *Parser) parseAssignment() (any, error) {
 	s, err := p.take(tokenAssignment, tokenBlockStart)
 	if err != nil {
 		return nil, err
@@ -204,12 +205,12 @@ func (p *Parser) parseAssignment() (interface{}, error) {
 	}
 }
 
-func (p *Parser) parseSequence(start, end tokenClass) ([]interface{}, error) {
+func (p *Parser) parseSequence(start, end tokenClass) ([]any, error) {
 	if _, err := p.take(start); err != nil {
 		return nil, err
 	}
 
-	var values []interface{}
+	var values []any
 	var delim = false
 	var firstType = tokenError
 
@@ -269,10 +270,8 @@ func (p *Parser) backup() {
 func (p *Parser) take(classes ...tokenClass) (*token, error) {
 	t := p.next()
 
-	for i := range classes {
-		if t.Class == classes[i] {
-			return t, nil
-		}
+	if slices.Contains(classes, t.Class) {
+		return t, nil
 	}
 
 	if t.Class == tokenEOF {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -107,12 +108,7 @@ func (c PortScanCheck) check(port int) bool {
 }
 
 func (c PortScanCheck) allowed(port int) bool {
-	for i := range c.Allow {
-		if c.Allow[i] == port {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(c.Allow, port)
 }
 
 func (c PortScanCheck) Execute(ctx context.Context) goplum.Result {

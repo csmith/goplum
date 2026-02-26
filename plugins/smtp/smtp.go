@@ -52,7 +52,7 @@ func (s SendAlert) Send(details goplum.AlertDetails) error {
 }
 
 func (s SendAlert) body(details goplum.AlertDetails) string {
-	settings := make(map[string]interface{})
+	settings := make(map[string]any)
 	dec, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		TagName:          "config",
 		Result:           &settings,

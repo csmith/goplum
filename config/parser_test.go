@@ -32,7 +32,7 @@ func TestParser_GoldenData(t *testing.T) {
 
 			parser := NewParser(f)
 
-			var expected interface{}
+			var expected any
 			if err := parser.Parse(); err != nil {
 				expected = err.Error()
 			} else {

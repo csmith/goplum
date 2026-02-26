@@ -14,7 +14,7 @@ type token struct {
 	Class  tokenClass
 	Line   int
 	Column int
-	Value  interface{}
+	Value  any
 }
 
 type tokenClass int
@@ -152,7 +152,7 @@ func (l *Lexer) backup() {
 	l.column--
 }
 
-func (l *Lexer) emit(class tokenClass, width int, value interface{}) {
+func (l *Lexer) emit(class tokenClass, width int, value any) {
 	l.output <- token{
 		Class:  class,
 		Line:   l.line,

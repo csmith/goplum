@@ -6,7 +6,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-func DecodeSettings(src *map[string]interface{}, targets ...interface{}) error {
+func DecodeSettings(src *map[string]any, targets ...any) error {
 	unused := make(map[string]int)
 
 	for i := range targets {

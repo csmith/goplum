@@ -113,14 +113,14 @@ type SavedState struct {
 	Received time.Time
 }
 
-func (g *ReceivedCheck) Save() interface{} {
+func (g *ReceivedCheck) Save() any {
 	return SavedState{
 		Created:  g.created,
 		Received: g.received,
 	}
 }
 
-func (g *ReceivedCheck) Restore(restorer func(interface{})) {
+func (g *ReceivedCheck) Restore(restorer func(any)) {
 	state := SavedState{}
 	restorer(&state)
 	g.created = state.Created
