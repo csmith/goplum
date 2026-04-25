@@ -75,10 +75,15 @@ that basic authentication isn't encrypted, so shouldn't be used over an insecure
 ```goplum
 alert http.webhook "example" {
   url = "https://www.example.com/incoming"
+  headers = ["Authorization: Bearer token123"]   # optional
 }
 ```
 
-Sends alerts as a POST request to the given webhook URL with a JSON payload:
+Sends alerts as a POST request to the given webhook URL with a JSON payload.
+
+If the `headers` parameter is specified, each entry is sent as an additional HTTP header on the
+request. Headers should be specified in `"Name: Value"` format. Multiple values for the same header
+name can be provided by including multiple entries.
 
 ```json
 {

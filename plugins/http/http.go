@@ -195,7 +195,8 @@ func (h HealthCheck) convert(status health.Status) goplum.CheckState {
 }
 
 type WebHookAlert struct {
-	Url string
+	Url     string
+	Headers []string
 }
 
 func (w WebHookAlert) Send(details goplum.AlertDetails) error {
@@ -204,7 +205,22 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 		return err
 	}
 
-	res, err := client.Post(w.Url, "application/json", bytes.NewReader(b))
+	req, err := http.NewRequest(http.MethodPost, w.Url, bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	for _, h := range w.Headers {
+		parts := strings.SplitN(h, ":", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid header %q, expected format \"Name: Value\"", h)
+		}
+		req.Header.Add(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
+	}
+
+	res, err := client.Do(req)
 	if err != nil {
 		return err
 	}
