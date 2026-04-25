@@ -76,6 +76,7 @@ that basic authentication isn't encrypted, so shouldn't be used over an insecure
 alert http.webhook "example" {
   url = "https://www.example.com/incoming"
   headers = ["Authorization: Bearer token123"]   # optional
+  secret = "my-secret-key"                       # optional
 }
 ```
 
@@ -84,6 +85,10 @@ Sends alerts as a POST request to the given webhook URL with a JSON payload.
 If the `headers` parameter is specified, each entry is sent as an additional HTTP header on the
 request. Headers should be specified in `"Name: Value"` format. Multiple values for the same header
 name can be provided by including multiple entries.
+
+If the `secret` parameter is specified, an `X-Goplum-Signature` header is included with each request
+containing a HMAC-SHA256 signature of the request body, prefixed with `sha256=`. This can be used
+by the receiving endpoint to verify that the request was sent by Goplum.
 
 ```json
 {

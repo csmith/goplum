@@ -6,6 +6,9 @@
 
 * The http.webhook alert method can now be configured to send arbitrary
   headers (e.g. auth tokens).
+* The http.webhook alert method can now be configured with a secret;
+  if specified it will send an X-Goplum-Signature header with a SHA256
+  digest of the payload.
 
 ## 1.0.0 - 2026-02-26
 

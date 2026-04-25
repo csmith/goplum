@@ -3,6 +3,9 @@ package http
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -197,6 +200,7 @@ func (h HealthCheck) convert(status health.Status) goplum.CheckState {
 type WebHookAlert struct {
 	Url     string
 	Headers []string
+	Secret  string
 }
 
 func (w WebHookAlert) Send(details goplum.AlertDetails) error {
@@ -211,6 +215,12 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+
+	if len(w.Secret) > 0 {
+		mac := hmac.New(sha256.New, []byte(w.Secret))
+		mac.Write(b)
+		req.Header.Set("X-Goplum-Signature", "sha256="+hex.EncodeToString(mac.Sum(nil)))
+	}
 
 	for _, h := range w.Headers {
 		parts := strings.SplitN(h, ":", 2)
