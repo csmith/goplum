@@ -19,11 +19,10 @@ require (
 	github.com/dasrick/go-teams-notify/v2 v2.1.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/nelkinda/health-go v0.0.1
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 )
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/nelkinda/http-go v0.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
