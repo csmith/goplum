@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	dario.cat/mergo v1.0.2
-	github.com/gosnmp/gosnmp v1.44.0
+	github.com/gosnmp/gosnmp v1.45.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/sebdah/goldie/v2 v2.8.0
 	github.com/spf13/cobra v1.10.2
