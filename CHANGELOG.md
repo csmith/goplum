@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1 - 2026-10-20
+
+### Fixed
+
+- Require Go 1.27.3 and update the base image to dockerbase 1.20261020.1,
+  for fixes to the eMudhra intermediate CA compromise
+- Update gRPC to fix HTTP/2 vulnerabilities
+
 ## 1.1.0 - 2026-04-25
 
 ### Features
