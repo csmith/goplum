@@ -28,7 +28,7 @@ func (p Plugin) Check(kind string) goplum.Check {
 
 type CommandCheck struct {
 	Name      string
-	Arguments []string
+	Arguments []string `redact:"true"`
 }
 
 func (c CommandCheck) Execute(ctx context.Context) goplum.Result {

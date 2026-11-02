@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -22,6 +23,9 @@ type Plugin interface {
 // Execute method will be called repeatedly over the lifetime of the application.
 //
 // Checks may also implement the Validator interface to validate their arguments when configured.
+//
+// Exported fields that hold secrets (passwords, tokens, etc) should be tagged with `redact:"true"`, so their
+// values are not included in alerts.
 type Check interface {
 	// Execute performs the actual check to see if the service is up or not.
 	// It should block until a result is available or the passed context is cancelled.
@@ -133,7 +137,7 @@ type AlertDetails struct {
 	Name string `json:"name"`
 	// Type is the type of check involved.
 	Type string `json:"type"`
-	// Config is the user-supplied parameters to the check.
+	// Config is the user-supplied parameters to the check, with any fields tagged `redact:"true"` redacted.
 	Config any `json:"config"`
 	// LastResult is the most recent result that caused the transition.
 	LastResult *Result `json:"last_result"`
@@ -143,6 +147,65 @@ type AlertDetails struct {
 	NewState CheckState `json:"new_state"`
 	// IsReminder indicates that this alert is a periodic reminder for an ongoing failure, not a new state change.
 	IsReminder bool `json:"is_reminder"`
+}
+
+const redactedValue = "[redacted]"
+
+func redact(config any) any {
+	v := reflect.ValueOf(config)
+	for v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return config
+		}
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return config
+	}
+
+	res := reflect.New(v.Type()).Elem()
+	redactStruct(res, v)
+	return res.Interface()
+}
+
+// redactStruct copies the exported fields of src into dst, redacting any tagged as secret. Unexported fields are
+// left as zero values: they're not part of the user's config, and may be in use concurrently.
+func redactStruct(dst, src reflect.Value) {
+	t := src.Type()
+	for i := range t.NumField() {
+		f := dst.Field(i)
+		if !f.CanSet() {
+			continue
+		}
+
+		switch {
+		case t.Field(i).Tag.Get("redact") == "true":
+			f.Set(redactValue(src.Field(i)))
+		case f.Kind() == reflect.Struct:
+			redactStruct(f, src.Field(i))
+		default:
+			f.Set(src.Field(i))
+		}
+	}
+}
+
+func redactValue(v reflect.Value) reflect.Value {
+	switch {
+	case v.IsZero():
+		// Leave unset values alone, so it's clear they weren't configured.
+		return v
+	case v.Kind() == reflect.String:
+		return reflect.ValueOf(redactedValue).Convert(v.Type())
+	case v.Kind() == reflect.Slice && v.Type().Elem().Kind() == reflect.String:
+		res := reflect.MakeSlice(v.Type(), v.Len(), v.Len())
+		for i := range v.Len() {
+			res.Index(i).Set(reflect.ValueOf(redactedValue).Convert(v.Type().Elem()))
+		}
+		return res
+	default:
+		return reflect.Zero(v.Type())
+	}
 }
 
 // Alert defines the method to inform the user of a change to a service - e.g. when it comes up or goes down.

@@ -537,7 +537,7 @@ func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isReminder bool) {
 	details := AlertDetails{
 		Name:          c.Name,
-		Config:        c.Check,
+		Config:        redact(c.Check),
 		Type:          c.Type,
 		LastResult:    c.LastResult(),
 		PreviousState: previousState,

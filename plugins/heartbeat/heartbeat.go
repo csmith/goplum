@@ -70,7 +70,7 @@ func (p *Plugin) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 }
 
 type ReceivedCheck struct {
-	ID     string `config:"id"`
+	ID     string `config:"id" redact:"true"`
 	Within time.Duration
 
 	created  time.Time

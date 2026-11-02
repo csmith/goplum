@@ -45,7 +45,7 @@ func (p Plugin) Check(kind string) goplum.Check {
 type BaseCheck struct {
 	Agent     string
 	Port      int
-	Community string
+	Community string `redact:"true"`
 	Oid       []string
 }
 

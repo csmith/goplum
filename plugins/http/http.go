@@ -61,7 +61,7 @@ func (p Plugin) Check(kind string) goplum.Check {
 
 type Credentials struct {
 	Username string
-	Password string
+	Password string `redact:"true"`
 }
 
 type BaseCheck struct {
