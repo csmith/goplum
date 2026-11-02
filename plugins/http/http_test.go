@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"chameth.com/goplum"
 	"github.com/stretchr/testify/assert"
@@ -142,4 +143,26 @@ func TestWebHookAlert_ReturnsErrorOnInvalidHeader(t *testing.T) {
 	err := alert.Send(goplum.AlertDetails{Text: "test"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid header")
+}
+
+func TestWebHookAlert_TimesOutIfServerNeverResponds(t *testing.T) {
+	done := make(chan struct{})
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				<-done
+			},
+		),
+	)
+	defer server.Close()
+	defer close(done)
+
+	oldTimeout := webhookTimeout
+	webhookTimeout = 100 * time.Millisecond
+	defer func() { webhookTimeout = oldTimeout }()
+
+	start := time.Now()
+	err := WebHookAlert{Url: server.URL}.Send(goplum.AlertDetails{})
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Less(t, time.Since(start), 5*time.Second)
 }

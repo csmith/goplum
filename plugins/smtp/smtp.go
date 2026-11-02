@@ -1,11 +1,15 @@
 package smtp
 
 import (
+	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/smtp"
 	"regexp"
 	"strings"
+	"time"
 
 	"chameth.com/goplum"
 	"github.com/mitchellh/mapstructure"
@@ -48,7 +52,73 @@ func (s SendAlert) Send(details goplum.AlertDetails) error {
 		s.From,
 		s.body(details),
 	)
-	return smtp.SendMail(s.Server, auth, s.From, []string{s.To}, []byte(body))
+	return sendMail(s.Server, auth, s.From, s.To, []byte(body))
+}
+
+var sendTimeout = 20 * time.Second
+
+// sendMail behaves like smtp.SendMail, but bounds the whole exchange by sendTimeout.
+func sendMail(addr string, auth smtp.Auth, from, to string, msg []byte) error {
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
+	defer cancel()
+
+	conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	if err := conn.SetDeadline(time.Now().Add(sendTimeout)); err != nil {
+		return err
+	}
+
+	host, _, _ := net.SplitHostPort(addr)
+	c, err := smtp.NewClient(conn, host)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+
+	if err := c.Hello("localhost"); err != nil {
+		return err
+	}
+
+	if ok, _ := c.Extension("STARTTLS"); ok {
+		if err := c.StartTLS(&tls.Config{ServerName: host}); err != nil {
+			return err
+		}
+	}
+
+	if ok, _ := c.Extension("AUTH"); !ok {
+		return errors.New("smtp: server doesn't support AUTH")
+	}
+
+	if err := c.Auth(auth); err != nil {
+		return err
+	}
+
+	if err := c.Mail(from); err != nil {
+		return err
+	}
+
+	if err := c.Rcpt(to); err != nil {
+		return err
+	}
+
+	w, err := c.Data()
+	if err != nil {
+		return err
+	}
+
+	if _, err := w.Write(msg); err != nil {
+		return err
+	}
+
+	if err := w.Close(); err != nil {
+		return err
+	}
+
+	return c.Quit()
 }
 
 func (s SendAlert) body(details goplum.AlertDetails) string {

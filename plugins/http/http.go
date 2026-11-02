@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -17,14 +18,20 @@ import (
 	"github.com/nelkinda/health-go"
 )
 
+// client is shared by checks and alerts. It has no overall timeout as checks are bounded by their context,
+// which may be configured to be longer than any default we could pick here.
 var client = http.Client{
 	Transport: &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           (&net.Dialer{Timeout: 30 * time.Second}).DialContext,
 		ForceAttemptHTTP2:     true,
 		DisableKeepAlives:     true,
+		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	},
 }
+
+var webhookTimeout = 20 * time.Second
 
 type Plugin struct{}
 
@@ -209,7 +216,10 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, w.Url, bytes.NewReader(b))
+	ctx, cancel := context.WithTimeout(context.Background(), webhookTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, w.Url, bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
