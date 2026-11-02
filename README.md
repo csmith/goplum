@@ -165,6 +165,7 @@ documentation, that explains how its checks and alerts need to be configured.
 | [network](plugins/network) | connect, portscan | - |
 | [heartbeat](plugins/heartbeat) | received | - |
 | [msteams](plugins/msteams) | - | message |
+| [prometheus](plugins/prometheus) | query | - |
 | [pushover](plugins/pushover) | - | message |
 | [slack](plugins/slack) | - | message |
 | [smtp](plugins/smtp) | - | send |

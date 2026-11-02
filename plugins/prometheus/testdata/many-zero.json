@@ -1,0 +1,9 @@
+{"status":"success","data":{"resultType":"vector","result":[
+  {"metric":{"i":"1"},"value":[0,"0"]},
+  {"metric":{"i":"2"},"value":[0,"0"]},
+  {"metric":{"i":"3"},"value":[0,"0"]},
+  {"metric":{"i":"4"},"value":[0,"0"]},
+  {"metric":{"i":"5"},"value":[0,"0"]},
+  {"metric":{"i":"6"},"value":[0,"0"]},
+  {"metric":{"i":"7"},"value":[0,"0"]}
+]}}

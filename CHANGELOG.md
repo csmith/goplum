@@ -6,6 +6,8 @@
 
 - Add `include` to load checks, alerts, groups and plugins from other
   config files
+- Add `prometheus` plugin with a `prometheus.query` check that runs PromQL
+  queries against a Prometheus-compatible API
 
 ### Changed
 
