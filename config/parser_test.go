@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/sebdah/goldie/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParser_GoldenData(t *testing.T) {
@@ -42,4 +45,24 @@ func TestParser_GoldenData(t *testing.T) {
 			gold.AssertJson(t, fmt.Sprintf("%s.parser", tests[i]), expected)
 		})
 	}
+}
+
+func TestParser_RecordsBlockPositions(t *testing.T) {
+	parser := NewParser(
+		strings.NewReader(
+			`
+alert debug.sysout "a" {}
+
+check debug.random "c" {}
+plugin debug {}
+  group "g" {}
+`,
+		),
+	)
+	require.NoError(t, parser.Parse())
+
+	assert.Equal(t, Position{Line: 2}, parser.AlertBlocks[0].Position)
+	assert.Equal(t, Position{Line: 4}, parser.CheckBlocks[0].Position)
+	assert.Equal(t, Position{Line: 5}, parser.PluginSettings[0].Position)
+	assert.Equal(t, Position{Line: 6}, parser.GroupBlocks[0].Position)
 }

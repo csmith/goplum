@@ -379,8 +379,14 @@ func (p *Plum) addChecks(checks []*config.Block) error {
 }
 
 func (p *Plum) configurePlugins(blocks []*config.Block) error {
+	seen := make(map[string]config.Position)
 	for i := range blocks {
 		name := blocks[i].Type
+		if first, ok := seen[name]; ok {
+			return fmt.Errorf("plugin defined multiple times: %s (at %s and %s)", name, first, blocks[i].Position)
+		}
+		seen[name] = blocks[i].Position
+
 		loaded, ok := p.loadedPlugins[name]
 		if ok {
 			if err := internal.DecodeSettings(&blocks[i].Settings, &loaded); err != nil {

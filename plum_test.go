@@ -2,6 +2,7 @@ package goplum_test
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"testing"
 
@@ -9,6 +10,8 @@ import (
 	"chameth.com/goplum/plugins/debug"
 	"chameth.com/goplum/plugins/http"
 	"github.com/sebdah/goldie/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var plugins = map[string]goplum.PluginLoader{
@@ -61,4 +64,47 @@ func TestReadConfig_GoldenData(t *testing.T) {
 			gold.AssertJson(t, tests[i], actual)
 		})
 	}
+}
+
+func TestReadConfig_RejectsDuplicatePluginBlocks(t *testing.T) {
+	configPath := path.Join(t.TempDir(), "goplum.conf")
+	require.NoError(
+		t,
+		os.WriteFile(
+			configPath,
+			[]byte(
+				`plugin http {
+}
+
+check http.get "example" {
+  url = "https://example.com/"
+  alerts = ["-"]
+}
+
+plugin http {
+}
+`,
+			),
+			0600,
+		),
+	)
+
+	plum := goplum.NewPlum()
+	plum.RegisterPlugins(plugins)
+	err := plum.ReadConfig(configPath)
+
+	require.Error(t, err)
+	assert.Equal(t, "plugin defined multiple times: http (at line 1 and line 9)", err.Error())
+}
+
+func TestReadConfig_RejectsDuplicateBlocksForUnloadedPlugin(t *testing.T) {
+	configPath := path.Join(t.TempDir(), "goplum.conf")
+	require.NoError(t, os.WriteFile(configPath, []byte("plugin debug {}\nplugin debug {}\n"), 0600))
+
+	plum := goplum.NewPlum()
+	plum.RegisterPlugins(plugins)
+	err := plum.ReadConfig(configPath)
+
+	require.Error(t, err)
+	assert.Equal(t, "plugin defined multiple times: debug (at line 1 and line 2)", err.Error())
 }

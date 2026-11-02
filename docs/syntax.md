@@ -72,7 +72,7 @@ plugin <identifier> {
 
 The plugin block requires an [Identifier](#identifier) that identifies the plugin
 being configured. They can exist only at the top-level of the
-configuration file.
+configuration file, and each plugin can be configured by only one block.
 
 ### Assignments
 

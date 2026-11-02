@@ -17,6 +17,9 @@
         "sid": "xxx",
         "to": "+44 ....",
         "token": "yyy"
+      },
+      "Position": {
+        "Line": 7
       }
     }
   ],
@@ -27,6 +30,9 @@
       "Settings": {
         "content": "Personal Homepage of Chris Smith",
         "url": "https://chameth.com/"
+      },
+      "Position": {
+        "Line": 14
       }
     }
   ],
@@ -36,6 +42,9 @@
       "Type": "http",
       "Settings": {
         "foo": "bar"
+      },
+      "Position": {
+        "Line": 19
       }
     }
   ],
@@ -50,6 +59,9 @@
           "interval": 30000000000,
           "timeout": 10000000000
         }
+      },
+      "Position": {
+        "Line": 23
       }
     }
   ]

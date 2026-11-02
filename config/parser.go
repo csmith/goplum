@@ -14,6 +14,16 @@ type Block struct {
 	Name     string
 	Type     string
 	Settings map[string]any
+	Position Position
+}
+
+// Position identifies where in the configuration a block was declared.
+type Position struct {
+	Line int
+}
+
+func (p Position) String() string {
+	return fmt.Sprintf("line %d", p.Line)
 }
 
 type Parser struct {
@@ -62,24 +72,28 @@ func (p *Parser) Parse() error {
 			if err != nil {
 				return err
 			}
+			block.Position = Position{Line: t.Line}
 			p.AlertBlocks = append(p.AlertBlocks, block)
 		case tokenCheck:
 			block, err := p.parseBlockWithTypeAndName(false)
 			if err != nil {
 				return err
 			}
+			block.Position = Position{Line: t.Line}
 			p.CheckBlocks = append(p.CheckBlocks, block)
 		case tokenPlugin:
 			block, err := p.parseBlockWithType(false)
 			if err != nil {
 				return err
 			}
+			block.Position = Position{Line: t.Line}
 			p.PluginSettings = append(p.PluginSettings, block)
 		case tokenGroup:
 			block, err := p.parseBlockWithName(true)
 			if err != nil {
 				return err
 			}
+			block.Position = Position{Line: t.Line}
 			p.GroupBlocks = append(p.GroupBlocks, block)
 		case tokenError:
 			return errors.New(t.Value.(string))
