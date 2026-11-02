@@ -79,8 +79,8 @@ in its working directory. You can change these by providing the appropriate path
 as a flag or environment variable - see the [flags documentation](flags.md) for
 more information.
 
-If any of the files are missing, or if the private key is group or world readable,
-GoPlum will not enable its API and will report the error in its log file.
+If any of the files are missing or invalid, GoPlum will not enable its API and will
+report the error in its log file.
 
 Clients will also require the CA certificate, and their own certificate and private
 key. Clients based on the GoPlum codebase will use the same flags and default settings
