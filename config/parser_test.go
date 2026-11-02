@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -29,21 +28,24 @@ func TestParser_GoldenData(t *testing.T) {
 	gold := goldie.New(t)
 
 	for i := range tests {
-		t.Run(tests[i], func(t *testing.T) {
-			f, _ := os.Open(path.Join("testdata", fmt.Sprintf("%s.conf", tests[i])))
-			defer f.Close()
+		t.Run(
+			tests[i],
+			func(t *testing.T) {
+				f, _ := os.Open(path.Join("testdata", tests[i]+".conf"))
+				defer f.Close()
 
-			parser := NewParser(f)
+				parser := NewParser(f)
 
-			var expected any
-			if err := parser.Parse(); err != nil {
-				expected = err.Error()
-			} else {
-				expected = parser
-			}
+				var expected any
+				if err := parser.Parse(); err != nil {
+					expected = err.Error()
+				} else {
+					expected = parser
+				}
 
-			gold.AssertJson(t, fmt.Sprintf("%s.parser", tests[i]), expected)
-		})
+				gold.AssertJson(t, tests[i]+".parser", expected)
+			},
+		)
 	}
 }
 

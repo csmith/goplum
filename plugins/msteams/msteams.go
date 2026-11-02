@@ -1,7 +1,7 @@
 package msteams
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 
 	"chameth.com/goplum"
@@ -47,11 +47,11 @@ var themeRegex = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
 
 func (m MessageAlert) Validate() error {
 	if len(m.Url) == 0 {
-		return fmt.Errorf("missing required argument: url")
+		return errors.New("missing required argument: url")
 	}
 
 	if !themeRegex.MatchString(m.Theme) {
-		return fmt.Errorf("theme must be a six-character hex colour starting with '#'")
+		return errors.New("theme must be a six-character hex colour starting with '#'")
 	}
 
 	return nil

@@ -13,12 +13,14 @@ func DecodeSettings(src *map[string]any, targets ...any) error {
 		dst := targets[i]
 
 		metadata := mapstructure.Metadata{}
-		dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-			WeaklyTypedInput: true,
-			TagName:          "config",
-			Metadata:         &metadata,
-			Result:           dst,
-		})
+		dec, err := mapstructure.NewDecoder(
+			&mapstructure.DecoderConfig{
+				WeaklyTypedInput: true,
+				TagName:          "config",
+				Metadata:         &metadata,
+				Result:           dst,
+			},
+		)
 		if err != nil {
 			return err
 		}

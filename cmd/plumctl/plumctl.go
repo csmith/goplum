@@ -16,11 +16,11 @@ var (
 
 func main() {
 	if err := rootCommand.Execute(); err != nil {
-		bail("Error executing command: %v", err)
+		bailf("Error executing command: %v", err)
 	}
 }
 
-func bail(format string, args ...any) {
-	fmt.Printf(fmt.Sprintf("%s\n", format), args)
+func bailf(format string, args ...any) {
+	fmt.Printf(format+"\n", args)
 	os.Exit(1)
 }

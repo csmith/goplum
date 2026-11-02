@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"slices"
 	"strconv"
@@ -60,7 +59,7 @@ func (c ConnectCheck) Execute(ctx context.Context) goplum.Result {
 
 func (c ConnectCheck) Validate() error {
 	if len(c.Address) == 0 {
-		return fmt.Errorf("missing required argument: address")
+		return errors.New("missing required argument: address")
 	}
 
 	_, _, err := net.SplitHostPort(c.Address)
@@ -140,15 +139,15 @@ enqueue:
 
 func (c PortScanCheck) Validate() error {
 	if len(c.Address) == 0 {
-		return fmt.Errorf("missing required argument: address")
+		return errors.New("missing required argument: address")
 	}
 
 	if c.Start < 1 || c.End > 65535 || c.Start > c.End {
-		return fmt.Errorf("invalid ports: must satisfy 1 <= start <= end <= 65535")
+		return errors.New("invalid ports: must satisfy 1 <= start <= end <= 65535")
 	}
 
 	if c.ConcurrentConnections <= 0 {
-		return fmt.Errorf("invalid number of concurrent connections: must be >0")
+		return errors.New("invalid number of concurrent connections: must be >0")
 	}
 
 	if c.ConnectionTimeout <= 0 {

@@ -232,5 +232,5 @@ type LongRunning interface {
 // Stateful is implemented by checks that keep local state that should be persisted across restarts.
 type Stateful interface {
 	Save() any
-	Restore(func(any))
+	Restore(restorer func(any))
 }

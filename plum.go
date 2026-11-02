@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"dario.cat/mergo"
 	"chameth.com/goplum/config"
 	"chameth.com/goplum/internal"
+	"dario.cat/mergo"
 )
 
 var (
@@ -76,44 +76,7 @@ func (g *Group) canSendAlert() (bool, bool) {
 	g.alertHistory = append(g.alertHistory, now)
 
 	// Check if this is the last alert we'll send before throttling
-	isLastAlert := currentCount+1 == g.AlertLimit
-
-	return true, isLastAlert
-}
-
-// shouldSendAlert checks all groups for a check and determines if an alert should be sent.
-// Returns (shouldSend, suppressionWarning, suppressingGroup) where suppressionWarning contains text to append if this is the last alert.
-func (p *Plum) shouldSendAlert(groupNames []string) (bool, string, string) {
-	if len(groupNames) == 0 {
-		return true, "", "" // No groups, no limits
-	}
-
-	var warnings []string
-
-	// Check each group - if ANY group forbids sending, we don't send
-	for _, groupName := range groupNames {
-		group, exists := p.Groups[groupName]
-		if !exists {
-			continue // Group doesn't exist, skip (this would be caught in validation)
-		}
-
-		canSend, isLast := group.canSendAlert()
-		if !canSend {
-			return false, "", groupName // Suppressed by this group
-		}
-
-		if isLast && group.AlertLimit > 0 {
-			warnings = append(warnings, fmt.Sprintf("[GROUP ALERT LIMIT REACHED: %s]", groupName))
-		}
-	}
-
-	// Combine all suppression warnings
-	var warning string
-	if len(warnings) > 0 {
-		warning = " " + strings.Join(warnings, " ")
-	}
-
-	return true, warning, ""
+	return true, currentCount+1 == g.AlertLimit
 }
 
 func (c CheckSettings) Copy() CheckSettings {
@@ -232,6 +195,154 @@ func (p *Plum) SaveState() error {
 	return NewTombStone(p.Checks).Save()
 }
 
+func (p *Plum) Run() {
+	for range *runners {
+		go p.processScheduledChecks()
+	}
+
+	for {
+		earliest := time.Now().Add(time.Hour)
+		for i := range p.Checks {
+			c := p.Checks[i]
+
+			if c.Suspended {
+				// If a check is suspended, don't wait more than a minute before we check again.
+				if next := time.Now().Add(time.Minute); next.Before(earliest) {
+					earliest = next
+				}
+				continue
+			}
+
+			remaining := c.Remaining()
+			if remaining <= 0 {
+				c.Scheduled = true
+				p.scheduled <- c
+				remaining = c.Remaining()
+			}
+
+			if next := time.Now().Add(remaining); next.Before(earliest) {
+				earliest = next
+			}
+		}
+
+		time.Sleep(time.Until(earliest))
+	}
+}
+
+func (p *Plum) RunCheck(c *ScheduledCheck) {
+	start := time.Now()
+	result := func() (res Result) {
+		defer func() {
+			if r := recover(); r != nil {
+				res = FailingResult("PANIC: %v", r)
+			}
+		}()
+
+		timeout := c.Config.Timeout
+		if longRunning, ok := c.Check.(LongRunning); ok {
+			timeout = longRunning.Timeout()
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		res = c.Check.Execute(ctx)
+		return
+	}()
+
+	if result.Facts == nil {
+		result.Facts = map[Fact]any{}
+	}
+	result.Facts[CheckTime] = time.Since(start)
+
+	c.AddResult(&result)
+
+	for _, listener := range p.checkListeners {
+		listener(c, result)
+	}
+}
+
+func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
+	p.raiseAlerts(c, previousState, false)
+}
+
+func (p *Plum) AlertsMatching(names []string) []Alert {
+	var res []Alert
+	re := regexpForWildcards(names)
+	for j := range p.Alerts {
+		if re.MatchString(j) {
+			res = append(res, p.Alerts[j])
+		}
+	}
+	return res
+}
+
+func (p *Plum) AddCheckListener(listener CheckListener) {
+	p.checkListeners[reflect.ValueOf(listener)] = listener
+}
+
+func (p *Plum) RemoveCheckListener(listener CheckListener) {
+	delete(p.checkListeners, reflect.ValueOf(listener))
+}
+
+// Suspend sets the check with the given name to be suspended (i.e., it won't run until unsuspended).
+// Returns the modified check, or nil if the check didn't exist.
+func (p *Plum) Suspend(checkName string) *ScheduledCheck {
+	if check, ok := p.Checks[checkName]; ok {
+		log.Printf("Check %s has been suspended", checkName)
+		check.Suspended = true
+		return check
+	}
+	return nil
+}
+
+// Unsuspend sets the check with the given name to be resumed (i.e., it will run normally).
+// Returns the modified check, or nil if the check didn't exist.
+func (p *Plum) Unsuspend(checkName string) *ScheduledCheck {
+	if check, ok := p.Checks[checkName]; ok {
+		log.Printf("Check %s has been unsuspended", checkName)
+		check.Suspended = false
+		return check
+	}
+	return nil
+}
+
+// shouldSendAlert checks all groups for a check and determines if an alert should be sent.
+// Returns (shouldSend, suppressionWarning, suppressingGroup) where suppressionWarning contains text to append if this
+// is the last alert.
+func (p *Plum) shouldSendAlert(groupNames []string) (bool, string, string) {
+	if len(groupNames) == 0 {
+		return true, "", "" // No groups, no limits
+	}
+
+	var warnings []string
+
+	// Check each group - if ANY group forbids sending, we don't send
+	for _, groupName := range groupNames {
+		group, exists := p.Groups[groupName]
+		if !exists {
+			continue // Group doesn't exist, skip (this would be caught in validation)
+		}
+
+		canSend, isLast := group.canSendAlert()
+		if !canSend {
+			return false, "", groupName // Suppressed by this group
+		}
+
+		if isLast && group.AlertLimit > 0 {
+			warnings = append(warnings, fmt.Sprintf("[GROUP ALERT LIMIT REACHED: %s]", groupName))
+		}
+	}
+
+	// Combine all suppression warnings
+	var warning string
+	if len(warnings) > 0 {
+		warning = " " + strings.Join(warnings, " ")
+	}
+
+	return true, warning, ""
+}
+
 func (p *Plum) addAlerts(alerts []*config.Block) error {
 	for i := range alerts {
 		if _, ok := p.Alerts[alerts[i].Name]; ok {
@@ -296,7 +407,8 @@ func (p *Plum) addGroups(groups []*config.Block) error {
 	return nil
 }
 
-// createCheck constructs a Check and CheckSettings by merging global defaults, group defaults, and check-specific settings
+// createCheck constructs a Check and CheckSettings by merging global defaults, group defaults, and check-specific
+// settings
 func (p *Plum) createCheck(checkBlock *config.Block, groups []string) (Check, CheckSettings, error) {
 	// Create the check object
 	parts := strings.SplitN(checkBlock.Type, ".", 2)
@@ -432,40 +544,6 @@ func (p *Plum) plugin(name string) (Plugin, error) {
 	return nil, fmt.Errorf("no plugin found with name %s", name)
 }
 
-func (p *Plum) Run() {
-	for i := 0; i < *runners; i++ {
-		go p.processScheduledChecks()
-	}
-
-	for {
-		min := time.Now().Add(time.Hour)
-		for i := range p.Checks {
-			c := p.Checks[i]
-
-			if c.Suspended {
-				// If a check is suspended, don't wait more than a minute before we check again.
-				if next := time.Now().Add(time.Minute); next.Before(min) {
-					min = next
-				}
-				continue
-			}
-
-			remaining := c.Remaining()
-			if remaining <= 0 {
-				c.Scheduled = true
-				p.scheduled <- c
-				remaining = c.Remaining()
-			}
-
-			if next := time.Now().Add(remaining); next.Before(min) {
-				min = next
-			}
-		}
-
-		time.Sleep(time.Until(min))
-	}
-}
-
 func (p *Plum) processScheduledChecks() {
 	for c := range p.scheduled {
 		p.RunCheck(c)
@@ -473,45 +551,14 @@ func (p *Plum) processScheduledChecks() {
 	}
 }
 
-func (p *Plum) RunCheck(c *ScheduledCheck) {
-	start := time.Now()
-	result := func() (res Result) {
-		defer func() {
-			if r := recover(); r != nil {
-				res = FailingResult("PANIC: %v", r)
-			}
-		}()
-
-		timeout := c.Config.Timeout
-		if longRunning, ok := c.Check.(LongRunning); ok {
-			timeout = longRunning.Timeout()
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel()
-
-		res = c.Check.Execute(ctx)
-		return
-	}()
-
-	if result.Facts == nil {
-		result.Facts = map[Fact]any{}
-	}
-	result.Facts[CheckTime] = time.Since(start)
-
-	c.AddResult(&result)
-
-	for _, listener := range p.checkListeners {
-		listener(c, result)
-	}
-}
-
 func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
 	oldState := c.State
-	newState := c.History.State(map[CheckState]int{
-		StateFailing: c.Config.FailingThreshold,
-		StateGood:    c.Config.GoodThreshold,
-	})
+	newState := c.History.State(
+		map[CheckState]int{
+			StateFailing: c.Config.FailingThreshold,
+			StateGood:    c.Config.GoodThreshold,
+		},
+	)
 	if newState != oldState {
 		c.State = newState
 		if c.Settled {
@@ -519,7 +566,11 @@ func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
 		} else {
 			c.Settled = true
 		}
-	} else if newState == StateFailing && c.Settled && c.Config.Reminder > 0 && time.Since(c.LastAlertTime) >= c.Config.Reminder {
+		return
+	}
+
+	reminderDue := c.Config.Reminder > 0 && time.Since(c.LastAlertTime) >= c.Config.Reminder
+	if newState == StateFailing && c.Settled && reminderDue {
 		p.raiseAlerts(c, oldState, true)
 	}
 }
@@ -528,10 +579,6 @@ func (p *Plum) logCheck(c *ScheduledCheck, result Result) {
 	if !*quietLogging {
 		log.Printf("Check '%s' executed in %s: %s (%s)\n", c.Name, result.Facts[CheckTime], result.State, result.Detail)
 	}
-}
-
-func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
-	p.raiseAlerts(c, previousState, false)
 }
 
 func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isReminder bool) {
@@ -545,18 +592,22 @@ func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isRemind
 		IsReminder:    isReminder,
 	}
 
-	if isReminder {
-		if len(details.LastResult.Detail) > 0 {
-			details.Text = fmt.Sprintf("Check '%s' is still %s (%s).", details.Name, details.NewState, details.LastResult.Detail)
-		} else {
-			details.Text = fmt.Sprintf("Check '%s' is still %s.", details.Name, details.NewState)
-		}
-	} else {
-		if len(details.LastResult.Detail) > 0 {
-			details.Text = fmt.Sprintf("Check '%s' is now %s (%s), was %s.", details.Name, details.NewState, details.LastResult.Detail, details.PreviousState)
-		} else {
-			details.Text = fmt.Sprintf("Check '%s' is now %s, was %s.", details.Name, details.NewState, details.PreviousState)
-		}
+	hasDetail := len(details.LastResult.Detail) > 0
+	switch {
+	case isReminder && hasDetail:
+		details.Text = fmt.Sprintf("Check '%s' is still %s (%s).", details.Name, details.NewState, details.LastResult.Detail)
+	case isReminder:
+		details.Text = fmt.Sprintf("Check '%s' is still %s.", details.Name, details.NewState)
+	case hasDetail:
+		details.Text = fmt.Sprintf(
+			"Check '%s' is now %s (%s), was %s.",
+			details.Name,
+			details.NewState,
+			details.LastResult.Detail,
+			details.PreviousState,
+		)
+	default:
+		details.Text = fmt.Sprintf("Check '%s' is now %s, was %s.", details.Name, details.NewState, details.PreviousState)
 	}
 
 	// Check group limits for all groups this check belongs to
@@ -580,47 +631,6 @@ func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isRemind
 	}
 
 	c.LastAlertTime = time.Now()
-}
-
-func (p *Plum) AlertsMatching(names []string) []Alert {
-	var res []Alert
-	re := regexpForWildcards(names)
-	for j := range p.Alerts {
-		if re.MatchString(j) {
-			res = append(res, p.Alerts[j])
-		}
-	}
-	return res
-}
-
-func (p *Plum) AddCheckListener(listener CheckListener) {
-	p.checkListeners[reflect.ValueOf(listener)] = listener
-}
-
-func (p *Plum) RemoveCheckListener(listener CheckListener) {
-	delete(p.checkListeners, reflect.ValueOf(listener))
-}
-
-// Suspend sets the check with the given name to be suspended (i.e., it won't run until unsuspended).
-// Returns the modified check, or nil if the check didn't exist.
-func (p *Plum) Suspend(checkName string) *ScheduledCheck {
-	if check, ok := p.Checks[checkName]; ok {
-		log.Printf("Check %s has been suspended", checkName)
-		check.Suspended = true
-		return check
-	}
-	return nil
-}
-
-// Unsuspend sets the check with the given name to be resumed (i.e., it will run normally).
-// Returns the modified check, or nil if the check didn't exist.
-func (p *Plum) Unsuspend(checkName string) *ScheduledCheck {
-	if check, ok := p.Checks[checkName]; ok {
-		log.Printf("Check %s has been unsuspended", checkName)
-		check.Suspended = false
-		return check
-	}
-	return nil
 }
 
 // regexpForWildcards converts a set of names containing '*' characters as wildcards into a single regex that will

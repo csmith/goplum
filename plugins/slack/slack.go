@@ -2,7 +2,9 @@ package slack
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -32,13 +34,18 @@ type MessageAlert struct {
 }
 
 func (m MessageAlert) Send(details goplum.AlertDetails) error {
-	payload, err := json.Marshal(struct {
-		Text string `json:"text"`
-	}{
-		details.Text,
-	})
+	payload, err := json.Marshal(
+		struct {
+			Text string `json:"text"`
+		}{
+			details.Text,
+		},
+	)
+	if err != nil {
+		return err
+	}
 
-	req, err := http.NewRequest(http.MethodPost, m.Url, bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, m.Url, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
@@ -60,7 +67,7 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 
 func (m MessageAlert) Validate() error {
 	if len(m.Url) == 0 {
-		return fmt.Errorf("missing required argument: url")
+		return errors.New("missing required argument: url")
 	}
 
 	return nil

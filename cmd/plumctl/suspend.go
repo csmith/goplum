@@ -19,7 +19,7 @@ var suspendCommand = &cobra.Command{
 			fmt.Printf("Unable to suspend check: %v\n", err)
 			return
 		}
-		fmt.Printf("Suspended check %s.\n", check.Name)
+		fmt.Printf("Suspended check %s.\n", check.GetName())
 	},
 }
 

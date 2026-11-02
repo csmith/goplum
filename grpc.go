@@ -3,6 +3,7 @@ package goplum
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -39,18 +40,24 @@ func (s *GrpcServer) Start() {
 		return
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", *apiPort))
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf("0.0.0.0:%d", *apiPort))
 	if err != nil {
 		log.Fatalf("Unable to listen on port %d for API requests: %v", *apiPort, err)
 	}
 
 	log.Printf("Starting API server on port %d", *apiPort)
-	s.server = grpc.NewServer(grpc.Creds(credentials.NewTLS(&tls.Config{
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		Certificates: certs,
-		ClientCAs:    pool,
-		MinVersion:   tls.VersionTLS13,
-	})))
+	s.server = grpc.NewServer(
+		grpc.Creds(
+			credentials.NewTLS(
+				&tls.Config{
+					ClientAuth:   tls.RequireAndVerifyClientCert,
+					Certificates: certs,
+					ClientCAs:    pool,
+					MinVersion:   tls.VersionTLS13,
+				},
+			),
+		),
+	)
 	api.RegisterGoPlumServer(s.server, s)
 	if err := s.server.Serve(lis); err != nil {
 		log.Printf("Error serving API: %v", err)
@@ -70,13 +77,15 @@ func (s *GrpcServer) Results(_ *api.Empty, rs api.GoPlum_ResultsServer) error {
 	)
 
 	l = func(check *ScheduledCheck, result Result) {
-		err := rs.Send(&api.Result{
-			Check:  check.Name,
-			Time:   check.LastRun.Unix(),
-			Result: s.convertState(result.State),
-			Detail: result.Detail,
-			Facts:  s.convertFacts(result.Facts),
-		})
+		err := rs.Send(
+			&api.Result{
+				Check:  check.Name,
+				Time:   check.LastRun.Unix(),
+				Result: s.convertState(result.State),
+				Detail: result.Detail,
+				Facts:  s.convertFacts(result.Facts),
+			},
+		)
 		if err != nil {
 			s.plum.RemoveCheckListener(l)
 			c <- err
@@ -91,7 +100,7 @@ func (s *GrpcServer) Results(_ *api.Empty, rs api.GoPlum_ResultsServer) error {
 }
 
 func (s *GrpcServer) GetChecks(_ context.Context, _ *api.Empty) (*api.CheckList, error) {
-	var checks []*api.Check
+	checks := make([]*api.Check, 0, len(s.plum.Checks))
 	for i := range s.plum.Checks {
 		checks = append(checks, s.convertCheck(s.plum.Checks[i]))
 	}
@@ -99,39 +108,39 @@ func (s *GrpcServer) GetChecks(_ context.Context, _ *api.Empty) (*api.CheckList,
 }
 
 func (s *GrpcServer) GetCheck(_ context.Context, name *api.CheckName) (*api.Check, error) {
-	if name == nil || len(name.Name) == 0 {
-		return nil, fmt.Errorf("no name specified")
+	if name == nil || len(name.GetName()) == 0 {
+		return nil, errors.New("no name specified")
 	}
 
-	check, ok := s.plum.Checks[name.Name]
+	check, ok := s.plum.Checks[name.GetName()]
 	if ok {
 		return s.convertCheck(check), nil
 	}
 
-	return nil, fmt.Errorf("no check found with name: %s", name.Name)
+	return nil, fmt.Errorf("no check found with name: %s", name.GetName())
 }
 
 func (s *GrpcServer) SuspendCheck(_ context.Context, name *api.CheckName) (*api.Check, error) {
-	if name == nil || len(name.Name) == 0 {
-		return nil, fmt.Errorf("no name specified")
+	if name == nil || len(name.GetName()) == 0 {
+		return nil, errors.New("no name specified")
 	}
 
-	check := s.plum.Suspend(name.Name)
+	check := s.plum.Suspend(name.GetName())
 	if check == nil {
-		return nil, fmt.Errorf("no check found with name: %s", name.Name)
+		return nil, fmt.Errorf("no check found with name: %s", name.GetName())
 	}
 
 	return s.convertCheck(check), nil
 }
 
 func (s *GrpcServer) ResumeCheck(_ context.Context, name *api.CheckName) (*api.Check, error) {
-	if name == nil || len(name.Name) == 0 {
-		return nil, fmt.Errorf("no name specified")
+	if name == nil || len(name.GetName()) == 0 {
+		return nil, errors.New("no name specified")
 	}
 
-	check := s.plum.Unsuspend(name.Name)
+	check := s.plum.Unsuspend(name.GetName())
 	if check == nil {
-		return nil, fmt.Errorf("no check found with name: %s", name.Name)
+		return nil, fmt.Errorf("no check found with name: %s", name.GetName())
 	}
 
 	return s.convertCheck(check), nil
@@ -164,10 +173,13 @@ func (s *GrpcServer) convertState(state CheckState) api.Status {
 func (s *GrpcServer) convertFacts(facts map[Fact]any) []*api.Fact {
 	res := make([]*api.Fact, 0, len(facts))
 	for i := range facts {
-		res = append(res, &api.Fact{
-			Name:  string(i),
-			Value: s.convertFactValue(facts[i]),
-		})
+		res = append(
+			res,
+			&api.Fact{
+				Name:  string(i),
+				Value: s.convertFactValue(facts[i]),
+			},
+		)
 	}
 	return res
 }

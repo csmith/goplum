@@ -2,7 +2,9 @@ package twilio
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -40,19 +42,19 @@ type BaseAlert struct {
 
 func (b BaseAlert) Validate() error {
 	if len(b.To) == 0 {
-		return fmt.Errorf("missing required argument: to")
+		return errors.New("missing required argument: to")
 	}
 
 	if len(b.From) == 0 {
-		return fmt.Errorf("missing required argument: from")
+		return errors.New("missing required argument: from")
 	}
 
 	if len(b.Sid) == 0 {
-		return fmt.Errorf("missing required argument: sid")
+		return errors.New("missing required argument: sid")
 	}
 
 	if len(b.Token) == 0 {
-		return fmt.Errorf("missing required argument: token")
+		return errors.New("missing required argument: token")
 	}
 
 	return nil
@@ -63,14 +65,17 @@ type SmsAlert struct {
 }
 
 func (s SmsAlert) Send(details goplum.AlertDetails) error {
-	req, err := http.NewRequest(
+	req, err := http.NewRequestWithContext(
+		context.Background(),
 		http.MethodPost,
 		fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Messages.json", s.Sid),
-		strings.NewReader(url.Values{
-			"To":   []string{s.To},
-			"From": []string{s.From},
-			"Body": []string{details.Text},
-		}.Encode()),
+		strings.NewReader(
+			url.Values{
+				"To":   []string{s.To},
+				"From": []string{s.From},
+				"Body": []string{details.Text},
+			}.Encode(),
+		),
 	)
 	if err != nil {
 		return err
@@ -106,14 +111,17 @@ func (c CallAlert) Send(details goplum.AlertDetails) error {
 		return err
 	}
 
-	req, err := http.NewRequest(
+	req, err := http.NewRequestWithContext(
+		context.Background(),
 		http.MethodPost,
 		fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Calls.json", c.Sid),
-		strings.NewReader(url.Values{
-			"To":    []string{c.To},
-			"From":  []string{c.From},
-			"Twiml": []string{fmt.Sprintf("<Response><Say>Go plum alert: %s</Say></Response>", b.String())},
-		}.Encode()),
+		strings.NewReader(
+			url.Values{
+				"To":    []string{c.To},
+				"From":  []string{c.From},
+				"Twiml": []string{fmt.Sprintf("<Response><Say>Go plum alert: %s</Say></Response>", b.String())},
+			}.Encode(),
+		),
 	)
 	if err != nil {
 		return err

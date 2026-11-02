@@ -2,6 +2,7 @@ package heartbeat
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -37,10 +38,10 @@ func (p *Plugin) Check(kind string) goplum.Check {
 
 func (p *Plugin) Validate() error {
 	if p.Port == 0 {
-		return fmt.Errorf("port must be specified")
+		return errors.New("port must be specified")
 	}
 
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p.Port))
+	l, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf(":%d", p.Port))
 	if err != nil {
 		return err
 	}
@@ -97,11 +98,11 @@ var idRegex = regexp.MustCompile("^[0-9a-f]{32}$")
 func (g *ReceivedCheck) Validate() error {
 	g.ID = strings.ToLower(g.ID)
 	if !idRegex.MatchString(g.ID) {
-		return fmt.Errorf("id must be a 32-character hexadecimal string")
+		return errors.New("id must be a 32-character hexadecimal string")
 	}
 
 	if g.Within < 30*time.Second {
-		return fmt.Errorf("within must be at least 30 seconds")
+		return errors.New("within must be at least 30 seconds")
 	}
 
 	checks[g.ID] = g

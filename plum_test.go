@@ -2,7 +2,6 @@ package goplum_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -52,21 +51,24 @@ func TestReadConfig_GoldenData(t *testing.T) {
 	gold := goldie.New(t)
 
 	for i := range tests {
-		t.Run(tests[i], func(t *testing.T) {
-			plum := goplum.NewPlum()
+		t.Run(
+			tests[i],
+			func(t *testing.T) {
+				plum := goplum.NewPlum()
 
-			plum.RegisterPlugins(plugins)
-			err := plum.ReadConfig(path.Join("testdata", fmt.Sprintf("%s.conf", tests[i])))
+				plum.RegisterPlugins(plugins)
+				err := plum.ReadConfig(path.Join("testdata", tests[i]+".conf"))
 
-			var actual any
-			if err == nil {
-				actual = plum
-			} else {
-				actual = err.Error()
-			}
+				var actual any
+				if err == nil {
+					actual = plum
+				} else {
+					actual = err.Error()
+				}
 
-			gold.AssertJson(t, tests[i], actual)
-		})
+				gold.AssertJson(t, tests[i], actual)
+			},
+		)
 	}
 }
 

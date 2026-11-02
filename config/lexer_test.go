@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -14,18 +13,21 @@ func TestLexer_GoldenData(t *testing.T) {
 	gold := goldie.New(t)
 
 	for i := range tests {
-		t.Run(tests[i], func(t *testing.T) {
-			f, _ := os.Open(path.Join("testdata", fmt.Sprintf("%s.conf", tests[i])))
-			defer f.Close()
-			lexer := NewLexer(f)
-			go lexer.Lex()
+		t.Run(
+			tests[i],
+			func(t *testing.T) {
+				f, _ := os.Open(path.Join("testdata", tests[i]+".conf"))
+				defer f.Close()
+				lexer := NewLexer(f)
+				go lexer.Lex()
 
-			var actual []token
-			for token := range lexer.output {
-				actual = append(actual, token)
-			}
+				var actual []token
+				for token := range lexer.output {
+					actual = append(actual, token)
+				}
 
-			gold.AssertJson(t, tests[i], actual)
-		})
+				gold.AssertJson(t, tests[i], actual)
+			},
+		)
 	}
 }

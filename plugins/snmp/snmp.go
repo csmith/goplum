@@ -2,7 +2,7 @@ package snmp
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"math"
 	"math/big"
 	"strings"
@@ -22,20 +22,16 @@ func (p Plugin) Check(kind string) goplum.Check {
 	switch kind {
 	case "string":
 		return StringCheck{
-			BaseCheck: BaseCheck{
-				Community: "public",
-				Port:      161,
-			},
+			Community:       "public",
+			Port:            161,
 			ContentExpected: true,
 		}
 	case "int":
 		return IntCheck{
-			BaseCheck: BaseCheck{
-				Community: "public",
-				Port:      161,
-			},
-			AtLeast: math.MinInt64,
-			AtMost:  math.MaxInt64,
+			Community: "public",
+			Port:      161,
+			AtLeast:   math.MinInt64,
+			AtMost:    math.MaxInt64,
 		}
 	default:
 		return nil
@@ -51,19 +47,19 @@ type BaseCheck struct {
 
 func (b BaseCheck) Validate() error {
 	if len(b.Agent) == 0 {
-		return fmt.Errorf("missing required argument: agent")
+		return errors.New("missing required argument: agent")
 	}
 
 	if b.Port <= 0 || b.Port > 65535 {
-		return fmt.Errorf("invalid argument: port")
+		return errors.New("invalid argument: port")
 	}
 
 	if len(b.Community) == 0 {
-		return fmt.Errorf("missing required argument: community")
+		return errors.New("missing required argument: community")
 	}
 
 	if len(b.Oid) == 0 {
-		return fmt.Errorf("missing required argument: oid")
+		return errors.New("missing required argument: oid")
 	}
 
 	return nil
@@ -106,8 +102,7 @@ func (s StringCheck) Execute(ctx context.Context) goplum.Result {
 	for i := range packet.Variables {
 		variable := packet.Variables[i]
 		if variable.Type == gosnmp.OctetString {
-			c := variable.Value.(string)
-			found := strings.Contains(c, s.Content)
+			found := strings.Contains(variable.Value.(string), s.Content)
 			if found && !s.ContentExpected {
 				return goplum.FailingResult("OID %s contained content %s", variable.Name, s.Content)
 			} else if !found && s.ContentExpected {

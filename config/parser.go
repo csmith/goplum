@@ -250,7 +250,11 @@ func (p *Parser) parseSequence(start, end tokenClass) ([]any, error) {
 			values = append(values, t.Value)
 		default:
 			if firstType == tokenError {
-				if t.Class == tokenBoolean || t.Class == tokenDuration || t.Class == tokenFloat || t.Class == tokenInt || t.Class == tokenString {
+				if t.Class == tokenBoolean ||
+					t.Class == tokenDuration ||
+					t.Class == tokenFloat ||
+					t.Class == tokenInt ||
+					t.Class == tokenString {
 					firstType = t.Class
 					values = append(values, t.Value)
 				} else {

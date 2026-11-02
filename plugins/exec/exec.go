@@ -2,7 +2,7 @@ package exec
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os/exec"
 
 	"chameth.com/goplum"
@@ -41,7 +41,7 @@ func (c CommandCheck) Execute(ctx context.Context) goplum.Result {
 
 func (c CommandCheck) Validate() error {
 	if len(c.Name) == 0 {
-		return fmt.Errorf("missing required argument: name")
+		return errors.New("missing required argument: name")
 	}
 	return nil
 }

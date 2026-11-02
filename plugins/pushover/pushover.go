@@ -2,7 +2,9 @@ package pushover
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -47,7 +49,7 @@ type MessageAlert struct {
 
 func (m MessageAlert) Send(details goplum.AlertDetails) error {
 	if m.errored {
-		return fmt.Errorf("pushover alert disabled as a non-recoverable API error was previously returned")
+		return errors.New("pushover alert disabled as a non-recoverable API error was previously returned")
 	}
 
 	var settings PushSettings
@@ -57,34 +59,39 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 		settings = m.Recovering
 	}
 
-	data := struct {
-		Token     string `json:"token"`
-		User      string `json:"user"`
-		Message   string `json:"message"`
-		Device    string `json:"device,omitempty"`
-		Priority  int    `json:"priority,omitempty"`
-		Sound     string `json:"sound,omitempty"`
-		Timestamp int64  `json:"timestamp"`
-		Retry     int    `json:"retry,omitempty"`
-		Expire    int    `json:"expire,omitempty"`
-	}{
-		Token:     m.Token,
-		User:      m.Key,
-		Message:   details.Text,
-		Device:    strings.Join(m.Devices, ","),
-		Priority:  settings.Priority,
-		Sound:     settings.Sound,
-		Retry:     int(settings.Retry.Seconds()),
-		Expire:    int(settings.Expire.Seconds()),
-		Timestamp: time.Now().Unix(),
-	}
-
-	payload, err := json.Marshal(data)
+	payload, err := json.Marshal(
+		struct {
+			Token     string `json:"token"`
+			User      string `json:"user"`
+			Message   string `json:"message"`
+			Device    string `json:"device,omitempty"`
+			Priority  int    `json:"priority,omitempty"`
+			Sound     string `json:"sound,omitempty"`
+			Timestamp int64  `json:"timestamp"`
+			Retry     int    `json:"retry,omitempty"`
+			Expire    int    `json:"expire,omitempty"`
+		}{
+			Token:     m.Token,
+			User:      m.Key,
+			Message:   details.Text,
+			Device:    strings.Join(m.Devices, ","),
+			Priority:  settings.Priority,
+			Sound:     settings.Sound,
+			Retry:     int(settings.Retry.Seconds()),
+			Expire:    int(settings.Expire.Seconds()),
+			Timestamp: time.Now().Unix(),
+		},
+	)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "https://api.pushover.net/1/messages.json", bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(
+		context.Background(),
+		http.MethodPost,
+		"https://api.pushover.net/1/messages.json",
+		bytes.NewReader(payload),
+	)
 	if err != nil {
 		return err
 	}
@@ -110,10 +117,10 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 
 func (m MessageAlert) Validate() error {
 	if len(m.Token) == 0 {
-		return fmt.Errorf("missing required argument: token")
+		return errors.New("missing required argument: token")
 	}
 	if len(m.Key) == 0 {
-		return fmt.Errorf("missing required argument: key")
+		return errors.New("missing required argument: key")
 	}
 	if err := m.validateSettings(m.Failing); err != nil {
 		return fmt.Errorf("failing block invalid: %v", err)
@@ -126,19 +133,19 @@ func (m MessageAlert) Validate() error {
 
 func (m MessageAlert) validateSettings(settings PushSettings) error {
 	if settings.Priority < -1 || settings.Priority > 2 {
-		return fmt.Errorf("priority must be in range -2..+2")
+		return errors.New("priority must be in range -2..+2")
 	}
 
 	if settings.Retry != 0 && settings.Retry < 30*time.Second {
-		return fmt.Errorf("retry must be at least 30 seconds")
+		return errors.New("retry must be at least 30 seconds")
 	}
 
 	if settings.Expire > 10800*time.Second {
-		return fmt.Errorf("expire must be at most 10800 seconds (3 hours)")
+		return errors.New("expire must be at most 10800 seconds (3 hours)")
 	}
 
 	if settings.Priority == 2 && (settings.Expire == 0 || settings.Retry == 0) {
-		return fmt.Errorf("expire and retry must be specified for emergency (2) priority")
+		return errors.New("expire and retry must be specified for emergency (2) priority")
 	}
 
 	return nil

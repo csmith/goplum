@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -130,7 +131,7 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 
 func (g GetCheck) Validate() error {
 	if len(g.Url) == 0 {
-		return fmt.Errorf("missing required argument: url")
+		return errors.New("missing required argument: url")
 	}
 
 	return nil
@@ -185,7 +186,7 @@ func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 
 func (h HealthCheck) Validate() error {
 	if len(h.Url) == 0 {
-		return fmt.Errorf("missing required argument: url")
+		return errors.New("missing required argument: url")
 	}
 
 	return nil
@@ -256,7 +257,7 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 
 func (w WebHookAlert) Validate() error {
 	if len(w.Url) == 0 {
-		return fmt.Errorf("missing required argument: url")
+		return errors.New("missing required argument: url")
 	}
 
 	return nil

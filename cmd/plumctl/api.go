@@ -32,13 +32,19 @@ func ConnectToApi(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid address: %v", err)
 	}
 
-	transportCreds := credentials.NewTLS(&tls.Config{
-		ServerName:   host,
-		Certificates: certs,
-		RootCAs:      pool,
-		MinVersion:   tls.VersionTLS13,
-	})
-	conn, err := grpc.Dial(config.Server, grpc.WithTransportCredentials(transportCreds))
+	conn, err := grpc.Dial(
+		config.Server,
+		grpc.WithTransportCredentials(
+			credentials.NewTLS(
+				&tls.Config{
+					ServerName:   host,
+					Certificates: certs,
+					RootCAs:      pool,
+					MinVersion:   tls.VersionTLS13,
+				},
+			),
+		),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to dial API: %v", err)
 	}

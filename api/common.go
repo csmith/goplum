@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"os"
 )
@@ -23,7 +24,7 @@ func LoadCertificates(localCert, localKey, caCert string) ([]tls.Certificate, *x
 
 	ok := certPool.AppendCertsFromPEM(bs)
 	if !ok {
-		return nil, nil, fmt.Errorf("failed to append ca cert")
+		return nil, nil, errors.New("failed to append ca cert")
 	}
 
 	return []tls.Certificate{certificate}, certPool, nil

@@ -21,24 +21,24 @@ var checksCommand = &cobra.Command{
 			return
 		}
 
-		fmt.Printf("%d checks\n", len(checks.Checks))
-		for i := range checks.Checks {
-			c := checks.Checks[i]
+		fmt.Printf("%d checks\n", len(checks.GetChecks()))
+		for i := range checks.GetChecks() {
+			c := checks.GetChecks()[i]
 			var extras []string
 
-			if c.Suspended {
+			if c.GetSuspended() {
 				extras = append(extras, "*SUSPENDED*")
 			}
 
-			if !c.Settled {
+			if !c.GetSettled() {
 				extras = append(extras, "[not settled]")
 			}
 
-			if c.State != api.Status_GOOD {
-				extras = append(extras, fmt.Sprintf("[%s]", api.Status_name[int32(c.State)]))
+			if c.GetState() != api.Status_GOOD {
+				extras = append(extras, fmt.Sprintf("[%s]", api.Status_name[int32(c.GetState())]))
 			}
 
-			fmt.Printf("%d. %s (type: %s) %s\n", i+1, c.Name, c.Type, strings.Join(extras, " "))
+			fmt.Printf("%d. %s (type: %s) %s\n", i+1, c.GetName(), c.GetType(), strings.Join(extras, " "))
 		}
 	},
 }

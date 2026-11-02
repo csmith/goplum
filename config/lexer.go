@@ -133,6 +133,12 @@ func NewLexer(reader io.Reader) *Lexer {
 	}
 }
 
+func (l *Lexer) Lex() {
+	for l.state != nil {
+		l.state = l.state(l)
+	}
+}
+
 func (l *Lexer) next() rune {
 	r, _, err := l.reader.ReadRune()
 	if err != nil {
@@ -165,36 +171,32 @@ func (l *Lexer) emit(class tokenClass, width int, value any) {
 	}
 }
 
-func (l *Lexer) Lex() {
-	for l.state != nil {
-		l.state = l.state(l)
-	}
-}
-
 func lex(lexer *Lexer) stateFunc {
 	for {
 		r := lexer.next()
-		if r == eof {
+		symbol, isSymbol := symbols[r]
+		switch {
+		case r == eof:
 			lexer.emit(tokenEOF, 0, nil)
 			return nil
-		} else if r == '\n' {
+		case r == '\n':
 			lexer.line++
 			lexer.column = 0
-		} else if r == '"' {
+		case r == '"':
 			return lexString
-		} else if r == '#' {
+		case r == '#':
 			return lexComment
-		} else if unicode.IsLetter(r) {
+		case unicode.IsLetter(r):
 			lexer.backup()
 			return lexIdentifier
-		} else if unicode.IsNumber(r) || r == '.' {
+		case unicode.IsNumber(r) || r == '.':
 			lexer.backup()
 			return lexNumber
-		} else if t, ok := symbols[r]; ok {
-			lexer.emit(t, 1, r)
-		} else if unicode.IsSpace(r) {
+		case isSymbol:
+			lexer.emit(symbol, 1, r)
+		case unicode.IsSpace(r):
 			// Just carry on
-		} else {
+		default:
 			lexer.emit(tokenError, 1, fmt.Sprintf("unexpected rune %c", r))
 			return nil
 		}
@@ -205,12 +207,13 @@ func lexIdentifier(lexer *Lexer) stateFunc {
 	builder := strings.Builder{}
 	for {
 		r := lexer.next()
-		if r == eof {
+		switch {
+		case r == eof:
 			lexer.emit(tokenEOF, 0, nil)
 			return nil
-		} else if unicode.IsLetter(r) || r == '.' || r == '_' {
+		case unicode.IsLetter(r) || r == '.' || r == '_':
 			builder.WriteRune(r)
-		} else {
+		default:
 			lexer.backup()
 			value := builder.String()
 			name := strings.ToLower(value)
@@ -245,26 +248,27 @@ func lexString(lexer *Lexer) stateFunc {
 	escaped := false
 	for {
 		r := lexer.next()
-		if r == eof || r == '\n' {
+		switch {
+		case r == eof || r == '\n':
 			lexer.emit(tokenError, width, "unterminated string literal")
 			return nil
-		} else if escaped {
+		case escaped:
 			width++
-			if sub, ok := stringEscapes[r]; ok {
-				builder.WriteRune(sub)
-				escaped = false
-			} else {
+			sub, ok := stringEscapes[r]
+			if !ok {
 				lexer.emit(tokenError, width, fmt.Sprintf("invalid character escape %c", r))
 				return nil
 			}
-		} else if r == '\\' {
+			builder.WriteRune(sub)
+			escaped = false
+		case r == '\\':
 			escaped = true
 			width++
-		} else if r == '"' {
+		case r == '"':
 			width++
 			lexer.emit(tokenString, width, builder.String())
 			return lex
-		} else {
+		default:
 			width++
 			builder.WriteRune(r)
 		}
@@ -280,10 +284,12 @@ func lexNumber(lexer *Lexer) stateFunc {
 
 	for {
 		r := lexer.next()
-		if unicode.IsNumber(r) {
+		multiplier, isDurationUnit := durations[r]
+		switch {
+		case unicode.IsNumber(r):
 			width++
 			builder.WriteRune(r)
-		} else if r == '.' {
+		case r == '.':
 			width++
 
 			if hasPeriod {
@@ -293,7 +299,7 @@ func lexNumber(lexer *Lexer) stateFunc {
 
 			builder.WriteRune(r)
 			hasPeriod = true
-		} else if m, ok := durations[r]; ok {
+		case isDurationUnit:
 			width++
 
 			value, err := strconv.Atoi(builder.String())
@@ -303,13 +309,13 @@ func lexNumber(lexer *Lexer) stateFunc {
 			}
 
 			isDuration = true
-			duration += m * value
+			duration += multiplier * value
 			builder.Reset()
-		} else if isDuration {
+		case isDuration:
 			lexer.backup()
 			lexer.emit(tokenDuration, width, time.Duration(duration)*time.Second)
 			return lex
-		} else if hasPeriod {
+		case hasPeriod:
 			lexer.backup()
 			value, err := strconv.ParseFloat(builder.String(), 64)
 			if err != nil {
@@ -318,7 +324,7 @@ func lexNumber(lexer *Lexer) stateFunc {
 			}
 			lexer.emit(tokenFloat, width, value)
 			return lex
-		} else {
+		default:
 			lexer.backup()
 			value, err := strconv.Atoi(builder.String())
 			if err != nil {

@@ -43,16 +43,22 @@ type SendAlert struct {
 
 func (s SendAlert) Send(details goplum.AlertDetails) error {
 	host, _, _ := net.SplitHostPort(s.Server)
-	auth := smtp.PlainAuth("", s.Username, s.Password, host)
-	body := fmt.Sprintf(
-		"To: %s\r\nSubject: %s%s\r\nFrom: %s\r\n\r\n%s\r\n",
-		s.To,
-		s.SubjectPrefix,
-		details.Text,
+	return sendMail(
+		s.Server,
+		smtp.PlainAuth("", s.Username, s.Password, host),
 		s.From,
-		s.body(details),
+		s.To,
+		[]byte(
+			fmt.Sprintf(
+				"To: %s\r\nSubject: %s%s\r\nFrom: %s\r\n\r\n%s\r\n",
+				s.To,
+				s.SubjectPrefix,
+				details.Text,
+				s.From,
+				s.body(details),
+			),
+		),
 	)
-	return sendMail(s.Server, auth, s.From, s.To, []byte(body))
 }
 
 var sendTimeout = 20 * time.Second
@@ -121,13 +127,33 @@ func sendMail(addr string, auth smtp.Auth, from, to string, msg []byte) error {
 	return c.Quit()
 }
 
+var basicEmailRegex = regexp.MustCompile(`^[^@]+@[^@]+$`)
+
+func (s SendAlert) Validate() error {
+	if _, _, err := net.SplitHostPort(s.Server); err != nil {
+		return fmt.Errorf("invalid server: %v", err)
+	}
+
+	if !basicEmailRegex.MatchString(s.From) {
+		return errors.New("invalid from address")
+	}
+
+	if !basicEmailRegex.MatchString(s.To) {
+		return errors.New("invalid to address")
+	}
+
+	return nil
+}
+
 func (s SendAlert) body(details goplum.AlertDetails) string {
 	settings := make(map[string]any)
-	dec, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		TagName:          "config",
-		Result:           &settings,
-		WeaklyTypedInput: true,
-	})
+	dec, _ := mapstructure.NewDecoder(
+		&mapstructure.DecoderConfig{
+			TagName:          "config",
+			Result:           &settings,
+			WeaklyTypedInput: true,
+		},
+	)
 	_ = dec.Decode(details.Config)
 
 	config := strings.Builder{}
@@ -144,22 +170,4 @@ func (s SendAlert) body(details goplum.AlertDetails) string {
 		details.LastResult.Detail,
 		config.String(),
 	)
-}
-
-var basicEmailRegex = regexp.MustCompile(`^[^@]+@[^@]+$`)
-
-func (s SendAlert) Validate() error {
-	if _, _, err := net.SplitHostPort(s.Server); err != nil {
-		return fmt.Errorf("invalid server: %v", err)
-	}
-
-	if !basicEmailRegex.MatchString(s.From) {
-		return fmt.Errorf("invalid from address")
-	}
-
-	if !basicEmailRegex.MatchString(s.To) {
-		return fmt.Errorf("invalid to address")
-	}
-
-	return nil
 }

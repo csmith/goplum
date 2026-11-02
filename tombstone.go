@@ -9,22 +9,26 @@ import (
 	"time"
 )
 
-var tombStonePath = flag.String("tombstone", "/tmp/goplum.tomb", "Path to save tombstones to persist data across restarts")
+var tombStonePath = flag.String(
+	"tombstone",
+	"/tmp/goplum.tomb",
+	"Path to save tombstones to persist data across restarts",
+)
 
 const maxTombStoneAge = 10 * time.Minute
 
 type TombStone struct {
-	Time   time.Time
-	Checks map[string]CheckTombStone
+	Time   time.Time                 `json:"Time"`
+	Checks map[string]CheckTombStone `json:"Checks"`
 }
 
 type CheckTombStone struct {
-	LastRun       time.Time
-	Settled       bool
-	State         CheckState
-	Suspended     bool
-	LastAlertTime time.Time `json:"last_alert_time,omitzero"`
-	History       ResultHistory
+	LastRun       time.Time       `json:"LastRun"`
+	Settled       bool            `json:"Settled"`
+	State         CheckState      `json:"State"`
+	Suspended     bool            `json:"Suspended"`
+	LastAlertTime time.Time       `json:"last_alert_time,omitzero"`
+	History       ResultHistory   `json:"History"`
 	PluginState   json.RawMessage `json:"plugin_state,omitempty"`
 }
 
@@ -99,11 +103,13 @@ func (ts *TombStone) Restore(checks map[string]*ScheduledCheck) error {
 			check.History = saved.History
 
 			if stateful, ok := check.Check.(Stateful); ok && saved.PluginState != nil {
-				stateful.Restore(func(i any) {
-					if err := json.Unmarshal(saved.PluginState, i); err != nil {
-						log.Printf("Unable to restore state of check %s: %v", check.Name, err)
-					}
-				})
+				stateful.Restore(
+					func(i any) {
+						if err := json.Unmarshal(saved.PluginState, i); err != nil {
+							log.Printf("Unable to restore state of check %s: %v", check.Name, err)
+						}
+					},
+				)
 			}
 		}
 	}

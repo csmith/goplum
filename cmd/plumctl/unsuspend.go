@@ -19,7 +19,7 @@ var unsuspendCommand = &cobra.Command{
 			fmt.Printf("Unable to suspend check: %v\n", err)
 			return
 		}
-		fmt.Printf("Resumed check %s.\n", check.Name)
+		fmt.Printf("Resumed check %s.\n", check.GetName())
 	},
 }
 
