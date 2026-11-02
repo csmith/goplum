@@ -1,1 +1,1 @@
-"error configuring check test: no group named 'nonexistent-group'"
+"testdata/unknown-group.conf:3: error configuring check test: no group named 'nonexistent-group'"

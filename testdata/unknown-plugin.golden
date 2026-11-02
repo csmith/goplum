@@ -1,1 +1,1 @@
-"error configuring check check: no plugin found with name foo"
+"testdata/unknown-plugin.conf:1: error configuring check check: no plugin found with name foo"

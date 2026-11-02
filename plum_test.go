@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"chameth.com/goplum"
 	"chameth.com/goplum/plugins/debug"
@@ -100,7 +103,7 @@ plugin http {
 	err := plum.ReadConfig(configPath)
 
 	require.Error(t, err)
-	assert.Equal(t, "plugin defined multiple times: http (at line 1 and line 9)", err.Error())
+	assert.Equal(t, "plugin defined multiple times: http (at "+configPath+":1 and "+configPath+":9)", err.Error())
 }
 
 func TestReadConfig_RejectsDuplicateBlocksForUnloadedPlugin(t *testing.T) {
@@ -112,7 +115,101 @@ func TestReadConfig_RejectsDuplicateBlocksForUnloadedPlugin(t *testing.T) {
 	err := plum.ReadConfig(configPath)
 
 	require.Error(t, err)
-	assert.Equal(t, "plugin defined multiple times: debug (at line 1 and line 2)", err.Error())
+	assert.Equal(t, "plugin defined multiple times: debug (at "+configPath+":1 and "+configPath+":2)", err.Error())
+}
+
+func TestReadConfig_ResolvesReferencesAcrossIncludedFiles(t *testing.T) {
+	dir := t.TempDir()
+	writeConfig(
+		t,
+		dir,
+		"goplum.conf",
+		`defaults {
+  alerts = ["shared"]
+  groups = ["web"]
+}
+
+check debug.random "main" {}
+
+include "conf.d/*.conf"
+`,
+	)
+	writeConfig(
+		t,
+		dir,
+		"conf.d/a.conf",
+		`check debug.random "included" {
+  alerts = ["late"]
+}
+`,
+	)
+	writeConfig(
+		t,
+		dir,
+		"conf.d/b.conf",
+		`alert debug.sysout "shared" {}
+alert debug.sysout "late" {}
+
+group "web" {
+  defaults {
+    interval = 2m
+  }
+}
+`,
+	)
+
+	plum := goplum.NewPlum()
+	plum.RegisterPlugins(plugins)
+	require.NoError(t, plum.ReadConfig(filepath.Join(dir, "goplum.conf")))
+
+	require.Contains(t, plum.Checks, "main")
+	assert.Equal(t, []string{"shared"}, plum.Checks["main"].Config.Alerts)
+	assert.Equal(t, 2*time.Minute, plum.Checks["main"].Config.Interval)
+	require.Contains(t, plum.Checks, "included")
+	assert.Equal(t, []string{"late"}, plum.Checks["included"].Config.Alerts)
+	assert.Equal(t, 2*time.Minute, plum.Checks["included"].Config.Interval)
+}
+
+func TestReadConfig_NamesBothFilesForDuplicatesAcrossIncludes(t *testing.T) {
+	dir := t.TempDir()
+	writeConfig(t, dir, "goplum.conf", "include \"*.inc\"\n\ncheck debug.random \"dup\" {\n  alerts = [\"-\"]\n}\n")
+	writeConfig(t, dir, "checks.inc", "\ncheck debug.random \"dup\" {\n  alerts = [\"-\"]\n}\n")
+
+	plum := goplum.NewPlum()
+	plum.RegisterPlugins(plugins)
+	err := plum.ReadConfig(filepath.Join(dir, "goplum.conf"))
+
+	require.Error(t, err)
+	assert.Equal(
+		t,
+		"check defined multiple times: dup (at "+filepath.Join(dir, "goplum.conf")+":3 and "+
+			filepath.Join(dir, "checks.inc")+":2)",
+		err.Error(),
+	)
+}
+
+func TestReadConfig_NamesIncludedFileInConfigurationErrors(t *testing.T) {
+	dir := t.TempDir()
+	writeConfig(t, dir, "goplum.conf", "include \"checks.inc\"\n")
+	writeConfig(t, dir, "checks.inc", "\n\ncheck debug.random \"c\" {\n  bazinga = 1\n}\n")
+
+	plum := goplum.NewPlum()
+	plum.RegisterPlugins(plugins)
+	err := plum.ReadConfig(filepath.Join(dir, "goplum.conf"))
+
+	require.Error(t, err)
+	assert.True(
+		t,
+		strings.HasPrefix(err.Error(), filepath.Join(dir, "checks.inc")+":3: error configuring check c:"),
+		err.Error(),
+	)
+}
+
+func writeConfig(t *testing.T, dir, name, content string) {
+	t.Helper()
+	p := filepath.Join(dir, name)
+	require.NoError(t, os.MkdirAll(filepath.Dir(p), 0700))
+	require.NoError(t, os.WriteFile(p, []byte(content), 0600))
 }
 
 type recordingAlert struct {

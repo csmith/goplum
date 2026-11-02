@@ -148,15 +148,9 @@ func (p *Plum) RegisterPlugin(name string, loader PluginLoader) {
 }
 
 func (p *Plum) ReadConfig(path string) error {
-	f, err := os.Open(path)
+	parser, err := config.Load(path)
 	if err != nil {
 		return err
-	}
-	defer f.Close()
-
-	parser := config.NewParser(f)
-	if err := parser.Parse(); err != nil {
-		return fmt.Errorf("unable to parse config file %s: %v", path, err)
 	}
 
 	if err := internal.DecodeSettings(&parser.DefaultSettings, &p.checkDefaults); err != nil {
@@ -344,66 +338,84 @@ func (p *Plum) shouldSendAlert(groupNames []string) (bool, string, string) {
 }
 
 func (p *Plum) addAlerts(alerts []*config.Block) error {
+	seen := make(map[string]config.Position)
 	for i := range alerts {
-		if _, ok := p.Alerts[alerts[i].Name]; ok {
-			return fmt.Errorf("alert defined multiple times: %s", alerts[i].Name)
+		if first, ok := seen[alerts[i].Name]; ok {
+			return fmt.Errorf("alert defined multiple times: %s (at %s and %s)", alerts[i].Name, first, alerts[i].Position)
 		}
+		seen[alerts[i].Name] = alerts[i].Position
 
-		parts := strings.SplitN(alerts[i].Type, ".", 2)
-		plugin, err := p.plugin(parts[0])
-		if err != nil {
-			return err
+		if err := p.addAlert(alerts[i]); err != nil {
+			return fmt.Errorf("%s: %v", alerts[i].Position, err)
 		}
-
-		alert := plugin.Alert(parts[1])
-		if alert == nil {
-			return fmt.Errorf("invalid alert %s in plugin %s", parts[1], parts[0])
-		}
-
-		if err := internal.DecodeSettings(&alerts[i].Settings, &alert); err != nil {
-			return fmt.Errorf("error configuring alert %s: %v", alerts[i].Name, err)
-		}
-
-		if v, ok := alert.(Validator); ok {
-			if err := v.Validate(); err != nil {
-				return fmt.Errorf("error configuring alert %s: %v", alerts[i].Name, err)
-			}
-		}
-
-		p.Alerts[alerts[i].Name] = alert
 	}
 
 	return nil
 }
 
-func (p *Plum) addGroups(groups []*config.Block) error {
-	for i := range groups {
-		if _, ok := p.Groups[groups[i].Name]; ok {
-			return fmt.Errorf("group defined multiple times: %s", groups[i].Name)
-		}
-
-		group := &Group{
-			Name: groups[i].Name,
-		}
-
-		// Extract defaults from settings if present
-		if defaults, ok := groups[i].Settings["defaults"].(map[string]any); ok {
-			group.Defaults = &CheckSettings{}
-			if err := internal.DecodeSettings(&defaults, group.Defaults); err != nil {
-				return fmt.Errorf("error configuring defaults for group %s: %v", groups[i].Name, err)
-			}
-			// Remove defaults from settings so it doesn't interfere with decoding other fields
-			delete(groups[i].Settings, "defaults")
-		}
-
-		// Decode the rest of the group settings
-		if err := internal.DecodeSettings(&groups[i].Settings, group); err != nil {
-			return fmt.Errorf("error configuring group %s: %v", groups[i].Name, err)
-		}
-
-		p.Groups[groups[i].Name] = group
+func (p *Plum) addAlert(block *config.Block) error {
+	parts := strings.SplitN(block.Type, ".", 2)
+	plugin, err := p.plugin(parts[0])
+	if err != nil {
+		return err
 	}
 
+	alert := plugin.Alert(parts[1])
+	if alert == nil {
+		return fmt.Errorf("invalid alert %s in plugin %s", parts[1], parts[0])
+	}
+
+	if err := internal.DecodeSettings(&block.Settings, &alert); err != nil {
+		return fmt.Errorf("error configuring alert %s: %v", block.Name, err)
+	}
+
+	if v, ok := alert.(Validator); ok {
+		if err := v.Validate(); err != nil {
+			return fmt.Errorf("error configuring alert %s: %v", block.Name, err)
+		}
+	}
+
+	p.Alerts[block.Name] = alert
+	return nil
+}
+
+func (p *Plum) addGroups(groups []*config.Block) error {
+	seen := make(map[string]config.Position)
+	for i := range groups {
+		if first, ok := seen[groups[i].Name]; ok {
+			return fmt.Errorf("group defined multiple times: %s (at %s and %s)", groups[i].Name, first, groups[i].Position)
+		}
+		seen[groups[i].Name] = groups[i].Position
+
+		if err := p.addGroup(groups[i]); err != nil {
+			return fmt.Errorf("%s: %v", groups[i].Position, err)
+		}
+	}
+
+	return nil
+}
+
+func (p *Plum) addGroup(block *config.Block) error {
+	group := &Group{
+		Name: block.Name,
+	}
+
+	// Extract defaults from settings if present
+	if defaults, ok := block.Settings["defaults"].(map[string]any); ok {
+		group.Defaults = &CheckSettings{}
+		if err := internal.DecodeSettings(&defaults, group.Defaults); err != nil {
+			return fmt.Errorf("error configuring defaults for group %s: %v", block.Name, err)
+		}
+		// Remove defaults from settings so it doesn't interfere with decoding other fields
+		delete(block.Settings, "defaults")
+	}
+
+	// Decode the rest of the group settings
+	if err := internal.DecodeSettings(&block.Settings, group); err != nil {
+		return fmt.Errorf("error configuring group %s: %v", block.Name, err)
+	}
+
+	p.Groups[block.Name] = group
 	return nil
 }
 
@@ -443,50 +455,59 @@ func (p *Plum) createCheck(checkBlock *config.Block, groups []string) (Check, Ch
 }
 
 func (p *Plum) addChecks(checks []*config.Block) error {
+	seen := make(map[string]config.Position)
 	for i := range checks {
-		if _, ok := p.Checks[checks[i].Name]; ok {
-			return fmt.Errorf("check defined multiple times: %s", checks[i].Name)
+		if first, ok := seen[checks[i].Name]; ok {
+			return fmt.Errorf("check defined multiple times: %s (at %s and %s)", checks[i].Name, first, checks[i].Position)
 		}
+		seen[checks[i].Name] = checks[i].Position
 
-		// First, get settings to extract groups for validation
-		_, tempSettings, err := p.createCheck(checks[i], nil)
-		if err != nil {
-			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
-		}
-
-		// Validate that all referenced groups exist
-		for _, groupName := range tempSettings.Groups {
-			if _, ok := p.Groups[groupName]; !ok {
-				return fmt.Errorf("error configuring check %s: no group named '%s'", checks[i].Name, groupName)
-			}
-		}
-
-		// Now create final check with validated groups
-		check, settings, err := p.createCheck(checks[i], tempSettings.Groups)
-		if err != nil {
-			return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
-		}
-
-		if v, ok := check.(Validator); ok {
-			if err := v.Validate(); err != nil {
-				return fmt.Errorf("error configuring check %s: %v", checks[i].Name, err)
-			}
-		}
-
-		for a := range settings.Alerts {
-			if settings.Alerts[a] != "-" && len(p.AlertsMatching(settings.Alerts[a:a+1])) == 0 {
-				return fmt.Errorf("error configuring check %s: no alerts match '%s'", checks[i].Name, settings.Alerts[a])
-			}
-		}
-
-		p.Checks[checks[i].Name] = &ScheduledCheck{
-			Name:   checks[i].Name,
-			Type:   checks[i].Type,
-			Config: &settings,
-			Check:  check,
+		if err := p.addCheck(checks[i]); err != nil {
+			return fmt.Errorf("%s: error configuring check %s: %v", checks[i].Position, checks[i].Name, err)
 		}
 	}
 
+	return nil
+}
+
+func (p *Plum) addCheck(block *config.Block) error {
+	// First, get settings to extract groups for validation
+	_, tempSettings, err := p.createCheck(block, nil)
+	if err != nil {
+		return err
+	}
+
+	// Validate that all referenced groups exist
+	for _, groupName := range tempSettings.Groups {
+		if _, ok := p.Groups[groupName]; !ok {
+			return fmt.Errorf("no group named '%s'", groupName)
+		}
+	}
+
+	// Now create final check with validated groups
+	check, settings, err := p.createCheck(block, tempSettings.Groups)
+	if err != nil {
+		return err
+	}
+
+	if v, ok := check.(Validator); ok {
+		if err := v.Validate(); err != nil {
+			return err
+		}
+	}
+
+	for a := range settings.Alerts {
+		if settings.Alerts[a] != "-" && len(p.AlertsMatching(settings.Alerts[a:a+1])) == 0 {
+			return fmt.Errorf("no alerts match '%s'", settings.Alerts[a])
+		}
+	}
+
+	p.Checks[block.Name] = &ScheduledCheck{
+		Name:   block.Name,
+		Type:   block.Type,
+		Config: &settings,
+		Check:  check,
+	}
 	return nil
 }
 
@@ -502,7 +523,7 @@ func (p *Plum) configurePlugins(blocks []*config.Block) error {
 		loaded, ok := p.loadedPlugins[name]
 		if ok {
 			if err := internal.DecodeSettings(&blocks[i].Settings, &loaded); err != nil {
-				return fmt.Errorf("error configuring plugin %s: %v", name, err)
+				return fmt.Errorf("%s: error configuring plugin %s: %v", blocks[i].Position, name, err)
 			}
 			continue
 		}
@@ -510,7 +531,7 @@ func (p *Plum) configurePlugins(blocks []*config.Block) error {
 		if _, ok := p.availablePlugins[name]; ok {
 			log.Printf("Config for plugin %s ignored as it is not loaded", name)
 		} else {
-			return fmt.Errorf("unable to configure plugin %s: no such plugin", name)
+			return fmt.Errorf("%s: unable to configure plugin %s: no such plugin", blocks[i].Position, name)
 		}
 	}
 

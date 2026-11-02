@@ -4,11 +4,86 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
 	"dario.cat/mergo"
 )
+
+// Load parses the configuration file at path, along with any files it includes. Included files are resolved
+// relative to the directory containing path.
+func Load(path string) (*Config, error) {
+	main, err := parseFile(path, false)
+	if err != nil {
+		return nil, err
+	}
+
+	res := main.Config
+	for _, include := range main.Includes {
+		files, err := resolveInclude(filepath.Dir(path), include.Pattern)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %v", include.Position, err)
+		}
+
+		for _, file := range files {
+			included, err := parseFile(file, true)
+			if err != nil {
+				return nil, err
+			}
+
+			res.AlertBlocks = append(res.AlertBlocks, included.AlertBlocks...)
+			res.CheckBlocks = append(res.CheckBlocks, included.CheckBlocks...)
+			res.PluginSettings = append(res.PluginSettings, included.PluginSettings...)
+			res.GroupBlocks = append(res.GroupBlocks, included.GroupBlocks...)
+		}
+	}
+
+	return &res, nil
+}
+
+func parseFile(path string, included bool) (*Parser, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	parser := NewParser(f)
+	parser.file = path
+	parser.included = included
+	if err := parser.Parse(); err != nil {
+		return nil, fmt.Errorf("unable to parse config file %s: %v", path, err)
+	}
+	return parser, nil
+}
+
+func resolveInclude(dir, pattern string) ([]string, error) {
+	if !filepath.IsAbs(pattern) {
+		pattern = filepath.Join(dir, pattern)
+	}
+
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("invalid include pattern %s: %v", pattern, err)
+	}
+
+	if len(matches) == 0 && !strings.ContainsAny(pattern, `*?[\`) {
+		return nil, fmt.Errorf("included file %s does not exist", pattern)
+	}
+
+	slices.Sort(matches)
+	return matches, nil
+}
+
+type Config struct {
+	DefaultSettings map[string]any
+	AlertBlocks     []*Block
+	CheckBlocks     []*Block
+	PluginSettings  []*Block
+	GroupBlocks     []*Block
+}
 
 type Block struct {
 	Name     string
@@ -19,23 +94,31 @@ type Block struct {
 
 // Position identifies where in the configuration a block was declared.
 type Position struct {
+	File string
 	Line int
 }
 
 func (p Position) String() string {
-	return fmt.Sprintf("line %d", p.Line)
+	if p.File == "" {
+		return fmt.Sprintf("line %d", p.Line)
+	}
+	return fmt.Sprintf("%s:%d", p.File, p.Line)
+}
+
+type Include struct {
+	Pattern  string
+	Position Position
 }
 
 type Parser struct {
-	lexer           *Lexer
-	saved           *token
-	last            *token
-	hasDefaults     bool
-	DefaultSettings map[string]any
-	AlertBlocks     []*Block
-	CheckBlocks     []*Block
-	PluginSettings  []*Block
-	GroupBlocks     []*Block
+	Config
+	Includes    []Include
+	lexer       *Lexer
+	saved       *token
+	last        *token
+	file        string
+	included    bool
+	hasDefaults bool
 }
 
 func NewParser(reader io.Reader) *Parser {
@@ -49,22 +132,18 @@ func (p *Parser) Parse() error {
 	go p.lexer.Lex()
 
 	for {
-		t, err := p.take(tokenEOF, tokenError, tokenDefaults, tokenAlert, tokenCheck, tokenPlugin, tokenGroup)
+		t, err := p.take(tokenEOF, tokenError, tokenDefaults, tokenInclude, tokenAlert, tokenCheck, tokenPlugin, tokenGroup)
 		if err != nil {
 			return err
 		}
 
 		switch t.Class {
-		case tokenDefaults:
-			if p.hasDefaults {
-				return fmt.Errorf("duplicate defaults block declared at line %d", t.Line)
-			}
-			p.hasDefaults = true
-			val, err := p.parseBlock(false)
-			if err != nil {
+		case tokenInclude:
+			if err := p.parseInclude(t); err != nil {
 				return err
 			}
-			if err := mergo.Merge(&p.DefaultSettings, val); err != nil {
+		case tokenDefaults:
+			if err := p.parseDefaults(t); err != nil {
 				return err
 			}
 		case tokenAlert:
@@ -72,28 +151,28 @@ func (p *Parser) Parse() error {
 			if err != nil {
 				return err
 			}
-			block.Position = Position{Line: t.Line}
+			block.Position = p.position(t)
 			p.AlertBlocks = append(p.AlertBlocks, block)
 		case tokenCheck:
 			block, err := p.parseBlockWithTypeAndName(false)
 			if err != nil {
 				return err
 			}
-			block.Position = Position{Line: t.Line}
+			block.Position = p.position(t)
 			p.CheckBlocks = append(p.CheckBlocks, block)
 		case tokenPlugin:
 			block, err := p.parseBlockWithType(false)
 			if err != nil {
 				return err
 			}
-			block.Position = Position{Line: t.Line}
+			block.Position = p.position(t)
 			p.PluginSettings = append(p.PluginSettings, block)
 		case tokenGroup:
 			block, err := p.parseBlockWithName(true)
 			if err != nil {
 				return err
 			}
-			block.Position = Position{Line: t.Line}
+			block.Position = p.position(t)
 			p.GroupBlocks = append(p.GroupBlocks, block)
 		case tokenError:
 			return errors.New(t.Value.(string))
@@ -101,6 +180,37 @@ func (p *Parser) Parse() error {
 			return nil
 		}
 	}
+}
+
+func (p *Parser) parseInclude(t *token) error {
+	if p.included {
+		return fmt.Errorf("include not allowed in an included file at line %d", t.Line)
+	}
+	pattern, err := p.take(tokenString)
+	if err != nil {
+		return err
+	}
+	p.Includes = append(p.Includes, Include{Pattern: pattern.Value.(string), Position: p.position(t)})
+	return nil
+}
+
+func (p *Parser) parseDefaults(t *token) error {
+	if p.included {
+		return fmt.Errorf("defaults block not allowed in an included file at line %d", t.Line)
+	}
+	if p.hasDefaults {
+		return fmt.Errorf("duplicate defaults block declared at line %d", t.Line)
+	}
+	p.hasDefaults = true
+	val, err := p.parseBlock(false)
+	if err != nil {
+		return err
+	}
+	return mergo.Merge(&p.DefaultSettings, val)
+}
+
+func (p *Parser) position(t *token) Position {
+	return Position{File: p.file, Line: t.Line}
 }
 
 func (p *Parser) parseBlockWithTypeAndName(allowDefaults bool) (*Block, error) {

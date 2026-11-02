@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Add `include` to load checks, alerts, groups and plugins from other
+  config files
+
 ### Changed
 
 - Redact secrets in check configuration (HTTP auth passwords, SNMP
@@ -9,6 +14,7 @@
 - Redact passwords embedded in HTTP check URLs from alerts
 - Reject multiple `plugin` blocks for the same plugin instead of merging
   them
+- Specify the file and line in configuration errors
 - Reject a `network.portscan` `connection_timeout` of zero
 - Report an interrupted `network.portscan` as indeterminate instead of good
 - **Breaking:** restrict `network.connect` and `network.portscan` to `tcp`,

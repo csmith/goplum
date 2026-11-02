@@ -1,1 +1,1 @@
-"check defined multiple times: same"
+"check defined multiple times: same (at testdata/duplicate-check.conf:1 and testdata/duplicate-check.conf:7)"

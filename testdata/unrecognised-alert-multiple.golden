@@ -1,1 +1,1 @@
-"error configuring check c3: no alerts match 'alert2'"
+"testdata/unrecognised-alert-multiple.conf:3: error configuring check c3: no alerts match 'alert2'"

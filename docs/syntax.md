@@ -30,7 +30,7 @@ defaults {
 
 The defaults block allows you to set default values for common check
 settings. The defaults block can only exist at the top-level of the
-configuration file.
+main configuration file, not in [included files](#includes).
 
 #### Named blocks (checks, alerts, and groups)
 
@@ -104,6 +104,24 @@ These consist of the [Identifier](#identifier) and then a simple block containin
 assignments. Block assignments can be infinitely nested but plugin authors should
 avoid requiring configuration to be layered too deeply.
 
+### Includes
+
+```goplum
+include "conf.d/*.conf"
+```
+
+The main configuration file can include other files. `include` takes a quoted
+glob pattern, resolved relative to the directory of the main configuration
+file. Matching files are loaded in sorted order, and `include` can be used
+several times.
+
+A pattern containing wildcards may match nothing (e.g. an empty directory),
+but a plain path must be an existing file.
+
+Included files may contain checks, alerts, groups and plugins, but not
+`defaults` or `include`. All files are read before anything is configured,
+so a check can refer to alerts and groups from any file.
+
 ### Miscellaneous
 
 #### Identifier
@@ -122,6 +140,7 @@ are:
 * `check`
 * `plugin`
 * `group`
+* `include`
 * `yes`
 * `no`
 * `on`

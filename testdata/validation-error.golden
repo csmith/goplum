@@ -1,1 +1,1 @@
-"error configuring check test: missing required argument: url"
+"testdata/validation-error.conf:1: error configuring check test: missing required argument: url"

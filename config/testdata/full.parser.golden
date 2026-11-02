@@ -19,6 +19,7 @@
         "token": "yyy"
       },
       "Position": {
+        "File": "",
         "Line": 7
       }
     }
@@ -32,6 +33,7 @@
         "url": "https://chameth.com/"
       },
       "Position": {
+        "File": "",
         "Line": 14
       }
     }
@@ -44,6 +46,7 @@
         "foo": "bar"
       },
       "Position": {
+        "File": "",
         "Line": 19
       }
     }
@@ -61,8 +64,10 @@
         }
       },
       "Position": {
+        "File": "",
         "Line": 23
       }
     }
-  ]
+  ],
+  "Includes": null
 }

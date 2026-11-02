@@ -1,1 +1,1 @@
-"error configuring check test: invalid check bazinga in plugin http"
+"testdata/unknown-check.conf:1: error configuring check test: invalid check bazinga in plugin http"

@@ -1,1 +1,1 @@
-"invalid alert bazinga in plugin http"
+"testdata/unknown-alert.conf:1: invalid alert bazinga in plugin http"

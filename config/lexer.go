@@ -41,6 +41,7 @@ const (
 	tokenCheck                           // check
 	tokenPlugin                          // plugin
 	tokenGroup                           // group
+	tokenInclude                         // include
 )
 
 var tokenNames = map[tokenClass]string{
@@ -65,6 +66,7 @@ var tokenNames = map[tokenClass]string{
 	tokenCheck:         "check keyword",
 	tokenPlugin:        "plugin keyword",
 	tokenGroup:         "group keyword",
+	tokenInclude:       "include keyword",
 }
 
 var keywords = map[string]tokenClass{
@@ -73,6 +75,7 @@ var keywords = map[string]tokenClass{
 	"check":    tokenCheck,
 	"plugin":   tokenPlugin,
 	"group":    tokenGroup,
+	"include":  tokenInclude,
 }
 
 var booleans = map[string]bool{

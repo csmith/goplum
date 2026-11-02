@@ -1,1 +1,1 @@
-"alert defined multiple times: alert1"
+"alert defined multiple times: alert1 (at testdata/duplicate-alert.conf:1 and testdata/duplicate-alert.conf:2)"

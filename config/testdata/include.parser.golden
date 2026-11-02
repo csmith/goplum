@@ -1,0 +1,27 @@
+{
+  "DefaultSettings": {
+    "alerts": [
+      "irc"
+    ]
+  },
+  "AlertBlocks": null,
+  "CheckBlocks": null,
+  "PluginSettings": null,
+  "GroupBlocks": null,
+  "Includes": [
+    {
+      "Pattern": "conf.d/*.conf",
+      "Position": {
+        "File": "",
+        "Line": 5
+      }
+    },
+    {
+      "Pattern": "/etc/goplum/secrets.conf",
+      "Position": {
+        "File": "",
+        "Line": 6
+      }
+    }
+  ]
+}

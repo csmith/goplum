@@ -1,1 +1,1 @@
-"group defined multiple times: test-group"
+"group defined multiple times: test-group (at testdata/duplicate-group.conf:1 and testdata/duplicate-group.conf:6)"

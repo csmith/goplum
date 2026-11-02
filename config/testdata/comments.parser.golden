@@ -19,11 +19,13 @@
         "token": "yyy"
       },
       "Position": {
+        "File": "",
         "Line": 7
       }
     }
   ],
   "CheckBlocks": null,
   "PluginSettings": null,
-  "GroupBlocks": null
+  "GroupBlocks": null,
+  "Includes": null
 }

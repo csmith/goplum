@@ -1,1 +1,1 @@
-"error configuring check c3: no alerts match 'b*'"
+"testdata/unrecognised-alert-wildcard.conf:3: error configuring check c3: no alerts match 'b*'"

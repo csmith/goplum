@@ -1,1 +1,1 @@
-"error configuring check test-check: no group named 'nonexistent-group'"
+"testdata/invalid-group-in-defaults.conf:9: error configuring check test-check: no group named 'nonexistent-group'"
