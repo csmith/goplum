@@ -96,18 +96,31 @@ replaced with `xxxxx`.
 
 ```json
 {
-  "text": "Check 'Testing' is now good, was failing.",
-  "name": "Testing",
-  "type": "debug.random",
+  "text": "Check 'example' is now failing (Bad status code: 503), was good.",
+  "name": "example",
+  "type": "http.get",
   "config": {
-    "percent_good": 0.8
+    "Url": "https://www.example.com/",
+    "Auth": {
+      "Username": "acidburn",
+      "Password": "[redacted]"
+    },
+    "Content": "Example Domain",
+    "ContentExpected": true,
+    "CertificateValidity": 864000000000000,
+    "MinStatusCode": 200,
+    "MaxStatusCode": 399
   },
   "last_result": {
     "state": "failing",
     "time": "2020-09-17T17:55:02.224973486+01:00",
-    "detail": "Random value 0.813640 greater than percent_good 0.800000"
+    "detail": "Bad status code: 503",
+    "facts": {
+      "chameth.com/goplum#check_time": 212264
+    }
   },
-  "previous_state": "failing",
-  "new_state": "good"
+  "previous_state": "good",
+  "new_state": "failing",
+  "is_reminder": false
 }
 ```
