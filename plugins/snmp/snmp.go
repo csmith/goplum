@@ -47,8 +47,6 @@ type BaseCheck struct {
 	Port      int
 	Community string
 	Oid       []string
-
-	client *gosnmp.GoSNMP
 }
 
 func (b BaseCheck) Validate() error {
@@ -71,27 +69,26 @@ func (b BaseCheck) Validate() error {
 	return nil
 }
 
-func (b BaseCheck) retrieve() (*gosnmp.SnmpPacket, error) {
-	if b.client == nil {
-		b.client = &gosnmp.GoSNMP{
-			Target:             b.Agent,
-			Port:               uint16(b.Port),
-			Transport:          "udp",
-			Community:          b.Community,
-			Version:            gosnmp.Version2c,
-			Timeout:            time.Duration(5) * time.Second,
-			Retries:            3,
-			ExponentialTimeout: true,
-			MaxOids:            gosnmp.MaxOids,
-		}
-
-		if err := b.client.Connect(); err != nil {
-			b.client = nil
-			return nil, err
-		}
+func (b BaseCheck) retrieve(ctx context.Context) (*gosnmp.SnmpPacket, error) {
+	client := &gosnmp.GoSNMP{
+		Context:            ctx,
+		Target:             b.Agent,
+		Port:               uint16(b.Port),
+		Transport:          "udp",
+		Community:          b.Community,
+		Version:            gosnmp.Version2c,
+		Timeout:            time.Duration(5) * time.Second,
+		Retries:            3,
+		ExponentialTimeout: true,
+		MaxOids:            gosnmp.MaxOids,
 	}
 
-	return b.client.Get(b.Oid)
+	if err := client.Connect(); err != nil {
+		return nil, err
+	}
+	defer client.Conn.Close()
+
+	return client.Get(b.Oid)
 }
 
 type StringCheck struct {
@@ -101,7 +98,7 @@ type StringCheck struct {
 }
 
 func (s StringCheck) Execute(ctx context.Context) goplum.Result {
-	packet, err := s.BaseCheck.retrieve()
+	packet, err := s.BaseCheck.retrieve(ctx)
 	if err != nil {
 		return goplum.FailingResult("SNMP failed: %v", err)
 	}
@@ -135,7 +132,7 @@ type IntCheck struct {
 }
 
 func (c IntCheck) Execute(ctx context.Context) goplum.Result {
-	packet, err := c.BaseCheck.retrieve()
+	packet, err := c.BaseCheck.retrieve(ctx)
 	if err != nil {
 		return goplum.FailingResult("SNMP failed: %v", err)
 	}
