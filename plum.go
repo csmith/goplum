@@ -681,7 +681,7 @@ func (c *ScheduledCheck) Remaining() time.Duration {
 }
 
 func (c *ScheduledCheck) AddResult(result *Result) ResultHistory {
-	copy(c.History[1:9], c.History[0:8])
+	copy(c.History[1:], c.History[:len(c.History)-1])
 	c.History[0] = result
 	c.LastRun = time.Now()
 	return c.History

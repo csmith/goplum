@@ -174,3 +174,16 @@ func TestRaiseAlerts_RedactsSecretsFromCheckConfig(t *testing.T) {
 		)
 	}
 }
+
+func TestScheduledCheck_AddResult_ReachesThresholdOfFullHistory(t *testing.T) {
+	check := &goplum.ScheduledCheck{}
+	thresholds := map[goplum.CheckState]int{goplum.StateGood: 10, goplum.StateFailing: 10}
+
+	for range 9 {
+		check.AddResult(&goplum.Result{State: goplum.StateGood})
+	}
+	assert.Equal(t, goplum.StateIndeterminate, check.History.State(thresholds))
+
+	history := check.AddResult(&goplum.Result{State: goplum.StateGood})
+	assert.Equal(t, goplum.StateGood, history.State(thresholds))
+}
