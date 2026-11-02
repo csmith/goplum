@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"slices"
@@ -83,69 +84,58 @@ type PortScanCheck struct {
 }
 
 func (c PortScanCheck) Timeout() time.Duration {
-	return c.ConnectionTimeout * time.Duration((c.End-c.Start)/c.ConcurrentConnections)
-}
-
-func (c PortScanCheck) worker(queue <-chan int, job func(int)) {
-	for {
-		p, more := <-queue
-		if more {
-			job(p)
-		} else {
-			return
-		}
-	}
-}
-
-func (c PortScanCheck) check(port int) bool {
-	target := net.JoinHostPort(c.Address, strconv.Itoa(port))
-	conn, err := net.DialTimeout(c.Network, target, c.ConnectionTimeout)
-	if err == nil {
-		conn.Close()
-		return true
-	}
-	return false
-}
-
-func (c PortScanCheck) allowed(port int) bool {
-	return slices.Contains(c.Allow, port)
+	// Allow an extra batch of slack so the final dials can time out on their own before the check is cancelled.
+	return c.ConnectionTimeout * time.Duration((c.End-c.Start+c.ConcurrentConnections)/c.ConcurrentConnections+1)
 }
 
 func (c PortScanCheck) Execute(ctx context.Context) goplum.Result {
-	open := make(chan int, c.End-c.Start)
+	var (
+		mu   sync.Mutex
+		open []int
+	)
+
 	queue := make(chan int)
 	wg := sync.WaitGroup{}
-
-	for i := 0; i < c.ConcurrentConnections; i++ {
-		go c.worker(queue, func(port int) {
-			if c.check(port) {
-				open <- port
-			}
-			wg.Done()
-		})
+	for range c.ConcurrentConnections {
+		wg.Go(
+			func() {
+				for port := range queue {
+					if c.check(ctx, port) {
+						mu.Lock()
+						open = append(open, port)
+						mu.Unlock()
+					}
+				}
+			},
+		)
 	}
 
+enqueue:
 	for p := c.Start; p <= c.End; p++ {
-		wg.Add(1)
-		queue <- p
+		select {
+		case queue <- p:
+		case <-ctx.Done():
+			break enqueue
+		}
 	}
 	close(queue)
-
 	wg.Wait()
-	close(open)
 
+	slices.Sort(open)
 	var failures []int
-	for p := range open {
+	for _, p := range open {
 		if !c.allowed(p) {
 			failures = append(failures, p)
 		}
 	}
 
-	if len(failures) == 0 {
-		return goplum.GoodResult()
-	} else {
+	if len(failures) > 0 {
 		return goplum.FailingResult("Unexpected open ports: %v", failures)
 	}
+	if err := ctx.Err(); err != nil {
+		return goplum.IndeterminateResult("Port scan did not complete: %v", err)
+	}
+	return goplum.GoodResult()
 }
 
 func (c PortScanCheck) Validate() error {
@@ -161,5 +151,23 @@ func (c PortScanCheck) Validate() error {
 		return fmt.Errorf("invalid number of concurrent connections: must be >0")
 	}
 
+	if c.ConnectionTimeout <= 0 {
+		return errors.New("invalid connection timeout: must be >0")
+	}
+
 	return nil
+}
+
+func (c PortScanCheck) check(ctx context.Context, port int) bool {
+	d := net.Dialer{Timeout: c.ConnectionTimeout}
+	conn, err := d.DialContext(ctx, c.Network, net.JoinHostPort(c.Address, strconv.Itoa(port)))
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
+}
+
+func (c PortScanCheck) allowed(port int) bool {
+	return slices.Contains(c.Allow, port)
 }
