@@ -18,7 +18,7 @@ the form "host:port", "host%zone:port", "\[host\]:port" or "\[host%zone\]:port".
 
 By default, connection attempts will be made over TCP (IPv6 or IPv4 using Fast Fallback).
 If the `network` parameter is included then connection attempts will be limited to that
-network. Valid options are: "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6".
+network. Valid options are: "tcp", "tcp4", "tcp6".
 
 ### network.portscan
 
@@ -47,4 +47,4 @@ can be controlled with the `concurrent_connections` parameter.
 
 By default, connection attempts will be made over TCP (IPv6 or IPv4 using Fast Fallback).
 If the `network` parameter is included then connection attempts will be limited to that
-network. Valid options are: "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6".
+network. Valid options are: "tcp", "tcp4", "tcp6".

@@ -3,9 +3,11 @@ package network
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -42,6 +44,15 @@ func (p Plugin) Check(kind string) goplum.Check {
 	}
 }
 
+var validNetworks = []string{"tcp", "tcp4", "tcp6"}
+
+func validateNetwork(network string) error {
+	if !slices.Contains(validNetworks, network) {
+		return fmt.Errorf("invalid network %q: must be one of %s", network, strings.Join(validNetworks, ", "))
+	}
+	return nil
+}
+
 type ConnectCheck struct {
 	Network string
 	Address string
@@ -60,6 +71,10 @@ func (c ConnectCheck) Execute(ctx context.Context) goplum.Result {
 func (c ConnectCheck) Validate() error {
 	if len(c.Address) == 0 {
 		return errors.New("missing required argument: address")
+	}
+
+	if err := validateNetwork(c.Network); err != nil {
+		return err
 	}
 
 	_, _, err := net.SplitHostPort(c.Address)
@@ -140,6 +155,10 @@ enqueue:
 func (c PortScanCheck) Validate() error {
 	if len(c.Address) == 0 {
 		return errors.New("missing required argument: address")
+	}
+
+	if err := validateNetwork(c.Network); err != nil {
+		return err
 	}
 
 	if c.Start < 1 || c.End > 65535 || c.Start > c.End {

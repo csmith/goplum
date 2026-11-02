@@ -131,3 +131,70 @@ func listenRange(t *testing.T, count int) int {
 	t.Skip("unable to find a range of free consecutive ports")
 	return 0
 }
+
+func TestConnectCheck_ValidateNetwork(t *testing.T) {
+	tests := []struct {
+		network string
+		valid   bool
+	}{
+		{"tcp", true},
+		{"tcp4", true},
+		{"tcp6", true},
+		{"udp", false},
+		{"udp6", false},
+		{"tpc", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(
+			tt.network,
+			func(t *testing.T) {
+				check := ConnectCheck{Network: tt.network, Address: "127.0.0.1:80"}
+				if tt.valid {
+					require.NoError(t, check.Validate())
+				} else {
+					require.Error(t, check.Validate())
+				}
+			},
+		)
+	}
+}
+
+func TestPortScanCheck_ValidateNetwork(t *testing.T) {
+	tests := []struct {
+		network string
+		valid   bool
+	}{
+		{"tcp", true},
+		{"tcp4", true},
+		{"tcp6", true},
+		{"udp", false},
+		{"udp4", false},
+		{"tpc", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(
+			tt.network,
+			func(t *testing.T) {
+				check := portScan(1, 10)
+				check.Network = tt.network
+				if tt.valid {
+					require.NoError(t, check.Validate())
+				} else {
+					require.Error(t, check.Validate())
+				}
+			},
+		)
+	}
+}
+
+func TestPlugin_DefaultNetworkIsValid(t *testing.T) {
+	connect := Plugin{}.Check("connect").(ConnectCheck)
+	connect.Address = "127.0.0.1:80"
+	require.NoError(t, connect.Validate())
+
+	scan := Plugin{}.Check("portscan").(PortScanCheck)
+	scan.Address = "127.0.0.1"
+	require.NoError(t, scan.Validate())
+}
