@@ -90,14 +90,15 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 	}
 
 	r, err := client.Do(req)
-
 	if err != nil {
 		return goplum.FailingResult("Error making request: %v", err)
-	} else if r.StatusCode < g.MinStatusCode || r.StatusCode > g.MaxStatusCode {
-		return goplum.FailingResult("Bad status code: %d", r.StatusCode)
 	}
 
 	defer r.Body.Close()
+
+	if r.StatusCode < g.MinStatusCode || r.StatusCode > g.MaxStatusCode {
+		return goplum.FailingResult("Bad status code: %d", r.StatusCode)
+	}
 
 	if len(g.Content) > 0 {
 		content, err := io.ReadAll(r.Body)
@@ -153,7 +154,6 @@ func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 	}
 
 	r, err := client.Do(req)
-
 	if err != nil {
 		return goplum.FailingResult("Error making request: %v", err)
 	}

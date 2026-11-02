@@ -24,6 +24,7 @@
 - Fix `snmp.string` panicking on every string value
 - Fix `snmp.int` passing when an OID returns no value instead of a number
 - Allow priority -2 in `pushover.message` alerts
+- Fix HTTP checks leaking a connection when the status code is unexpected
 
 ## 1.1.1 - 2026-10-20
 

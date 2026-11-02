@@ -52,6 +52,42 @@ func TestGetCheck_FollowsRedirectsEachTime(t *testing.T) {
 	assert.Equal(t, []string{"/", "/redirect"}, urls)
 }
 
+func TestGetCheck_ClosesBodyOnBadStatusCode(t *testing.T) {
+	disconnected := make(chan struct{})
+	finished := make(chan struct{})
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.(http.Flusher).Flush()
+				// Hold the response open until the client gives up on it.
+				select {
+				case <-r.Context().Done():
+					close(disconnected)
+				case <-finished:
+				}
+			},
+		),
+	)
+	defer server.Close()
+	defer close(finished)
+
+	check := &GetCheck{
+		Url:           server.URL,
+		MinStatusCode: 200,
+		MaxStatusCode: 399,
+	}
+
+	result := check.Execute(context.Background())
+	assert.Equal(t, goplum.StateFailing, result.State)
+
+	select {
+	case <-disconnected:
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "response body was not closed")
+	}
+}
+
 func TestWebHookAlert_SendsPostWithJsonBody(t *testing.T) {
 	var method string
 	var contentType string
