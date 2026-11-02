@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Redact secrets in check configuration (HTTP auth passwords, SNMP
+  communities, exec arguments and heartbeat IDs) from alerts
+- Reject multiple `plugin` blocks for the same plugin instead of merging
+  them
+- Reject a `network.portscan` `connection_timeout` of zero
+- Report an interrupted `network.portscan` as indeterminate instead of good
+
+### Fixed
+
+- Time out webhook and SMTP alerts after 20 seconds instead of blocking
+  checks indefinitely
+- Fix `network.portscan` hanging when every port in the range is open, and
+  respect the check timeout
+- Fix SNMP checks leaking a UDP socket on every execution and ignoring the
+  check timeout
+
 ## 1.1.1 - 2026-10-20
 
 ### Fixed
