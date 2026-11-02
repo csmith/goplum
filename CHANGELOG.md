@@ -27,6 +27,8 @@
 - Allow priority -2 in `pushover.message` alerts
 - Fix HTTP checks leaking a connection when the status code is unexpected
 - Fix garbled `plumctl` error messages
+- Fix HTTP checks panicking when the URL cannot be parsed, and reject
+  unparseable URLs in config
 - Fix check history only keeping 9 results, so a threshold of 10 was never
   reached
 

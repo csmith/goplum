@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -82,7 +83,7 @@ type GetCheck struct {
 func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, g.Url, http.NoBody)
 	if err != nil {
-		goplum.FailingResult("Error building request: %v", err)
+		return goplum.FailingResult("Error building request: %v", withoutUrl(err))
 	}
 
 	if len(g.Auth.Username) > 0 || len(g.Auth.Password) > 0 {
@@ -131,11 +132,7 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 }
 
 func (g GetCheck) Validate() error {
-	if len(g.Url) == 0 {
-		return errors.New("missing required argument: url")
-	}
-
-	return nil
+	return validateUrl(g.Url)
 }
 
 type HealthCheck struct {
@@ -146,7 +143,7 @@ type HealthCheck struct {
 func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.Url, http.NoBody)
 	if err != nil {
-		goplum.FailingResult("Error building request: %v", err)
+		return goplum.FailingResult("Error building request: %v", withoutUrl(err))
 	}
 
 	if len(h.Auth.Username) > 0 || len(h.Auth.Password) > 0 {
@@ -185,11 +182,7 @@ func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 }
 
 func (h HealthCheck) Validate() error {
-	if len(h.Url) == 0 {
-		return errors.New("missing required argument: url")
-	}
-
-	return nil
+	return validateUrl(h.Url)
 }
 
 func (h HealthCheck) convert(status health.Status) goplum.CheckState {
@@ -256,9 +249,25 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 }
 
 func (w WebHookAlert) Validate() error {
-	if len(w.Url) == 0 {
+	return validateUrl(w.Url)
+}
+
+func validateUrl(u string) error {
+	if len(u) == 0 {
 		return errors.New("missing required argument: url")
 	}
 
+	if _, err := url.Parse(u); err != nil {
+		return fmt.Errorf("invalid url: %w", withoutUrl(err))
+	}
+
 	return nil
+}
+
+// withoutUrl strips the URL from a url.Error, as it may contain credentials.
+func withoutUrl(err error) error {
+	if urlErr, ok := errors.AsType[*url.Error](err); ok {
+		return urlErr.Err
+	}
+	return err
 }

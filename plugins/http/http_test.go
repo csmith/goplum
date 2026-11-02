@@ -224,3 +224,60 @@ func TestWebHookAlert_TimesOutIfServerNeverResponds(t *testing.T) {
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 	assert.Less(t, time.Since(start), 5*time.Second)
 }
+
+const unparseableUrl = "http://user:secret@example.com/%zz"
+
+func TestGetCheck_FailsWithoutPanicOnUnparseableUrl(t *testing.T) {
+	check := GetCheck{Url: unparseableUrl}
+
+	result := check.Execute(context.Background())
+	assert.Equal(t, goplum.StateFailing, result.State)
+	assert.Contains(t, result.Detail, "Error building request")
+	assert.NotContains(t, result.Detail, "secret")
+}
+
+func TestHealthCheck_FailsWithoutPanicOnUnparseableUrl(t *testing.T) {
+	check := HealthCheck{Url: unparseableUrl}
+
+	result := check.Execute(context.Background())
+	assert.Equal(t, goplum.StateFailing, result.State)
+	assert.Contains(t, result.Detail, "Error building request")
+	assert.NotContains(t, result.Detail, "secret")
+}
+
+func TestValidate_RejectsUnparseableUrl(t *testing.T) {
+	validators := map[string]interface{ Validate() error }{
+		"get":         GetCheck{Url: unparseableUrl},
+		"healthcheck": HealthCheck{Url: unparseableUrl},
+		"webhook":     WebHookAlert{Url: unparseableUrl},
+	}
+
+	for name, v := range validators {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				err := v.Validate()
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "invalid url")
+				assert.NotContains(t, err.Error(), "secret")
+			},
+		)
+	}
+}
+
+func TestValidate_AcceptsValidUrl(t *testing.T) {
+	validators := map[string]interface{ Validate() error }{
+		"get":         GetCheck{Url: "https://example.com/"},
+		"healthcheck": HealthCheck{Url: "https://example.com/"},
+		"webhook":     WebHookAlert{Url: "https://example.com/"},
+	}
+
+	for name, v := range validators {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				assert.NoError(t, v.Validate())
+			},
+		)
+	}
+}
