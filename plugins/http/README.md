@@ -91,7 +91,8 @@ containing a HMAC-SHA256 signature of the request body, prefixed with `sha256=`.
 by the receiving endpoint to verify that the request was sent by Goplum.
 
 The payload includes the check's configuration. Values that may contain secrets, such as passwords,
-are replaced with `"[redacted]"`.
+are replaced with `"[redacted]"`. Passwords embedded in URLs (`https://user:pass@host/`) are
+replaced with `xxxxx`.
 
 ```json
 {

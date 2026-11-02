@@ -127,11 +127,11 @@ func (r *recordingAlert) Send(details goplum.AlertDetails) error {
 func TestRaiseAlerts_RedactsSecretsFromCheckConfig(t *testing.T) {
 	tests := map[string]goplum.Check{
 		"http.get": http.GetCheck{BaseCheck: http.BaseCheck{
-			Url:  "https://example.com/",
+			Url:  "https://user:secret-value@example.com/",
 			Auth: http.Credentials{Username: "user", Password: "secret-value"},
 		}},
 		"http.healthcheck": http.HealthCheck{BaseCheck: http.BaseCheck{
-			Url:  "https://example.com/",
+			Url:  "https://user:secret-value@example.com/",
 			Auth: http.Credentials{Username: "user", Password: "secret-value"},
 		}},
 		"snmp.string": snmp.StringCheck{BaseCheck: snmp.BaseCheck{Agent: "192.0.2.1", Community: "secret-value"}},

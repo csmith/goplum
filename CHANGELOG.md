@@ -6,6 +6,7 @@
 
 - Redact secrets in check configuration (HTTP auth passwords, SNMP
   communities, exec arguments and heartbeat IDs) from alerts
+- Redact passwords embedded in HTTP check URLs from alerts
 - Reject multiple `plugin` blocks for the same plugin instead of merging
   them
 - Reject a `network.portscan` `connection_timeout` of zero

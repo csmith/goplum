@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"reflect"
 	"time"
 )
@@ -25,7 +26,8 @@ type Plugin interface {
 // Checks may also implement the Validator interface to validate their arguments when configured.
 //
 // Exported fields that hold secrets (passwords, tokens, etc) should be tagged with `redact:"true"`, so their
-// values are not included in alerts.
+// values are not included in alerts. String fields holding URLs that may embed credentials should instead be
+// tagged with `redact:"url"`, so only the password is removed.
 type Check interface {
 	// Execute performs the actual check to see if the service is up or not.
 	// It should block until a result is available or the passed context is cancelled.
@@ -137,7 +139,7 @@ type AlertDetails struct {
 	Name string `json:"name"`
 	// Type is the type of check involved.
 	Type string `json:"type"`
-	// Config is the user-supplied parameters to the check, with any fields tagged `redact:"true"` redacted.
+	// Config is the user-supplied parameters to the check, with any secrets redacted.
 	Config any `json:"config"`
 	// LastResult is the most recent result that caused the transition.
 	LastResult *Result `json:"last_result"`
@@ -179,13 +181,17 @@ func redactStruct(dst, src reflect.Value) {
 			continue
 		}
 
-		switch {
-		case t.Field(i).Tag.Get("redact") == "true":
+		switch t.Field(i).Tag.Get("redact") {
+		case "true":
 			f.Set(redactValue(src.Field(i)))
-		case f.Kind() == reflect.Struct:
-			redactStruct(f, src.Field(i))
+		case "url":
+			f.Set(redactURL(src.Field(i)))
 		default:
-			f.Set(src.Field(i))
+			if f.Kind() == reflect.Struct {
+				redactStruct(f, src.Field(i))
+			} else {
+				f.Set(src.Field(i))
+			}
 		}
 	}
 }
@@ -206,6 +212,20 @@ func redactValue(v reflect.Value) reflect.Value {
 	default:
 		return reflect.Zero(v.Type())
 	}
+}
+
+func redactURL(v reflect.Value) reflect.Value {
+	if v.Kind() != reflect.String {
+		return redactValue(v)
+	}
+
+	u, err := url.Parse(v.String())
+	if err != nil {
+		// We can't tell which part is the password, so err on the side of caution.
+		return redactValue(v)
+	}
+
+	return reflect.ValueOf(u.Redacted()).Convert(v.Type())
 }
 
 // Alert defines the method to inform the user of a change to a service - e.g. when it comes up or goes down.

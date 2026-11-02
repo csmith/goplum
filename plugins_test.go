@@ -13,7 +13,7 @@ type RedactCredentials struct {
 }
 
 type RedactBase struct {
-	Url  string
+	Url  string `redact:"url"`
 	Auth RedactCredentials
 }
 
@@ -82,4 +82,28 @@ func TestRedact_ReturnsNonStructsUnchanged(t *testing.T) {
 
 	var check *redactCheck
 	assert.Equal(t, check, redact(check))
+}
+
+func TestRedact_RemovesPasswordsFromUrls(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want string
+	}{
+		{"no credentials", "https://example.com/path?q=1", "https://example.com/path?q=1"},
+		{"username only", "https://user@example.com/", "https://user@example.com/"},
+		{"username and password", "https://user:hunter2@example.com/", "https://user:xxxxx@example.com/"},
+		{"unparseable", "https://user:hunter2@example.com:port/", "[redacted]"},
+		{"empty", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name,
+			func(t *testing.T) {
+				res := redact(redactCheck{Url: tt.url}).(redactCheck)
+				assert.Equal(t, tt.want, res.Url)
+			},
+		)
+	}
 }

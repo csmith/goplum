@@ -66,7 +66,7 @@ type Credentials struct {
 }
 
 type BaseCheck struct {
-	Url  string
+	Url  string `redact:"url"`
 	Auth Credentials
 }
 
