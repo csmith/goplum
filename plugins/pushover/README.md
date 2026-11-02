@@ -31,9 +31,9 @@ website), and `key` is the user or group key you wish to send the alert to.
 Optionally you can limit the alert to a specific device or devices by passing their names
 in the `devices` option.
 
-You can configure sounds and priorities for both failing and recovering alerts by using the
-appropriate blocks. For emergency alerts (priority 2), you must also specify how often the
-alert is retried (minimum: 30s), and after how long it will stop (maximum: 3h).
+You can configure sounds and priorities (from `-2` to `2`) for both failing and recovering
+alerts by using the appropriate blocks. For emergency alerts (priority 2), you must also specify
+how often the alert is retried (minimum: 30s), and after how long it will stop (maximum: 3h).
 
 If the priority is not set, or the blocks are omitted entirely, the alerts are sent as
 priority `0`. If sounds are not set then the default sounds configured in the Pushover

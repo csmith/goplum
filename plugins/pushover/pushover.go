@@ -132,7 +132,7 @@ func (m MessageAlert) Validate() error {
 }
 
 func (m MessageAlert) validateSettings(settings PushSettings) error {
-	if settings.Priority < -1 || settings.Priority > 2 {
+	if settings.Priority < -2 || settings.Priority > 2 {
 		return errors.New("priority must be in range -2..+2")
 	}
 

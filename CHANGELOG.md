@@ -23,6 +23,7 @@
   check timeout
 - Fix `snmp.string` panicking on every string value
 - Fix `snmp.int` passing when an OID returns no value instead of a number
+- Allow priority -2 in `pushover.message` alerts
 
 ## 1.1.1 - 2026-10-20
 
