@@ -14,6 +14,7 @@ import (
 	"chameth.com/goplum/plugins/exec"
 	"chameth.com/goplum/plugins/heartbeat"
 	"chameth.com/goplum/plugins/http"
+	"chameth.com/goplum/plugins/prometheus"
 	"chameth.com/goplum/plugins/snmp"
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/assert"
@@ -270,6 +271,34 @@ func TestRaiseAlerts_RedactsSecretsFromCheckConfig(t *testing.T) {
 			},
 		)
 	}
+}
+
+func TestRaiseAlerts_OmitsPluginSettings(t *testing.T) {
+	plugin := &prometheus.Plugin{
+		Url:         "https://user:secret-value@example.com/",
+		BearerToken: "secret-value",
+		Headers:     []string{"X-Scope-OrgID: secret-value"},
+	}
+	check := plugin.Check("query")
+
+	alert := &recordingAlert{}
+	plum := goplum.NewPlum()
+	plum.Alerts["test"] = alert
+
+	scheduled := &goplum.ScheduledCheck{
+		Name:   "test",
+		Type:   "prometheus.query",
+		Config: &goplum.CheckSettings{Alerts: []string{"*"}},
+		Check:  check,
+		State:  goplum.StateFailing,
+	}
+	scheduled.AddResult(&goplum.Result{State: goplum.StateFailing})
+	plum.RaiseAlerts(scheduled, goplum.StateGood)
+
+	require.Len(t, alert.details, 1)
+	b, err := json.Marshal(alert.details[0])
+	require.NoError(t, err)
+	assert.NotContains(t, string(b), "secret-value")
 }
 
 func TestScheduledCheck_AddResult_ReachesThresholdOfFullHistory(t *testing.T) {

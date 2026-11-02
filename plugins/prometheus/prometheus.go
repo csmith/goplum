@@ -2,13 +2,17 @@ package prometheus
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -19,7 +23,25 @@ import (
 const maxSeriesInDetail = 5
 
 type Plugin struct {
-	Url string
+	Url         string
+	Auth        Credentials
+	BearerToken string `config:"bearer_token"`
+	Headers     []string
+	TLS         TLSConfig `config:"tls"`
+
+	headers http.Header
+	client  *http.Client
+}
+
+type Credentials struct {
+	Username string
+	Password string
+}
+
+type TLSConfig struct {
+	CAFile   string `config:"ca_file"`
+	CertFile string `config:"cert_file"`
+	KeyFile  string `config:"key_file"`
 }
 
 func (p *Plugin) Alert(_ string) goplum.Alert {
@@ -45,7 +67,59 @@ func (p *Plugin) Validate() error {
 		return errors.New("url must be an absolute http or https URL")
 	}
 
+	if len(p.BearerToken) > 0 && (len(p.Auth.Username) > 0 || len(p.Auth.Password) > 0) {
+		return errors.New("bearer_token and auth cannot both be specified")
+	}
+
+	p.headers = make(http.Header)
+	for _, h := range p.Headers {
+		name, value, ok := strings.Cut(h, ":")
+		name = strings.TrimSpace(name)
+		if !ok || len(name) == 0 {
+			return fmt.Errorf("invalid header %q, expected format \"Name: Value\"", h)
+		}
+		p.headers.Add(name, strings.TrimSpace(value))
+	}
+
+	tlsConfig, err := p.TLS.build()
+	if err != nil {
+		return err
+	}
+
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = tlsConfig
+	p.client = &http.Client{Transport: transport}
 	return nil
+}
+
+func (t TLSConfig) build() (*tls.Config, error) {
+	config := &tls.Config{}
+
+	if len(t.CAFile) > 0 {
+		pem, err := os.ReadFile(t.CAFile)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read ca_file: %w", err)
+		}
+
+		config.RootCAs = x509.NewCertPool()
+		if !config.RootCAs.AppendCertsFromPEM(pem) {
+			return nil, errors.New("no certificates found in ca_file")
+		}
+	}
+
+	if len(t.CertFile) > 0 || len(t.KeyFile) > 0 {
+		if len(t.CertFile) == 0 || len(t.KeyFile) == 0 {
+			return nil, errors.New("cert_file and key_file must be specified together")
+		}
+
+		cert, err := tls.LoadX509KeyPair(t.CertFile, t.KeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("unable to load client certificate: %w", err)
+		}
+		config.Certificates = []tls.Certificate{cert}
+	}
+
+	return config, nil
 }
 
 type QueryCheck struct {
@@ -65,9 +139,16 @@ func (q QueryCheck) Execute(ctx context.Context) goplum.Result {
 	if err != nil {
 		return goplum.FailingResult("Error building request: %v", withoutUrl(err))
 	}
+	maps.Copy(req.Header, q.plugin.headers)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	res, err := http.DefaultClient.Do(req)
+	if len(q.plugin.Auth.Username) > 0 || len(q.plugin.Auth.Password) > 0 {
+		req.SetBasicAuth(q.plugin.Auth.Username, q.plugin.Auth.Password)
+	} else if len(q.plugin.BearerToken) > 0 {
+		req.Header.Set("Authorization", "Bearer "+q.plugin.BearerToken)
+	}
+
+	res, err := q.plugin.client.Do(req)
 	if err != nil {
 		return goplum.FailingResult("Error making request: %v", withoutUrl(err))
 	}

@@ -4,13 +4,41 @@ The Prometheus plugin runs PromQL queries against a Prometheus-compatible API
 (such as Prometheus itself or VictoriaMetrics), so services can be checked using
 metrics that are already being collected.
 
-The plugin must be configured with the URL of the API:
+The plugin must be configured with the URL of the API, and can optionally
+authenticate, send extra headers, and use custom TLS settings:
 
 ```goplum
 plugin prometheus {
+  # URL is required
   url = "https://prometheus.example.com/"
+
+  # Basic authentication
+  auth {
+    username = "goplum"
+    password = "hunter2"
+  }
+
+  # Or a bearer token
+  bearer_token = "abc123"
+
+  # Additional headers, such as a tenant ID for Mimir or Cortex
+  headers = ["X-Scope-OrgID: tenant-1"]
+
+  tls {
+    # CA certificate(s) to verify the server with, instead of the system's
+    ca_file = "/etc/goplum/prometheus-ca.pem"
+
+    # Client certificate and key, for mutual TLS
+    cert_file = "/etc/goplum/client.pem"
+    key_file = "/etc/goplum/client-key.pem"
+  }
 }
 ```
+
+Only one of `auth` and `bearer_token` may be specified. Headers are given in
+`"Name: Value"` format, and a header may be repeated to send multiple values.
+`cert_file` and `key_file` must be specified together, and all TLS files must
+be PEM-encoded.
 
 ## Checks
 
