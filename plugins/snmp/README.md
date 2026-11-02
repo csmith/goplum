@@ -11,7 +11,7 @@ check snmp.int "example" {
   agent = "192.168.1.1"
   port = 161
   community = "public"
-  oid = [".1.3.6.1.4.1.2021.4.11.0", ".1.3.6.1.4.1.2021.4.4"]
+  oid = [".1.3.6.1.4.1.2021.4.11.0", ".1.3.6.1.4.1.2021.4.4.0"]
   at_least = 10000
   at_most = 90000
 }
@@ -30,7 +30,7 @@ check snmp.string "example" {
   agent = "192.168.1.1"
   port = 161
   community = "public"
-  oid = ".1.3.6.1.4.1.2021.9.1.2"
+  oid = ".1.3.6.1.4.1.2021.9.1.2.1"
   content = "HDD"
   content_expected = true
 }

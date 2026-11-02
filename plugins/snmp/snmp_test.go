@@ -21,7 +21,7 @@ func TestIntCheck_DoesNotLeakSockets(t *testing.T) {
 
 	check := IntCheck{
 		Agent:     "127.0.0.1",
-		Port:      startAgent(t, true),
+		Port:      startAgent(t, respondWith(gosnmp.Integer, 42)),
 		Community: "public",
 		Oid:       []string{".1.3.6.1.2.1.1.3.0"},
 		AtLeast:   0,
@@ -39,7 +39,7 @@ func TestIntCheck_DoesNotLeakSockets(t *testing.T) {
 func TestIntCheck_HonoursContext(t *testing.T) {
 	check := IntCheck{
 		Agent:     "127.0.0.1",
-		Port:      startAgent(t, false),
+		Port:      startAgent(t, nil),
 		Community: "public",
 		Oid:       []string{".1.3.6.1.2.1.1.3.0"},
 	}
@@ -53,8 +53,89 @@ func TestIntCheck_HonoursContext(t *testing.T) {
 	assert.Less(t, time.Since(start), 2*time.Second)
 }
 
-// startAgent listens on a local UDP port and, if respond is set, answers every Get with an integer value of 42.
-func startAgent(t *testing.T, respond bool) int {
+func TestIntCheck_FailsOnNonNumericValues(t *testing.T) {
+	tests := map[string]gosnmp.Asn1BER{
+		"no such object":   gosnmp.NoSuchObject,
+		"no such instance": gosnmp.NoSuchInstance,
+		"null":             gosnmp.Null,
+	}
+
+	for name, berType := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				check := IntCheck{
+					Agent:     "127.0.0.1",
+					Port:      startAgent(t, respondWith(berType, nil)),
+					Community: "public",
+					Oid:       []string{".1.3.6.1.2.1.1.3.0"},
+					AtLeast:   0,
+					AtMost:    100,
+				}
+
+				result := check.Execute(context.Background())
+				assert.Equal(t, goplum.StateFailing, result.State, result.Detail)
+			},
+		)
+	}
+}
+
+func TestStringCheck_MatchesOctetStringContent(t *testing.T) {
+	tests := map[string]struct {
+		content         string
+		contentExpected bool
+		want            goplum.CheckState
+	}{
+		"expected and present":   {content: "world", contentExpected: true, want: goplum.StateGood},
+		"expected and absent":    {content: "absent", contentExpected: true, want: goplum.StateFailing},
+		"unexpected and present": {content: "world", contentExpected: false, want: goplum.StateFailing},
+		"unexpected and absent":  {content: "absent", contentExpected: false, want: goplum.StateGood},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				check := StringCheck{
+					Agent:           "127.0.0.1",
+					Port:            startAgent(t, respondWith(gosnmp.OctetString, "hello world")),
+					Community:       "public",
+					Oid:             []string{".1.3.6.1.2.1.1.1.0"},
+					Content:         tt.content,
+					ContentExpected: tt.contentExpected,
+				}
+
+				result := check.Execute(context.Background())
+				assert.Equal(t, tt.want, result.State, result.Detail)
+			},
+		)
+	}
+}
+
+func TestStringCheck_FailsOnNonStringValues(t *testing.T) {
+	check := StringCheck{
+		Agent:           "127.0.0.1",
+		Port:            startAgent(t, respondWith(gosnmp.NoSuchObject, nil)),
+		Community:       "public",
+		Oid:             []string{".1.3.6.1.2.1.1.1.0"},
+		Content:         "world",
+		ContentExpected: false,
+	}
+
+	result := check.Execute(context.Background())
+	assert.Equal(t, goplum.StateFailing, result.State, result.Detail)
+}
+
+func respondWith(berType gosnmp.Asn1BER, value any) func(*gosnmp.SnmpPDU) {
+	return func(variable *gosnmp.SnmpPDU) {
+		variable.Type = berType
+		variable.Value = value
+	}
+}
+
+// startAgent listens on a local UDP port and, if respond is non-nil, answers every Get after passing each variable
+// through it.
+func startAgent(t *testing.T, respond func(*gosnmp.SnmpPDU)) int {
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
@@ -67,7 +148,7 @@ func startAgent(t *testing.T, respond bool) int {
 			if err != nil {
 				return
 			}
-			if !respond {
+			if respond == nil {
 				continue
 			}
 
@@ -78,8 +159,7 @@ func startAgent(t *testing.T, respond bool) int {
 
 			request.PDUType = gosnmp.GetResponse
 			for i := range request.Variables {
-				request.Variables[i].Type = gosnmp.Integer
-				request.Variables[i].Value = 42
+				respond(&request.Variables[i])
 			}
 
 			out, err := request.MarshalMsg()

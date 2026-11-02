@@ -101,8 +101,9 @@ func (s StringCheck) Execute(ctx context.Context) goplum.Result {
 
 	for i := range packet.Variables {
 		variable := packet.Variables[i]
-		if variable.Type == gosnmp.OctetString {
-			found := strings.Contains(variable.Value.(string), s.Content)
+		value, ok := octetString(variable)
+		if ok {
+			found := strings.Contains(value, s.Content)
 			if found && !s.ContentExpected {
 				return goplum.FailingResult("OID %s contained content %s", variable.Name, s.Content)
 			} else if !found && s.ContentExpected {
@@ -120,6 +121,21 @@ func (s StringCheck) Validate() error {
 	return s.BaseCheck.Validate()
 }
 
+func octetString(variable gosnmp.SnmpPDU) (string, bool) {
+	if variable.Type != gosnmp.OctetString {
+		return "", false
+	}
+
+	switch value := variable.Value.(type) {
+	case []byte:
+		return string(value), true
+	case string:
+		return value, true
+	default:
+		return "", false
+	}
+}
+
 type IntCheck struct {
 	BaseCheck `config:",squash"`
 	AtLeast   int64 `config:"at_least"`
@@ -134,6 +150,10 @@ func (c IntCheck) Execute(ctx context.Context) goplum.Result {
 
 	for i := range packet.Variables {
 		variable := packet.Variables[i]
+		if !isNumeric(variable.Type) {
+			return goplum.FailingResult("OID did not return a number: %s (%s)", variable.Name, variable.Type)
+		}
+
 		val := gosnmp.ToBigInt(variable.Value)
 		if val.Cmp(big.NewInt(c.AtLeast)) == -1 {
 			return goplum.FailingResult("OID %s returned %d, must be at least %d", variable.Name, val, c.AtLeast)
@@ -147,4 +167,13 @@ func (c IntCheck) Execute(ctx context.Context) goplum.Result {
 
 func (c IntCheck) Validate() error {
 	return c.BaseCheck.Validate()
+}
+
+func isNumeric(t gosnmp.Asn1BER) bool {
+	switch t {
+	case gosnmp.Integer, gosnmp.Counter32, gosnmp.Counter64, gosnmp.Gauge32, gosnmp.TimeTicks, gosnmp.Uinteger32:
+		return true
+	default:
+		return false
+	}
 }

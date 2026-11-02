@@ -19,6 +19,8 @@
   respect the check timeout
 - Fix SNMP checks leaking a UDP socket on every execution and ignoring the
   check timeout
+- Fix `snmp.string` panicking on every string value
+- Fix `snmp.int` passing when an OID returns no value instead of a number
 
 ## 1.1.1 - 2026-10-20
 
