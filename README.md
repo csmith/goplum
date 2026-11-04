@@ -186,7 +186,8 @@ subsequently changes.
 
 Goplum uses **thresholds** to decide how many times a check result must happen in
 a row before it's considered settled. By default, this the threshold is two "good"
-results or two "failing" results, but this can be changed - see [Default Settings](#default-settings).
+results or two "failing" results, but this can be changed to anything from 1 to 10 -
+see [Default Settings](#default-settings).
 
 For example:
 
@@ -212,8 +213,8 @@ If they're not specified then Goplum's built-in defaults will be used.
 | `timeout` | Maximum length of time the check can run for before it's terminated. | `20s` |
 | `alerts` | A list of alert names to trigger when the service changes state. Supports '\*' as a wildcard. | `["*"]` |
 | `groups` | A list of group names this check belongs to. | `[]` |
-| `failing_threshold` | The number of checks that must fail in a row before a failure alert is raised. | `2` |
-| `good_threshold` | The number of checks that must pass in a row before a recovery alert is raised. | `2` |
+| `failing_threshold` | The number of checks that must fail in a row before a failure alert is raised (1 to 10). | `2` |
+| `good_threshold` | The number of checks that must pass in a row before a recovery alert is raised (1 to 10). | `2` |
 | `reminder` | If set, a reminder alert will be sent periodically while a check remains in a failing state. A value of `0` disables reminders. The actual interval between reminders will be rounded up to the next multiple of the check interval. | `0` (disabled) |
 
 For example, to change the `interval` and `timeout` for all checks:

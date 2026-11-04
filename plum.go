@@ -498,6 +498,14 @@ func (p *Plum) addCheck(block *config.Block) error {
 		return err
 	}
 
+	if err := validateThreshold("good_threshold", settings.GoodThreshold); err != nil {
+		return err
+	}
+
+	if err := validateThreshold("failing_threshold", settings.FailingThreshold); err != nil {
+		return err
+	}
+
 	if v, ok := check.(Validator); ok {
 		if err := v.Validate(); err != nil {
 			return err
@@ -515,6 +523,13 @@ func (p *Plum) addCheck(block *config.Block) error {
 		Type:   block.Type,
 		Config: &settings,
 		Check:  check,
+	}
+	return nil
+}
+
+func validateThreshold(name string, value int) error {
+	if limit := len(ResultHistory{}); value < 1 || value > limit {
+		return fmt.Errorf("%s must be between 1 and %d, got %d", name, limit, value)
 	}
 	return nil
 }

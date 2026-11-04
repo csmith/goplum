@@ -347,3 +347,66 @@ func TestReadConfig_RejectsTypeWithoutPluginPrefix(t *testing.T) {
 		)
 	}
 }
+
+func TestReadConfig_ValidatesThresholds(t *testing.T) {
+	tests := map[string]struct {
+		config string
+		errMsg string
+	}{
+		"lowest allowed": {
+			config: "check debug.random \"c\" {\n  alerts = [\"-\"]\n  good_threshold = 1\n  failing_threshold = 1\n}\n",
+		},
+		"highest allowed": {
+			config: "check debug.random \"c\" {\n  alerts = [\"-\"]\n  good_threshold = 10\n  failing_threshold = 10\n}\n",
+		},
+		"good zero": {
+			config: "check debug.random \"c\" {\n  alerts = [\"-\"]\n  good_threshold = 0\n}\n",
+			errMsg: "good_threshold must be between 1 and 10, got 0",
+		},
+		"good too high": {
+			config: "check debug.random \"c\" {\n  alerts = [\"-\"]\n  good_threshold = 11\n}\n",
+			errMsg: "good_threshold must be between 1 and 10, got 11",
+		},
+		"failing zero": {
+			config: "check debug.random \"c\" {\n  alerts = [\"-\"]\n  failing_threshold = 0\n}\n",
+			errMsg: "failing_threshold must be between 1 and 10, got 0",
+		},
+		"failing too high": {
+			config: "check debug.random \"c\" {\n  alerts = [\"-\"]\n  failing_threshold = 11\n}\n",
+			errMsg: "failing_threshold must be between 1 and 10, got 11",
+		},
+		"inherited from defaults": {
+			config: "defaults {\n  good_threshold = 11\n}\n\ncheck debug.random \"c\" {\n  alerts = [\"-\"]\n}\n",
+			errMsg: "good_threshold must be between 1 and 10, got 11",
+		},
+		"inherited from group": {
+			config: "group \"g\" {\n  defaults {\n    failing_threshold = 11\n  }\n}\n\n" +
+				"check debug.random \"c\" {\n  alerts = [\"-\"]\n  groups = [\"g\"]\n}\n",
+			errMsg: "failing_threshold must be between 1 and 10, got 11",
+		},
+		"overridden by check": {
+			config: "defaults {\n  good_threshold = 11\n}\n\n" +
+				"check debug.random \"c\" {\n  alerts = [\"-\"]\n  good_threshold = 3\n}\n",
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				dir := t.TempDir()
+				writeConfig(t, dir, "goplum.conf", tt.config)
+
+				plum := goplum.NewPlum()
+				plum.RegisterPlugins(plugins)
+				err := plum.ReadConfig(filepath.Join(dir, "goplum.conf"))
+
+				if tt.errMsg == "" {
+					assert.NoError(t, err)
+				} else {
+					assert.ErrorContains(t, err, tt.errMsg)
+				}
+			},
+		)
+	}
+}

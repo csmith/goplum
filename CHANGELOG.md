@@ -21,6 +21,8 @@
 - Report an interrupted `network.portscan` as indeterminate instead of good
 - Restrict `network.connect` and `network.portscan` to `tcp`, `tcp4` and
   `tcp6`, as UDP probes always succeeded
+- Reject a `good_threshold` or `failing_threshold` outside 1 to 10, as a check
+  using one could never settle or alert
 - Reject a `network.portscan` `address` that includes a port, as the check
   passed without scanning anything
 - Reject malformed `http.webhook` `headers` in config instead of failing every
