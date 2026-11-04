@@ -226,12 +226,8 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 		req.Header.Set("X-Goplum-Signature", "sha256="+hex.EncodeToString(mac.Sum(nil)))
 	}
 
-	for _, h := range w.Headers {
-		parts := strings.SplitN(h, ":", 2)
-		if len(parts) != 2 {
-			return fmt.Errorf("invalid header %q, expected format \"Name: Value\"", h)
-		}
-		req.Header.Add(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
+	if err := addHeaders(req.Header, w.Headers); err != nil {
+		return err
 	}
 
 	res, err := client.Do(req)
@@ -249,7 +245,37 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 }
 
 func (w WebHookAlert) Validate() error {
-	return validateUrl(w.Url)
+	if err := validateUrl(w.Url); err != nil {
+		return err
+	}
+
+	return addHeaders(http.Header{}, w.Headers)
+}
+
+const headerNameChars = "!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+// addHeaders parses "Name: Value" entries into dst. It rejects anything net/http would refuse to send, so entries
+// that pass here can't fail later for being malformed. Errors give the entry's position instead of its content, as
+// it may contain credentials.
+func addHeaders(dst http.Header, headers []string) error {
+	for i, h := range headers {
+		name, value, ok := strings.Cut(h, ":")
+		name, value = strings.TrimSpace(name), strings.TrimSpace(value)
+
+		invalidValue := strings.ContainsFunc(
+			value,
+			func(r rune) bool {
+				return (r < ' ' && r != '\t') || r == 0x7f
+			},
+		)
+		if !ok || len(name) == 0 || strings.Trim(name, headerNameChars) != "" || invalidValue {
+			return fmt.Errorf("invalid header at position %d, expected format \"Name: Value\"", i+1)
+		}
+
+		dst.Add(name, value)
+	}
+
+	return nil
 }
 
 func validateUrl(u string) error {

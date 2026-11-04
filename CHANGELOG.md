@@ -23,6 +23,8 @@
   `tcp6`, as UDP probes always succeeded
 - Reject a `network.portscan` `address` that includes a port, as the check
   passed without scanning anything
+- Reject malformed `http.webhook` `headers` in config instead of failing every
+  alert
 
 ### Fixed
 

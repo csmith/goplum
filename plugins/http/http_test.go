@@ -203,6 +203,84 @@ func TestWebHookAlert_ReturnsErrorOnInvalidHeader(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid header")
 }
 
+func TestWebHookAlert_ValidateAndSendRejectMalformedHeaders(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			},
+		),
+	)
+	defer server.Close()
+
+	headers := map[string]string{
+		"missing colon":     "Authorization Bearer secret",
+		"empty name":        ": secret",
+		"blank name":        "   : secret",
+		"space in name":     "X Custom: secret",
+		"newline in value":  "X-Custom: secret\nX-Injected: secret",
+		"control in value":  "X-Custom: sec\x7fret",
+		"non-token in name": "X-Cüstom: secret",
+	}
+
+	for name, header := range headers {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				alert := WebHookAlert{Url: server.URL, Headers: []string{"X-Good: value", header}}
+
+				err := alert.Validate()
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "invalid header at position 2")
+				assert.NotContains(t, err.Error(), "secret")
+
+				assert.EqualError(t, alert.Send(goplum.AlertDetails{Text: "test"}), err.Error())
+			},
+		)
+	}
+}
+
+func TestWebHookAlert_ValidateAndSendAcceptWellFormedHeaders(t *testing.T) {
+	var received http.Header
+
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				received = r.Header
+				w.WriteHeader(http.StatusOK)
+			},
+		),
+	)
+	defer server.Close()
+
+	alert := WebHookAlert{
+		Url: server.URL,
+		Headers: []string{
+			"X-Plain: value",
+			"  X-Padded  :  value  ",
+			"X-Empty:",
+			"X-Colons: a:b:c",
+			"X-Tab: a\tb",
+			"X-Utf8: café",
+			"X-Multi: a",
+			"X-Multi: b",
+			"!#$%&'*+-.^_`|~: value",
+		},
+	}
+
+	require.NoError(t, alert.Validate())
+	require.NoError(t, alert.Send(goplum.AlertDetails{Text: "test"}))
+
+	assert.Equal(t, "value", received.Get("X-Plain"))
+	assert.Equal(t, "value", received.Get("X-Padded"))
+	assert.Equal(t, []string{""}, received.Values("X-Empty"))
+	assert.Equal(t, "a:b:c", received.Get("X-Colons"))
+	assert.Equal(t, "a\tb", received.Get("X-Tab"))
+	assert.Equal(t, "café", received.Get("X-Utf8"))
+	assert.Equal(t, []string{"a", "b"}, received.Values("X-Multi"))
+	assert.Equal(t, "value", received.Get("!#$%&'*+-.^_`|~"))
+}
+
 func TestWebHookAlert_TimesOutIfServerNeverResponds(t *testing.T) {
 	done := make(chan struct{})
 	server := httptest.NewServer(
