@@ -1,51 +1,44 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 - 2026-11-04 
 
 ### Added
 
-- Add `include` to load checks, alerts, groups and plugins from other
-  config files
-- Add `prometheus` plugin with a `prometheus.query` check that runs PromQL
-  queries against a Prometheus-compatible API
+- The config file can now `include` other files. Defaults may only
+  be specified in the main config file, but everything else can be
+  split up ([issue #8](https://github.com/csmith/goplum/issues/8))
+- A new `prometheus` plugin provides a `prometheus.query` check
+  that runs PromQL queries
 
 ### Changed
 
-- Redact secrets in check configuration (HTTP auth passwords, SNMP
-  communities, exec arguments and heartbeat IDs) from alerts
-- Redact passwords embedded in HTTP check URLs from alerts
-- Reject multiple `plugin` blocks for the same plugin instead of merging
-  them
-- Specify the file and line in configuration errors
-- Reject a `network.portscan` `connection_timeout` of zero
-- Report an interrupted `network.portscan` as indeterminate instead of good
-- Restrict `network.connect` and `network.portscan` to `tcp`, `tcp4` and
-  `tcp6`, as UDP probes always succeeded
-- Reject a `good_threshold` or `failing_threshold` outside 1 to 10, as a check
-  using one could never settle or alert
-- Reject a `network.portscan` `address` that includes a port, as the check
-  passed without scanning anything
-- Alert when a check first settles as failing, instead of sending a "still
-  failing" reminder or, with reminders off, no alert at all
-- Reject malformed `http.webhook` `headers` in config instead of failing every
-  alert
+- Potentially sensitive fields from alert configurations and
+  HTTP check URLs are no longer passed to alerts
+- Config file errors now include the file and line
+- Each plugin may only have a single configuration block;
+  previously multiple were silently merged with undefined
+  precedence
+- A lot of configuration mistakes are now caught at startup
+  and raise errors, instead of failing checks or silently
+  being ignored
+- Interrupted portscans are now treated as an indeterminate
+  result not good.
+- Alert when a check first settles as failing, instead of
+  sending a "still failing" reminder
 
 ### Fixed
 
 - Fix a crash at startup when an alert or check type has no plugin prefix
-- Time out webhook and SMTP alerts after 20 seconds instead of blocking
+- Webhook and SMTP alerts now have a 20 second timeout instead of blocking
   checks indefinitely
-- Fix `network.portscan` hanging when every port in the range is open, and
-  respect the check timeout
-- Fix SNMP checks leaking a UDP socket on every execution and ignoring the
-  check timeout
+- Fix `network.portscan` hanging when every port in the range is open
+- Fix SNMP checks leaking a UDP socket on every execution
 - Fix `snmp.string` panicking on every string value
 - Fix `snmp.int` passing when an OID returns no value instead of a number
 - Allow priority -2 in `pushover.message` alerts
 - Fix HTTP checks leaking a connection when the status code is unexpected
 - Fix garbled `plumctl` error messages
-- Fix HTTP checks panicking when the URL cannot be parsed, and reject
-  unparseable URLs in config
+- Fix HTTP checks panicking when the URL cannot be parsed
 - Fix check history only keeping 9 results, so a threshold of 10 was never
   reached
 
