@@ -19,8 +19,8 @@
 - Specify the file and line in configuration errors
 - Reject a `network.portscan` `connection_timeout` of zero
 - Report an interrupted `network.portscan` as indeterminate instead of good
-- **Breaking:** restrict `network.connect` and `network.portscan` to `tcp`,
-  `tcp4` and `tcp6`, as UDP probes always succeeded
+- Restrict `network.connect` and `network.portscan` to `tcp`, `tcp4` and
+  `tcp6`, as UDP probes always succeeded
 
 ### Fixed
 
