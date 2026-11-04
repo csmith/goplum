@@ -25,6 +25,8 @@
   using one could never settle or alert
 - Reject a `network.portscan` `address` that includes a port, as the check
   passed without scanning anything
+- Alert when a check first settles as failing, instead of sending a "still
+  failing" reminder or, with reminders off, no alert at all
 - Reject malformed `http.webhook` `headers` in config instead of failing every
   alert
 

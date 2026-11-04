@@ -180,9 +180,9 @@ that contains an example of every check and alert fully configured.
 ### Settling and thresholds
 
 When Goplum first starts, it is not aware of the current state of your services.
-To avoid immediately sending alerts when the state is determined, Goplum waits for
-each check to **settle** into a state, and then only alerts when that state
-subsequently changes.
+Goplum waits for each check to **settle** into a state before alerting. Settling as
+"good" is silent, while settling as "failing" raises an alert. After that, Goplum
+alerts whenever the state changes.
 
 Goplum uses **thresholds** to decide how many times a check result must happen in
 a row before it's considered settled. By default, this the threshold is two "good"

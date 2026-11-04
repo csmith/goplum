@@ -1,6 +1,7 @@
 package goplum_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path"
@@ -409,4 +410,98 @@ func TestReadConfig_ValidatesThresholds(t *testing.T) {
 			},
 		)
 	}
+}
+
+type fixedCheck struct {
+	state goplum.CheckState
+}
+
+func (f *fixedCheck) Execute(context.Context) goplum.Result {
+	return goplum.Result{State: f.state, Detail: "fixed detail"}
+}
+
+func newSettlingCheck(
+	state goplum.CheckState,
+	reminder time.Duration,
+) (*goplum.Plum, *goplum.ScheduledCheck, *fixedCheck, *recordingAlert) {
+	alert := &recordingAlert{}
+	plum := goplum.NewPlum()
+	plum.Alerts["test"] = alert
+
+	check := &fixedCheck{state: state}
+	return plum, &goplum.ScheduledCheck{
+		Name:  "test",
+		Type:  "test.fixed",
+		Check: check,
+		Config: &goplum.CheckSettings{
+			Alerts:           []string{"*"},
+			Timeout:          time.Second,
+			Reminder:         reminder,
+			GoodThreshold:    2,
+			FailingThreshold: 2,
+		},
+	}, check, alert
+}
+
+func TestUpdateStatus_AlertsWhenFirstSettlingAsFailing(t *testing.T) {
+	plum, scheduled, _, alert := newSettlingCheck(goplum.StateFailing, time.Hour)
+
+	plum.RunCheck(scheduled)
+	assert.Empty(t, alert.details)
+
+	plum.RunCheck(scheduled)
+	require.Len(t, alert.details, 1)
+	assert.False(t, alert.details[0].IsReminder)
+	assert.Equal(t, goplum.StateIndeterminate, alert.details[0].PreviousState)
+	assert.Equal(t, goplum.StateFailing, alert.details[0].NewState)
+	assert.Equal(t, "Check 'test' is now failing (fixed detail), was indeterminate.", alert.details[0].Text)
+
+	plum.RunCheck(scheduled)
+	assert.Len(t, alert.details, 1)
+}
+
+func TestUpdateStatus_RemindsOnceReminderIntervalPassesAfterSettling(t *testing.T) {
+	plum, scheduled, _, alert := newSettlingCheck(goplum.StateFailing, time.Hour)
+
+	plum.RunCheck(scheduled)
+	plum.RunCheck(scheduled)
+	require.Len(t, alert.details, 1)
+
+	scheduled.LastAlertTime = time.Now().Add(-2 * time.Hour)
+	plum.RunCheck(scheduled)
+
+	require.Len(t, alert.details, 2)
+	assert.True(t, alert.details[1].IsReminder)
+}
+
+func TestUpdateStatus_AlertsOnSettlingWithRemindersDisabled(t *testing.T) {
+	plum, scheduled, _, alert := newSettlingCheck(goplum.StateFailing, 0)
+
+	plum.RunCheck(scheduled)
+	plum.RunCheck(scheduled)
+	require.Len(t, alert.details, 1)
+	assert.False(t, alert.details[0].IsReminder)
+
+	scheduled.LastAlertTime = time.Now().Add(-2 * time.Hour)
+	plum.RunCheck(scheduled)
+	assert.Len(t, alert.details, 1)
+}
+
+func TestUpdateStatus_SettlesSilentlyAsGood(t *testing.T) {
+	plum, scheduled, check, alert := newSettlingCheck(goplum.StateGood, time.Hour)
+
+	plum.RunCheck(scheduled)
+	plum.RunCheck(scheduled)
+	assert.True(t, scheduled.Settled)
+	assert.Empty(t, alert.details)
+
+	check.state = goplum.StateFailing
+	plum.RunCheck(scheduled)
+	assert.Empty(t, alert.details)
+
+	plum.RunCheck(scheduled)
+	require.Len(t, alert.details, 1)
+	assert.False(t, alert.details[0].IsReminder)
+	assert.Equal(t, goplum.StateGood, alert.details[0].PreviousState)
+	assert.Equal(t, goplum.StateFailing, alert.details[0].NewState)
 }

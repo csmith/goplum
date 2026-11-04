@@ -605,11 +605,10 @@ func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
 	)
 	if newState != oldState {
 		c.State = newState
-		if c.Settled {
+		if c.Settled || newState == StateFailing {
 			p.raiseAlerts(c, oldState, false)
-		} else {
-			c.Settled = true
 		}
+		c.Settled = true
 		return
 	}
 
