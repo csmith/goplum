@@ -28,6 +28,7 @@
 
 ### Fixed
 
+- Fix a crash at startup when an alert or check type has no plugin prefix
 - Time out webhook and SMTP alerts after 20 seconds instead of blocking
   checks indefinitely
 - Fix `network.portscan` hanging when every port in the range is open, and

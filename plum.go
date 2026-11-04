@@ -354,15 +354,19 @@ func (p *Plum) addAlerts(alerts []*config.Block) error {
 }
 
 func (p *Plum) addAlert(block *config.Block) error {
-	parts := strings.SplitN(block.Type, ".", 2)
-	plugin, err := p.plugin(parts[0])
+	pluginName, kind, ok := strings.Cut(block.Type, ".")
+	if !ok {
+		return fmt.Errorf("invalid alert type %q: expected <plugin>.<type>", block.Type)
+	}
+
+	plugin, err := p.plugin(pluginName)
 	if err != nil {
 		return err
 	}
 
-	alert := plugin.Alert(parts[1])
+	alert := plugin.Alert(kind)
 	if alert == nil {
-		return fmt.Errorf("invalid alert %s in plugin %s", parts[1], parts[0])
+		return fmt.Errorf("invalid alert %s in plugin %s", kind, pluginName)
 	}
 
 	if err := internal.DecodeSettings(&block.Settings, &alert); err != nil {
@@ -423,15 +427,19 @@ func (p *Plum) addGroup(block *config.Block) error {
 // settings
 func (p *Plum) createCheck(checkBlock *config.Block, groups []string) (Check, CheckSettings, error) {
 	// Create the check object
-	parts := strings.SplitN(checkBlock.Type, ".", 2)
-	plugin, err := p.plugin(parts[0])
+	pluginName, kind, ok := strings.Cut(checkBlock.Type, ".")
+	if !ok {
+		return nil, CheckSettings{}, fmt.Errorf("invalid check type %q: expected <plugin>.<type>", checkBlock.Type)
+	}
+
+	plugin, err := p.plugin(pluginName)
 	if err != nil {
 		return nil, CheckSettings{}, err
 	}
 
-	check := plugin.Check(parts[1])
+	check := plugin.Check(kind)
 	if check == nil {
-		return nil, CheckSettings{}, fmt.Errorf("invalid check %s in plugin %s", parts[1], parts[0])
+		return nil, CheckSettings{}, fmt.Errorf("invalid check %s in plugin %s", kind, pluginName)
 	}
 
 	// Start with global defaults

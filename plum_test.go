@@ -313,3 +313,37 @@ func TestScheduledCheck_AddResult_ReachesThresholdOfFullHistory(t *testing.T) {
 	history := check.AddResult(&goplum.Result{State: goplum.StateGood})
 	assert.Equal(t, goplum.StateGood, history.State(thresholds))
 }
+
+func TestReadConfig_RejectsTypeWithoutPluginPrefix(t *testing.T) {
+	tests := map[string]struct {
+		config   string
+		expected string
+	}{
+		"alert": {
+			config:   "alert debug \"x\" {}\n",
+			expected: `invalid alert type "debug": expected <plugin>.<type>`,
+		},
+		"check": {
+			config:   "check debug \"x\" {\n  alerts = [\"-\"]\n}\n",
+			expected: `error configuring check x: invalid check type "debug": expected <plugin>.<type>`,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				dir := t.TempDir()
+				writeConfig(t, dir, "goplum.conf", tt.config)
+				configPath := filepath.Join(dir, "goplum.conf")
+
+				plum := goplum.NewPlum()
+				plum.RegisterPlugins(plugins)
+				err := plum.ReadConfig(configPath)
+
+				require.Error(t, err)
+				assert.Equal(t, configPath+":1: "+tt.expected, err.Error())
+			},
+		)
+	}
+}
