@@ -21,6 +21,8 @@
 - Report an interrupted `network.portscan` as indeterminate instead of good
 - Restrict `network.connect` and `network.portscan` to `tcp`, `tcp4` and
   `tcp6`, as UDP probes always succeeded
+- Reject a `network.portscan` `address` that includes a port, as the check
+  passed without scanning anything
 
 ### Fixed
 

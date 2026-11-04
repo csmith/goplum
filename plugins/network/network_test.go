@@ -189,6 +189,34 @@ func TestPortScanCheck_ValidateNetwork(t *testing.T) {
 	}
 }
 
+func TestPortScanCheck_ValidateAddress(t *testing.T) {
+	tests := []struct {
+		address string
+		valid   bool
+	}{
+		{"example.com:22", false},
+		{"127.0.0.1:22", false},
+		{"[::1]:22", false},
+		{"example.com", true},
+		{"127.0.0.1", true},
+		{"::1", true},
+	}
+	for _, tt := range tests {
+		t.Run(
+			tt.address,
+			func(t *testing.T) {
+				check := portScan(1, 10)
+				check.Address = tt.address
+				if tt.valid {
+					require.NoError(t, check.Validate())
+				} else {
+					require.ErrorContains(t, check.Validate(), "must not include a port")
+				}
+			},
+		)
+	}
+}
+
 func TestPlugin_DefaultNetworkIsValid(t *testing.T) {
 	connect := Plugin{}.Check("connect").(ConnectCheck)
 	connect.Address = "127.0.0.1:80"

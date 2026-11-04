@@ -157,6 +157,10 @@ func (c PortScanCheck) Validate() error {
 		return errors.New("missing required argument: address")
 	}
 
+	if _, _, err := net.SplitHostPort(c.Address); err == nil {
+		return fmt.Errorf("invalid address %q: must not include a port", c.Address)
+	}
+
 	if err := validateNetwork(c.Network); err != nil {
 		return err
 	}
