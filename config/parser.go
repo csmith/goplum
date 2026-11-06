@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -44,13 +45,14 @@ func Load(path string) (*Config, error) {
 }
 
 func parseFile(path string, included bool) (*Parser, error) {
-	f, err := os.Open(path)
+	// The lexer keeps reading ahead in the background after the parser gives up, so it can't be given a file that gets
+	// closed when we return.
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 
-	parser := NewParser(f)
+	parser := NewParser(bytes.NewReader(content))
 	parser.file = path
 	parser.included = included
 	if err := parser.Parse(); err != nil {

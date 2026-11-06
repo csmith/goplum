@@ -30,6 +30,8 @@
   characters
 - Shorten `discord.message`, `slack.message` and `twilio.sms` alerts to fit each
   service's message limit, instead of the alert being rejected or cut off
+- Fix a crash instead of an error message when the config path is
+  a directory, or the config has a syntax error near the end of a file
 
 ## 1.2.0 - 2026-11-04 
 
