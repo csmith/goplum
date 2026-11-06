@@ -16,8 +16,7 @@ var unsuspendCommand = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		check, err := client.ResumeCheck(context.Background(), &api.CheckName{Name: args[0]})
 		if err != nil {
-			fmt.Printf("Unable to unsuspend check: %v\n", err)
-			return
+			bailf("Unable to unsuspend check: %v", err)
 		}
 		fmt.Printf("Resumed check %s.\n", check.GetName())
 	},

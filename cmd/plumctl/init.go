@@ -15,14 +15,12 @@ var initCommand = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		_, _, err := net.SplitHostPort(args[0])
 		if err != nil {
-			fmt.Printf("Invalid host: %v\n", err)
-			return
+			bailf("Invalid host: %v", err)
 		}
 
 		p, err := configPath()
 		if err != nil {
-			fmt.Printf("Unable to get config path: %v\n", err)
-			return
+			bailf("Unable to get config path: %v", err)
 		}
 
 		dir := filepath.Dir(p)
@@ -35,8 +33,7 @@ var initCommand = &cobra.Command{
 			},
 		}
 		if err := SaveConfig(); err != nil {
-			fmt.Printf("Unable to save config: %v\n", err)
-			return
+			bailf("Unable to save config: %v", err)
 		}
 
 		fmt.Printf("Config created in %s.\n", dir)

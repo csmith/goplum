@@ -5,6 +5,7 @@
 ### Fixed
 
 - Fix `plumctl unsuspend` saying "suspend" in its error message
+- Exit with a non-zero status when a `plumctl` command fails
 
 ## 1.2.0 - 2026-11-04 
 

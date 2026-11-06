@@ -16,8 +16,7 @@ var suspendCommand = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		check, err := client.SuspendCheck(context.Background(), &api.CheckName{Name: args[0]})
 		if err != nil {
-			fmt.Printf("Unable to suspend check: %v\n", err)
-			return
+			bailf("Unable to suspend check: %v", err)
 		}
 		fmt.Printf("Suspended check %s.\n", check.GetName())
 	},

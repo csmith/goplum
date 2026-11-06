@@ -17,8 +17,7 @@ var checksCommand = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		checks, err := client.GetChecks(context.Background(), &api.Empty{})
 		if err != nil {
-			fmt.Printf("Unable to retrieve checks: %v\n", err)
-			return
+			bailf("Unable to retrieve checks: %v", err)
 		}
 
 		fmt.Printf("%d checks\n", len(checks.GetChecks()))

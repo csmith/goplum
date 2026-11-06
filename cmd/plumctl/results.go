@@ -16,15 +16,13 @@ var resultsCommand = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		resultClient, err := client.Results(context.Background(), &api.Empty{})
 		if err != nil {
-			fmt.Printf("Unable to stream results: %v\n", err)
-			return
+			bailf("Unable to stream results: %v", err)
 		}
 
 		for {
 			res, err := resultClient.Recv()
 			if err != nil {
-				fmt.Printf("Unable to stream results: %v\n", err)
-				return
+				bailf("Unable to stream results: %v", err)
 			}
 			fmt.Printf("%v\n", res)
 		}
