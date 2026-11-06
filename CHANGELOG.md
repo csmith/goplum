@@ -19,6 +19,9 @@
   of the alert being rejected
 - Remove the claim that `pushover.message` alerts are disabled after an error
   response; every alert is still attempted
+- Fix `smtp.send` alerts having malformed headers when a check's detail spans
+  multiple lines; the subject is now kept to a single line of up to 200
+  characters
 
 ## 1.2.0 - 2026-11-04 
 

@@ -50,15 +50,23 @@ func (s SendAlert) Send(details goplum.AlertDetails) error {
 		s.To,
 		[]byte(
 			fmt.Sprintf(
-				"To: %s\r\nSubject: %s%s\r\nFrom: %s\r\n\r\n%s\r\n",
+				"To: %s\r\nSubject: %s\r\nFrom: %s\r\n\r\n%s\r\n",
 				s.To,
-				s.SubjectPrefix,
-				details.Text,
+				subject(s.SubjectPrefix+details.Text),
 				s.From,
 				s.body(details),
 			),
 		),
 	)
+}
+
+const maxSubjectLength = 200
+
+var lineBreaks = strings.NewReplacer("\r\n", " ", "\r", " ", "\n", " ")
+
+// subject makes text fit on a single header line. The full check detail is still available in the message body.
+func subject(text string) string {
+	return goplum.Truncate(lineBreaks.Replace(text), maxSubjectLength)
 }
 
 var sendTimeout = 20 * time.Second

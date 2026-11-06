@@ -2,7 +2,9 @@ package smtp
 
 import (
 	"bufio"
+	"io"
 	"net"
+	"net/mail"
 	"strings"
 	"testing"
 	"time"
@@ -46,17 +48,22 @@ func TestSendAlert_TimesOutIfServerNeverResponds(t *testing.T) {
 	assert.Less(t, time.Since(start), 5*time.Second)
 }
 
-func TestSendAlert_DeliversMessage(t *testing.T) {
-	withSendTimeout(t, 5*time.Second)
+type smtpSession struct {
+	commands []string
+	data     string
+}
+
+func startServer(t *testing.T) (string, <-chan smtpSession) {
+	t.Helper()
 
 	listener, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	defer listener.Close()
+	t.Cleanup(func() { _ = listener.Close() })
 
-	commands := make(chan []string, 1)
+	sessions := make(chan smtpSession, 1)
 	go func() {
-		var received []string
-		defer func() { commands <- received }()
+		var session smtpSession
+		defer func() { sessions <- session }()
 
 		conn, err := listener.Accept()
 		if err != nil {
@@ -73,7 +80,7 @@ func TestSendAlert_DeliversMessage(t *testing.T) {
 				return
 			}
 			line = strings.TrimSpace(line)
-			received = append(received, line)
+			session.commands = append(session.commands, line)
 			switch {
 			case strings.HasPrefix(line, "EHLO"):
 				write("250-test")
@@ -87,6 +94,7 @@ func TestSendAlert_DeliversMessage(t *testing.T) {
 					if err != nil || l == ".\r\n" {
 						break
 					}
+					session.data += l
 				}
 				write("250 ok")
 			case line == "QUIT":
@@ -98,8 +106,15 @@ func TestSendAlert_DeliversMessage(t *testing.T) {
 		}
 	}()
 
-	err = SendAlert{
-		Server:   listener.Addr().String(),
+	return listener.Addr().String(), sessions
+}
+
+func TestSendAlert_DeliversMessage(t *testing.T) {
+	withSendTimeout(t, 5*time.Second)
+	addr, sessions := startServer(t)
+
+	err := SendAlert{
+		Server:   addr,
 		Username: "user",
 		Password: "pass",
 		From:     "a@example.com",
@@ -116,6 +131,80 @@ func TestSendAlert_DeliversMessage(t *testing.T) {
 			"DATA",
 			"QUIT",
 		},
-		<-commands,
+		(<-sessions).commands,
 	)
+}
+
+func sendAndParse(t *testing.T, details goplum.AlertDetails) *mail.Message {
+	t.Helper()
+	withSendTimeout(t, 5*time.Second)
+	addr, sessions := startServer(t)
+
+	require.NoError(
+		t,
+		SendAlert{
+			Server:        addr,
+			Username:      "user",
+			Password:      "pass",
+			SubjectPrefix: "Alert: ",
+			From:          "a@example.com",
+			To:            "b@example.com",
+		}.Send(details),
+	)
+
+	message, err := mail.ReadMessage(strings.NewReader((<-sessions).data))
+	require.NoError(t, err)
+	return message
+}
+
+func TestSendAlert_KeepsSubjectOnOneLine(t *testing.T) {
+	tests := map[string]struct {
+		text     string
+		expected string
+	}{
+		"CRLF":      {"one\r\nX-Extra: two\r\n\r\nthree", "Alert: one X-Extra: two  three"},
+		"bare LF":   {"one\nX-Extra: two", "Alert: one X-Extra: two"},
+		"bare CR":   {"one\rX-Extra: two", "Alert: one X-Extra: two"},
+		"no breaks": {"one two", "Alert: one two"},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				message := sendAndParse(
+					t,
+					goplum.AlertDetails{
+						Text:       tt.text,
+						LastResult: &goplum.Result{Detail: tt.text},
+					},
+				)
+
+				assert.Equal(t, tt.expected, message.Header.Get("Subject"))
+				assert.Empty(t, message.Header.Get("X-Extra"))
+				assert.Equal(t, "a@example.com", message.Header.Get("From"))
+				assert.Equal(t, "b@example.com", message.Header.Get("To"))
+			},
+		)
+	}
+}
+
+func TestSendAlert_ShortensLongSubjectButNotBody(t *testing.T) {
+	detail := strings.Repeat("line of output\n", 100)
+
+	message := sendAndParse(
+		t,
+		goplum.AlertDetails{
+			Text:       detail,
+			LastResult: &goplum.Result{Detail: detail},
+		},
+	)
+
+	subject := message.Header.Get("Subject")
+	assert.Len(t, []rune(subject), 200)
+	assert.True(t, strings.HasPrefix(subject, "Alert: line of output line of output"), subject)
+
+	body, err := io.ReadAll(message.Body)
+	require.NoError(t, err)
+	assert.Equal(t, 100, strings.Count(string(body), "line of output"))
 }
