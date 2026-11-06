@@ -17,7 +17,8 @@
         "Timeout": 20000000000,
         "Reminder": 0,
         "GoodThreshold": 2,
-        "FailingThreshold": 2
+        "FailingThreshold": 2,
+        "Link": ""
       },
       "Check": {
         "PercentGood": 0.5

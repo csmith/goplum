@@ -121,6 +121,7 @@ replaced with `xxxxx`.
   },
   "previous_state": "good",
   "new_state": "failing",
-  "is_reminder": false
+  "is_reminder": false,
+  "link": "https://wiki.example.com/runbooks/example"
 }
 ```

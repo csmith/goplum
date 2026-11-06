@@ -14,6 +14,8 @@ import (
 	"chameth.com/goplum"
 )
 
+const maxSmsLength = 1600
+
 var client = http.Client{Timeout: 20 * time.Second}
 
 type Plugin struct{}
@@ -73,7 +75,7 @@ func (s SmsAlert) Send(details goplum.AlertDetails) error {
 			url.Values{
 				"To":   []string{s.To},
 				"From": []string{s.From},
-				"Body": []string{details.Text},
+				"Body": []string{details.TextWithLink(maxSmsLength)},
 			}.Encode(),
 		),
 	)

@@ -10,11 +10,15 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"chameth.com/goplum"
 )
 
-const maxMessageLength = 1024
+const (
+	maxMessageLength = 1024
+	maxURLLength     = 512
+)
 
 var (
 	client = http.Client{Timeout: 20 * time.Second}
@@ -59,6 +63,13 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 		settings = m.Recovering
 	}
 
+	// Links go in Pushover's own URL fields, unless they're too long for it to accept.
+	var link, linkTitle string
+	if details.Link != "" && utf8.RuneCountInString(details.Link) <= maxURLLength {
+		link, linkTitle = details.Link, "More details"
+		details.Link = ""
+	}
+
 	payload, err := json.Marshal(
 		struct {
 			Token     string `json:"token"`
@@ -70,16 +81,20 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 			Timestamp int64  `json:"timestamp"`
 			Retry     int    `json:"retry,omitempty"`
 			Expire    int    `json:"expire,omitempty"`
+			URL       string `json:"url,omitempty"`
+			URLTitle  string `json:"url_title,omitempty"`
 		}{
 			Token:     m.Token,
 			User:      m.Key,
-			Message:   goplum.Truncate(details.Text, maxMessageLength),
+			Message:   details.TextWithLink(maxMessageLength),
 			Device:    strings.Join(m.Devices, ","),
 			Priority:  settings.Priority,
 			Sound:     settings.Sound,
 			Retry:     int(settings.Retry.Seconds()),
 			Expire:    int(settings.Expire.Seconds()),
 			Timestamp: time.Now().Unix(),
+			URL:       link,
+			URLTitle:  linkTitle,
 		},
 	)
 	if err != nil {

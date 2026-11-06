@@ -16,7 +16,9 @@ import (
 )
 
 type sentMessage struct {
-	Message string `json:"message"`
+	Message  string `json:"message"`
+	URL      string `json:"url"`
+	URLTitle string `json:"url_title"`
 }
 
 func startServer(t *testing.T, status int) *[]sentMessage {
@@ -87,6 +89,66 @@ func TestSend_TruncatesLongMessages(t *testing.T) {
 			},
 		)
 	}
+}
+
+func TestSend_SendsLinkInItsOwnFields(t *testing.T) {
+	received := startServer(t, http.StatusOK)
+	link := "https://wiki.example.com/runbook"
+
+	require.NoError(
+		t,
+		MessageAlert{Token: "token", Key: "key"}.Send(goplum.AlertDetails{Text: "alert", Link: link}),
+	)
+
+	require.Len(t, *received, 1)
+	assert.Equal(t, "alert", (*received)[0].Message)
+	assert.Equal(t, link, (*received)[0].URL)
+	assert.NotEmpty(t, (*received)[0].URLTitle)
+}
+
+func TestSend_OmitsUrlFieldsWithoutLink(t *testing.T) {
+	received := startServer(t, http.StatusOK)
+
+	require.NoError(t, MessageAlert{Token: "token", Key: "key"}.Send(goplum.AlertDetails{Text: "alert"}))
+
+	require.Len(t, *received, 1)
+	assert.Empty(t, (*received)[0].URL)
+	assert.Empty(t, (*received)[0].URLTitle)
+}
+
+func TestSend_LinkInOwnFieldLeavesWholeMessageLimitForText(t *testing.T) {
+	received := startServer(t, http.StatusOK)
+	link := "https://wiki.example.com/runbook"
+
+	require.NoError(
+		t,
+		MessageAlert{Token: "token", Key: "key"}.Send(
+			goplum.AlertDetails{Text: strings.Repeat("a", 2000), Link: link},
+		),
+	)
+
+	require.Len(t, *received, 1)
+	assert.Equal(t, strings.Repeat("a", 1023)+"…", (*received)[0].Message)
+	assert.Equal(t, link, (*received)[0].URL)
+}
+
+func TestSend_MovesLinkTooLongForUrlFieldIntoMessage(t *testing.T) {
+	received := startServer(t, http.StatusOK)
+	link := "https://example.com/" + strings.Repeat("a", 500)
+	require.Greater(t, len(link), 512)
+
+	require.NoError(
+		t,
+		MessageAlert{Token: "token", Key: "key"}.Send(
+			goplum.AlertDetails{Text: strings.Repeat("b", 2000), Link: link},
+		),
+	)
+
+	require.Len(t, *received, 1)
+	assert.Empty(t, (*received)[0].URL)
+	assert.Empty(t, (*received)[0].URLTitle)
+	assert.True(t, strings.HasSuffix((*received)[0].Message, "\n"+link))
+	assert.Equal(t, 1024, utf8.RuneCountInString((*received)[0].Message))
 }
 
 func TestValidateSettings_Priority(t *testing.T) {

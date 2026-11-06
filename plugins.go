@@ -150,6 +150,33 @@ type AlertDetails struct {
 	NewState CheckState `json:"new_state"`
 	// IsReminder indicates that this alert is a periodic reminder for an ongoing failure, not a new state change.
 	IsReminder bool `json:"is_reminder"`
+	// Link is the URL configured for the check with its placeholders expanded, or empty if there isn't one.
+	Link string `json:"link,omitempty"`
+}
+
+// minTextWithLink is how much of the alert text must survive for a link to be worth including in a limited message.
+const minTextWithLink = 100
+
+// TextWithLink returns Text, followed by Link on its own line if there is one.
+//
+// If limit is positive the result is at most limit characters. Text is shortened to make room for Link, unless that
+// would leave too little of it, in which case Link is omitted.
+func (d AlertDetails) TextWithLink(limit int) string {
+	suffix := ""
+	if d.Link != "" {
+		suffix = "\n" + d.Link
+	}
+
+	if limit <= 0 {
+		return d.Text + suffix
+	}
+
+	room := limit - utf8.RuneCountInString(suffix)
+	if room < minTextWithLink {
+		return Truncate(d.Text, limit)
+	}
+
+	return Truncate(d.Text, room) + suffix
 }
 
 // Truncate shortens s to at most limit characters, which must be positive, ending it with an ellipsis if anything

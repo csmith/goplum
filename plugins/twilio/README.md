@@ -19,7 +19,7 @@ alert twilio.call "example" {
 ```
 
 Initiates a phone call using the Twilio API. When the call is answered the alert will be spoken
-using text-to-speech.
+using text-to-speech. A check's `link` is not read out.
 
 ### twilio.sms
 

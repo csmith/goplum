@@ -2,9 +2,11 @@ package goplum
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/signal"
 	"reflect"
@@ -32,6 +34,7 @@ type CheckSettings struct {
 	Reminder         time.Duration
 	GoodThreshold    int `config:"good_threshold"`
 	FailingThreshold int `config:"failing_threshold"`
+	Link             string
 }
 
 type Group struct {
@@ -94,6 +97,7 @@ func (c CheckSettings) Copy() CheckSettings {
 		Reminder:         c.Reminder,
 		GoodThreshold:    c.GoodThreshold,
 		FailingThreshold: c.FailingThreshold,
+		Link:             c.Link,
 	}
 }
 
@@ -506,6 +510,10 @@ func (p *Plum) addCheck(block *config.Block) error {
 		return err
 	}
 
+	if err := validateLink(settings.Link); err != nil {
+		return err
+	}
+
 	if v, ok := check.(Validator); ok {
 		if err := v.Validate(); err != nil {
 			return err
@@ -532,6 +540,28 @@ func validateThreshold(name string, value int) error {
 		return fmt.Errorf("%s must be between 1 and %d, got %d", name, limit, value)
 	}
 	return nil
+}
+
+// validateLink doesn't include the link in its errors, as it may contain credentials.
+func validateLink(link string) error {
+	if link == "" {
+		return nil
+	}
+
+	u, err := url.Parse(expandLink(link, "name", "plugin.type"))
+	if err != nil {
+		return fmt.Errorf("invalid link: %w", internal.WithoutURL(err))
+	}
+
+	if u.Scheme == "" || u.Host == "" {
+		return errors.New("invalid link: must be an absolute URL")
+	}
+
+	return nil
+}
+
+func expandLink(link, name, checkType string) string {
+	return strings.NewReplacer("{name}", url.PathEscape(name), "{type}", checkType).Replace(link)
 }
 
 func (p *Plum) configurePlugins(blocks []*config.Block) error {
@@ -633,6 +663,7 @@ func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isRemind
 		PreviousState: previousState,
 		NewState:      c.State,
 		IsReminder:    isReminder,
+		Link:          expandLink(c.Config.Link, c.Name, c.Type),
 	}
 
 	hasDetail := len(details.LastResult.Detail) > 0

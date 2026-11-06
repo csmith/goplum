@@ -208,3 +208,28 @@ func TestSendAlert_ShortensLongSubjectButNotBody(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 100, strings.Count(string(body), "line of output"))
 }
+
+func TestSendAlert_IncludesLinkInBodyNotSubject(t *testing.T) {
+	message := sendAndParse(
+		t,
+		goplum.AlertDetails{
+			Text:       "alert text",
+			LastResult: &goplum.Result{},
+			Link:       "https://wiki.example.com/runbook",
+		},
+	)
+
+	assert.Equal(t, "Alert: alert text", message.Header.Get("Subject"))
+
+	body, err := io.ReadAll(message.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "\r\nLink: https://wiki.example.com/runbook\r\n")
+}
+
+func TestSendAlert_OmitsLinkLineWithoutLink(t *testing.T) {
+	body, err := io.ReadAll(
+		sendAndParse(t, goplum.AlertDetails{Text: "alert text", LastResult: &goplum.Result{}}).Body,
+	)
+	require.NoError(t, err)
+	assert.NotContains(t, string(body), "Link:")
+}

@@ -12,6 +12,8 @@ import (
 	"chameth.com/goplum"
 )
 
+const maxContentLength = 2000
+
 var client = http.Client{Timeout: 20 * time.Second}
 
 type Plugin struct{}
@@ -38,7 +40,7 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 		struct {
 			Content string `json:"content"`
 		}{
-			details.Text,
+			details.TextWithLink(maxContentLength),
 		},
 	)
 	if err != nil {

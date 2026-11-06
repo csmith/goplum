@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+- Add a `link` check setting, sent with alerts to point at a runbook or
+  dashboard. It supports `{name}` and `{type}` placeholders, and can be set in
+  `defaults`, a group's `defaults`, or on a check
+
 ### Changed
 
 - Reject a `network.portscan` `address` with an IPv6 address in brackets, as
@@ -22,6 +28,8 @@
 - Fix `smtp.send` alerts having malformed headers when a check's detail spans
   multiple lines; the subject is now kept to a single line of up to 200
   characters
+- Shorten `discord.message`, `slack.message` and `twilio.sms` alerts to fit each
+  service's message limit, instead of the alert being rejected or cut off
 
 ## 1.2.0 - 2026-11-04 
 

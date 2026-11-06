@@ -18,7 +18,8 @@
         "Timeout": 15000000000,
         "Reminder": 0,
         "GoodThreshold": 3,
-        "FailingThreshold": 5
+        "FailingThreshold": 5,
+        "Link": ""
       },
       "Check": {
         "PercentGood": 0.5
@@ -57,7 +58,8 @@
         "Timeout": 30000000000,
         "Reminder": 0,
         "GoodThreshold": 3,
-        "FailingThreshold": 0
+        "FailingThreshold": 0,
+        "Link": ""
       }
     },
     "webservices": {
@@ -71,7 +73,8 @@
         "Timeout": 15000000000,
         "Reminder": 0,
         "GoodThreshold": 0,
-        "FailingThreshold": 5
+        "FailingThreshold": 5,
+        "Link": ""
       }
     }
   }

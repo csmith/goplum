@@ -45,6 +45,6 @@ type SysOutAlert struct {
 }
 
 func (s SysOutAlert) Send(details goplum.AlertDetails) error {
-	log.Printf("DEBUG ALERT - %s\n", details.Text)
+	log.Printf("DEBUG ALERT - %s\n", details.TextWithLink(0))
 	return nil
 }

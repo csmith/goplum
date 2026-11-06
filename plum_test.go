@@ -3,6 +3,9 @@ package goplum_test
 import (
 	"context"
 	"encoding/json"
+	"io"
+	nethttp "net/http"
+	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
@@ -504,4 +507,287 @@ func TestUpdateStatus_SettlesSilentlyAsGood(t *testing.T) {
 	assert.False(t, alert.details[0].IsReminder)
 	assert.Equal(t, goplum.StateGood, alert.details[0].PreviousState)
 	assert.Equal(t, goplum.StateFailing, alert.details[0].NewState)
+}
+
+func loadLinkConfig(t *testing.T, config string) *goplum.Plum {
+	t.Helper()
+	dir := t.TempDir()
+	writeConfig(t, dir, "goplum.conf", config)
+
+	plum := goplum.NewPlum()
+	plum.RegisterPlugins(plugins)
+	require.NoError(t, plum.ReadConfig(filepath.Join(dir, "goplum.conf")))
+	return plum
+}
+
+func TestReadConfig_LinkPrecedence(t *testing.T) {
+	const groups = `group "first" {
+  defaults {
+    link = "https://example.com/first"
+  }
+}
+
+group "second" {
+  defaults {
+    link = "https://example.com/second"
+  }
+}
+
+group "linkless" {
+  defaults {
+    interval = 1m
+  }
+}
+
+`
+
+	tests := map[string]struct {
+		defaults string
+		check    string
+		expected string
+	}{
+		"unset": {},
+		"from defaults": {
+			defaults: `link = "https://example.com/defaults"`,
+			expected: "https://example.com/defaults",
+		},
+		"group without link keeps defaults": {
+			defaults: `link = "https://example.com/defaults"`,
+			check:    `groups = ["linkless"]`,
+			expected: "https://example.com/defaults",
+		},
+		"group beats defaults": {
+			defaults: `link = "https://example.com/defaults"`,
+			check:    `groups = ["first"]`,
+			expected: "https://example.com/first",
+		},
+		"later group beats earlier group": {
+			check:    `groups = ["first", "second"]`,
+			expected: "https://example.com/second",
+		},
+		"check beats group and defaults": {
+			defaults: `link = "https://example.com/defaults"`,
+			check:    "groups = [\"first\"]\n  link = \"https://example.com/check\"",
+			expected: "https://example.com/check",
+		},
+		"check can clear inherited link": {
+			defaults: `link = "https://example.com/defaults"`,
+			check:    `link = ""`,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				plum := loadLinkConfig(
+					t,
+					"defaults {\n  "+tt.defaults+"\n}\n\n"+groups+
+						"check debug.random \"c\" {\n  alerts = [\"-\"]\n  "+tt.check+"\n}\n",
+				)
+
+				assert.Equal(t, tt.expected, plum.Checks["c"].Config.Link)
+			},
+		)
+	}
+}
+
+func TestReadConfig_ValidatesLink(t *testing.T) {
+	tests := map[string]struct {
+		link string
+		ok   bool
+	}{
+		"absolute":               {link: "https://example.com/runbook", ok: true},
+		"placeholders in path":   {link: "https://example.com/{type}/{name}", ok: true},
+		"placeholder in host":    {link: "https://{name}.example.com/", ok: true},
+		"unknown braces in path": {link: "https://example.com/{other}", ok: true},
+		"path only":              {link: "/runbooks/thing"},
+		"no scheme":              {link: "wiki.example.com/runbook"},
+		"no scheme with port":    {link: "wiki.example.com:8080/runbook"},
+		"no host":                {link: "https://"},
+		"unknown braces in host": {link: "https://{other}.example.com/"},
+		"unparseable":            {link: "https://exa mple.com/"},
+		"only a placeholder":     {link: "{name}"},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				dir := t.TempDir()
+				writeConfig(
+					t,
+					dir,
+					"goplum.conf",
+					"check debug.random \"c\" {\n  alerts = [\"-\"]\n  link = \""+tt.link+"\"\n}\n",
+				)
+
+				plum := goplum.NewPlum()
+				plum.RegisterPlugins(plugins)
+				err := plum.ReadConfig(filepath.Join(dir, "goplum.conf"))
+
+				if tt.ok {
+					assert.NoError(t, err)
+				} else {
+					assert.ErrorContains(t, err, "invalid link")
+				}
+			},
+		)
+	}
+}
+
+func TestReadConfig_ValidatesInheritedLinkWithoutRevealingIt(t *testing.T) {
+	const link = `link = "https://user:secret-value@exa mple.com/"`
+
+	tests := map[string]string{
+		"defaults": "defaults {\n  " + link + "\n}\n\ncheck debug.random \"c\" {\n  alerts = [\"-\"]\n}\n",
+		"group": "group \"g\" {\n  defaults {\n    " + link + "\n  }\n}\n\n" +
+			"check debug.random \"c\" {\n  alerts = [\"-\"]\n  groups = [\"g\"]\n}\n",
+	}
+
+	for name, config := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				dir := t.TempDir()
+				writeConfig(t, dir, "goplum.conf", config)
+
+				plum := goplum.NewPlum()
+				plum.RegisterPlugins(plugins)
+				err := plum.ReadConfig(filepath.Join(dir, "goplum.conf"))
+
+				require.ErrorContains(t, err, "invalid link")
+				assert.NotContains(t, err.Error(), "secret-value")
+			},
+		)
+	}
+}
+
+func TestRaiseAlerts_ExpandsLink(t *testing.T) {
+	tests := map[string]struct {
+		check    string
+		link     string
+		expected string
+	}{
+		"name is escaped": {
+			check:    "smarts load",
+			link:     "https://example.com/{name}",
+			expected: "https://example.com/smarts%20load",
+		},
+		"slashes in name are escaped": {
+			check:    "a/b",
+			link:     "https://example.com/{name}",
+			expected: "https://example.com/a%2Fb",
+		},
+		"type": {
+			check:    "c",
+			link:     "https://example.com/{type}",
+			expected: "https://example.com/debug.random",
+		},
+		"every occurrence": {
+			check:    "c",
+			link:     "https://example.com/{name}/{type}?check={name}",
+			expected: "https://example.com/c/debug.random?check=c",
+		},
+		"other braces are left alone": {
+			check:    "c",
+			link:     "https://example.com/{other}/{NAME}/{}",
+			expected: "https://example.com/{other}/{NAME}/{}",
+		},
+		"placeholder in name is not expanded": {
+			check:    "{type}",
+			link:     "https://example.com/{name}",
+			expected: "https://example.com/%7Btype%7D",
+		},
+		"no placeholders": {
+			check:    "c",
+			link:     "https://example.com/static",
+			expected: "https://example.com/static",
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				plum := loadLinkConfig(
+					t,
+					"alert debug.sysout \"test\" {}\n\ncheck debug.random \""+tt.check+"\" {\n"+
+						"  percent_good = 0\n  failing_threshold = 1\n  link = \""+tt.link+"\"\n}\n",
+				)
+				alert := &recordingAlert{}
+				plum.Alerts["test"] = alert
+
+				plum.RunCheck(plum.Checks[tt.check])
+
+				require.Len(t, alert.details, 1)
+				assert.Equal(t, tt.expected, alert.details[0].Link)
+				assert.NotContains(t, alert.details[0].Text, "example.com")
+			},
+		)
+	}
+}
+
+func TestRaiseAlerts_RemindersCarryLink(t *testing.T) {
+	plum := loadLinkConfig(
+		t,
+		"alert debug.sysout \"test\" {}\n\ncheck debug.random \"c\" {\n  percent_good = 0\n"+
+			"  failing_threshold = 1\n  reminder = 1h\n  link = \"https://example.com/{name}\"\n}\n",
+	)
+	alert := &recordingAlert{}
+	plum.Alerts["test"] = alert
+	check := plum.Checks["c"]
+
+	plum.RunCheck(check)
+	check.LastAlertTime = time.Now().Add(-2 * time.Hour)
+	plum.RunCheck(check)
+
+	require.Len(t, alert.details, 2)
+	assert.True(t, alert.details[1].IsReminder)
+	assert.Equal(t, "https://example.com/c", alert.details[1].Link)
+}
+
+func TestWebhookAlert_SendsLinkInJson(t *testing.T) {
+	tests := map[string]struct {
+		setting  string
+		expected any
+	}{
+		"with link":    {setting: `link = "https://example.com/{name}"`, expected: "https://example.com/my%20check"},
+		"without link": {},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				bodies := make(chan []byte, 1)
+				server := httptest.NewServer(
+					nethttp.HandlerFunc(
+						func(_ nethttp.ResponseWriter, r *nethttp.Request) {
+							body, err := io.ReadAll(r.Body)
+							assert.NoError(t, err)
+							bodies <- body
+						},
+					),
+				)
+				defer server.Close()
+
+				plum := loadLinkConfig(
+					t,
+					"alert http.webhook \"hook\" {\n  url = \""+server.URL+"\"\n}\n\n"+
+						"check debug.random \"my check\" {\n  percent_good = 0\n  failing_threshold = 1\n  "+
+						tt.setting+"\n}\n",
+				)
+
+				plum.RunCheck(plum.Checks["my check"])
+
+				var payload map[string]any
+				require.NoError(t, json.Unmarshal(<-bodies, &payload))
+				assert.Equal(t, "my check", payload["name"])
+				link, present := payload["link"]
+				assert.Equal(t, tt.expected != nil, present)
+				assert.Equal(t, tt.expected, link)
+			},
+		)
+	}
 }

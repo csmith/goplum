@@ -216,6 +216,7 @@ If they're not specified then Goplum's built-in defaults will be used.
 | `failing_threshold` | The number of checks that must fail in a row before a failure alert is raised (1 to 10). | `2` |
 | `good_threshold` | The number of checks that must pass in a row before a recovery alert is raised (1 to 10). | `2` |
 | `reminder` | If set, a reminder alert will be sent periodically while a check remains in a failing state. A value of `0` disables reminders. The actual interval between reminders will be rounded up to the next multiple of the check interval. | `0` (disabled) |
+| `link` | A URL to send with alerts, such as a runbook or dashboard. `{name}` is replaced with the check's name (URL path-escaped) and `{type}` with its type, so one link can be shared by a group of checks. | None |
 
 For example, to change the `interval` and `timeout` for all checks:
 

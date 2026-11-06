@@ -169,13 +169,19 @@ func (s SendAlert) body(details goplum.AlertDetails) string {
 		config.WriteString(fmt.Sprintf("\t%s = %v\r\n", k, v))
 	}
 
+	link := ""
+	if details.Link != "" {
+		link = fmt.Sprintf("Link: %s\r\n\r\n", details.Link)
+	}
+
 	return fmt.Sprintf(
-		"Check '%s' (type %s) is now %s (was: %s).\r\n\r\nCheck message: %s\r\n\r\nCheck config:\r\n%s\r\n",
+		"Check '%s' (type %s) is now %s (was: %s).\r\n\r\nCheck message: %s\r\n\r\n%sCheck config:\r\n%s\r\n",
 		details.Name,
 		details.Type,
 		details.NewState,
 		details.PreviousState,
 		details.LastResult.Detail,
+		link,
 		config.String(),
 	)
 }

@@ -37,7 +37,7 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 
 	card := goteamsnotify.NewMessageCard()
 	card.Title = m.Title
-	card.Text = details.Text
+	card.Text = details.TextWithLink(0)
 	card.ThemeColor = m.Theme
 
 	return mstClient.Send(m.Url, card)

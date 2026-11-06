@@ -1,6 +1,7 @@
 package goplum
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -103,6 +104,59 @@ func TestRedact_RemovesPasswordsFromUrls(t *testing.T) {
 			func(t *testing.T) {
 				res := redact(redactCheck{Url: tt.url}).(redactCheck)
 				assert.Equal(t, tt.want, res.Url)
+			},
+		)
+	}
+}
+
+func TestAlertDetails_TextWithLink(t *testing.T) {
+	const link = "https://example.com/runbook"
+
+	tests := map[string]struct {
+		text     string
+		link     string
+		limit    int
+		expected string
+	}{
+		"no link":   {text: "alert", expected: "alert"},
+		"with link": {text: "alert", link: link, expected: "alert\n" + link},
+		"limit not reached": {
+			text:     "alert",
+			link:     link,
+			limit:    1000,
+			expected: "alert\n" + link,
+		},
+		"exactly at limit": {
+			text:     strings.Repeat("a", 172),
+			link:     link,
+			limit:    200,
+			expected: strings.Repeat("a", 172) + "\n" + link,
+		},
+		"text shortened to keep link": {
+			text:     strings.Repeat("a", 173),
+			link:     link,
+			limit:    200,
+			expected: strings.Repeat("a", 171) + "…\n" + link,
+		},
+		"limit without link": {
+			text:     strings.Repeat("a", 201),
+			limit:    200,
+			expected: strings.Repeat("a", 199) + "…",
+		},
+		"link omitted when it would leave too little text": {
+			text:     strings.Repeat("a", 300),
+			link:     link,
+			limit:    120,
+			expected: strings.Repeat("a", 119) + "…",
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				details := AlertDetails{Text: tt.text, Link: tt.link}
+				assert.Equal(t, tt.expected, details.TextWithLink(tt.limit))
 			},
 		)
 	}
