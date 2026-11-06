@@ -8,12 +8,10 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"os/signal"
 	"reflect"
 	"regexp"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"chameth.com/goplum/config"
@@ -180,8 +178,8 @@ func (p *Plum) ReadConfig(path string) error {
 	return nil
 }
 
-func (p *Plum) RestoreState() error {
-	ts, err := LoadTombStone()
+func (p *Plum) RestoreState(tombStonePath string) error {
+	ts, err := LoadTombStone(tombStonePath)
 	if err != nil {
 		return err
 	}
@@ -189,13 +187,22 @@ func (p *Plum) RestoreState() error {
 	return ts.Restore(p.Checks)
 }
 
-func (p *Plum) SaveState() error {
-	return NewTombStone(p.Checks).Save()
+func (p *Plum) SaveState(tombStonePath string) error {
+	return NewTombStone(p.Checks).Save(tombStonePath)
 }
 
-func (p *Plum) Run() {
+// Run schedules checks until ctx is cancelled, then waits for any running checks and alerts to finish. Cancelling ctx
+// also interrupts the running checks, and their results are discarded.
+func (p *Plum) Run(ctx context.Context) {
+	var workers sync.WaitGroup
+	defer workers.Wait()
+
 	for range *runners {
-		go p.processScheduledChecks()
+		workers.Go(
+			func() {
+				p.processScheduledChecks(ctx)
+			},
+		)
 	}
 
 	for {
@@ -214,7 +221,11 @@ func (p *Plum) Run() {
 			remaining := c.Remaining()
 			if remaining <= 0 {
 				c.Scheduled = true
-				p.scheduled <- c
+				select {
+				case p.scheduled <- c:
+				case <-ctx.Done():
+					return
+				}
 				remaining = c.Remaining()
 			}
 
@@ -223,41 +234,16 @@ func (p *Plum) Run() {
 			}
 		}
 
-		time.Sleep(time.Until(earliest))
+		select {
+		case <-time.After(time.Until(earliest)):
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
 func (p *Plum) RunCheck(c *ScheduledCheck) {
-	start := time.Now()
-	result := func() (res Result) {
-		defer func() {
-			if r := recover(); r != nil {
-				res = FailingResult("PANIC: %v", r)
-			}
-		}()
-
-		timeout := c.Config.Timeout
-		if longRunning, ok := c.Check.(LongRunning); ok {
-			timeout = longRunning.Timeout()
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel()
-
-		res = c.Check.Execute(ctx)
-		return
-	}()
-
-	if result.Facts == nil {
-		result.Facts = map[Fact]any{}
-	}
-	result.Facts[CheckTime] = time.Since(start)
-
-	c.AddResult(&result)
-
-	for _, listener := range p.checkListeners {
-		listener(c, result)
-	}
+	p.runCheck(context.Background(), c)
 }
 
 func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
@@ -308,6 +294,43 @@ func (p *Plum) Unsuspend(checkName string) *ScheduledCheck {
 // shouldSendAlert checks all groups for a check and determines if an alert should be sent.
 // Returns (shouldSend, suppressionWarning, suppressingGroup) where suppressionWarning contains text to append if this
 // is the last alert.
+func (p *Plum) runCheck(ctx context.Context, c *ScheduledCheck) {
+	start := time.Now()
+	result := func() (res Result) {
+		defer func() {
+			if r := recover(); r != nil {
+				res = FailingResult("PANIC: %v", r)
+			}
+		}()
+
+		timeout := c.Config.Timeout
+		if longRunning, ok := c.Check.(LongRunning); ok {
+			timeout = longRunning.Timeout()
+		}
+
+		checkCtx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+
+		res = c.Check.Execute(checkCtx)
+		return
+	}()
+
+	if ctx.Err() != nil {
+		return
+	}
+
+	if result.Facts == nil {
+		result.Facts = map[Fact]any{}
+	}
+	result.Facts[CheckTime] = time.Since(start)
+
+	c.AddResult(&result)
+
+	for _, listener := range p.checkListeners {
+		listener(c, result)
+	}
+}
+
 func (p *Plum) shouldSendAlert(groupNames []string) (bool, string, string) {
 	if len(groupNames) == 0 {
 		return true, "", "" // No groups, no limits
@@ -618,10 +641,15 @@ func (p *Plum) plugin(name string) (Plugin, error) {
 	return nil, fmt.Errorf("no plugin found with name %s", name)
 }
 
-func (p *Plum) processScheduledChecks() {
-	for c := range p.scheduled {
-		p.RunCheck(c)
-		c.Scheduled = false
+func (p *Plum) processScheduledChecks(ctx context.Context) {
+	for {
+		select {
+		case c := <-p.scheduled:
+			p.runCheck(ctx, c)
+			c.Scheduled = false
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
@@ -791,34 +819,51 @@ func (h ResultHistory) State(thresholds map[CheckState]int) CheckState {
 	return StateIndeterminate
 }
 
-// Run creates a new instance of Plum, registers plugins and loads configuration, and starts the main loop.
-// Listens for interrupt and sigterm signals in order to save state and clean up. It is expected that flag.Parse
-// has been called prior to calling this method.
-func Run(plugins map[string]PluginLoader, configPath string) {
+const shutdownTimeout = 5 * time.Second
+
+// Run creates a new instance of Plum, registers plugins and loads configuration, and starts the main loop. It blocks
+// until a value is received on signals, then saves state and cleans up. An error is returned if goplum couldn't start.
+// It is expected that flag.Parse has been called prior to calling this method.
+func Run(plugins map[string]PluginLoader, configPath, tombStonePath string, signals <-chan os.Signal) error {
 	p := NewPlum()
 	p.RegisterPlugins(plugins)
 
 	if err := p.ReadConfig(configPath); err != nil {
-		log.Fatalf("Unable to read config: %v", err)
+		return fmt.Errorf("unable to read config: %w", err)
 	}
 
-	if err := p.RestoreState(); err != nil {
+	if err := p.RestoreState(tombStonePath); err != nil {
 		log.Printf("Unable to restore state from tombstone: %v", err)
 	}
 
 	api := NewGrpcServer(p)
+	if err := api.Start(); err != nil {
+		return err
+	}
 
-	go api.Start()
-	go p.Run()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	signal.Notify(c, syscall.SIGTERM)
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		p.Run(ctx)
+	}()
 
-	<-c
+	<-signals
 
 	api.Stop()
-	if err := p.SaveState(); err != nil {
+	cancel()
+
+	select {
+	case <-stopped:
+	case <-time.After(shutdownTimeout):
+		log.Printf("Timed out waiting for running checks and alerts to finish")
+	}
+
+	if err := p.SaveState(tombStonePath); err != nil {
 		log.Printf("Unable to save state to tombstone: %v", err)
 	}
+
+	return nil
 }

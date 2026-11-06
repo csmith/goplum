@@ -2,17 +2,10 @@ package goplum
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"os"
 	"time"
-)
-
-var tombStonePath = flag.String(
-	"tombstone",
-	"/tmp/goplum.tomb",
-	"Path to save tombstones to persist data across restarts",
 )
 
 const maxTombStoneAge = 10 * time.Minute
@@ -64,8 +57,8 @@ func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
 	return ts
 }
 
-func LoadTombStone() (*TombStone, error) {
-	f, err := os.Open(*tombStonePath)
+func LoadTombStone(path string) (*TombStone, error) {
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +69,8 @@ func LoadTombStone() (*TombStone, error) {
 	return tombStone, json.NewDecoder(f).Decode(tombStone)
 }
 
-func (ts *TombStone) Save() error {
-	f, err := os.OpenFile(*tombStonePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(0600))
+func (ts *TombStone) Save(path string) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(0600))
 	if err != nil {
 		return err
 	}

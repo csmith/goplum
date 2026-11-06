@@ -16,6 +16,8 @@
   absolute `http` or `https` URLs, instead of failing every run
 - Reject malformed `prometheus` plugin `headers` in config instead of failing
   every check
+- Running checks are now cancelled on shutdown, and goplum waits up
+  to 5 seconds for alerts being sent to finish before saving state
 
 ### Fixed
 

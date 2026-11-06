@@ -33,16 +33,18 @@ func NewGrpcServer(plum *Plum) *GrpcServer {
 	}
 }
 
-func (s *GrpcServer) Start() {
+// Start begins serving the API in the background. If the certificates can't be loaded then goplum runs without an API,
+// and no error is returned.
+func (s *GrpcServer) Start() error {
 	certs, pool, err := api.LoadCertificates(*localCert, *localKey, *caCert)
 	if err != nil {
 		log.Printf("Not starting API: unable to load certificates: %v", err)
-		return
+		return nil
 	}
 
 	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf("0.0.0.0:%d", *apiPort))
 	if err != nil {
-		log.Fatalf("Unable to listen on port %d for API requests: %v", *apiPort, err)
+		return fmt.Errorf("unable to listen on port %d for API requests: %w", *apiPort, err)
 	}
 
 	log.Printf("Starting API server on port %d", *apiPort)
@@ -59,9 +61,13 @@ func (s *GrpcServer) Start() {
 		),
 	)
 	api.RegisterGoPlumServer(s.server, s)
-	if err := s.server.Serve(lis); err != nil {
-		log.Printf("Error serving API: %v", err)
-	}
+	go func() {
+		if err := s.server.Serve(lis); err != nil {
+			log.Printf("Error serving API: %v", err)
+		}
+	}()
+
+	return nil
 }
 
 func (s *GrpcServer) Stop() {
