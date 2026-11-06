@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Fix `plumctl unsuspend` saying "suspend" in its error message
+
 ## 1.2.0 - 2026-11-04 
 
 ### Added
