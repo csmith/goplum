@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"chameth.com/goplum"
+	"chameth.com/goplum/internal"
 )
 
 const maxSeriesInDetail = 5
@@ -58,13 +59,8 @@ func (p *Plugin) Check(kind string) goplum.Check {
 }
 
 func (p *Plugin) Validate() error {
-	if len(p.Url) == 0 {
-		return errors.New("url must be specified")
-	}
-
-	u, err := url.Parse(p.Url)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return errors.New("url must be an absolute http or https URL")
+	if err := internal.ValidateHTTPURL(p.Url); err != nil {
+		return err
 	}
 
 	if len(p.BearerToken) > 0 && (len(p.Auth.Username) > 0 || len(p.Auth.Password) > 0) {
@@ -72,13 +68,8 @@ func (p *Plugin) Validate() error {
 	}
 
 	p.headers = make(http.Header)
-	for _, h := range p.Headers {
-		name, value, ok := strings.Cut(h, ":")
-		name = strings.TrimSpace(name)
-		if !ok || len(name) == 0 {
-			return fmt.Errorf("invalid header %q, expected format \"Name: Value\"", h)
-		}
-		p.headers.Add(name, strings.TrimSpace(value))
+	if err := internal.AddHeaders(p.headers, p.Headers); err != nil {
+		return err
 	}
 
 	tlsConfig, err := p.TLS.build()
@@ -137,7 +128,7 @@ func (q QueryCheck) Execute(ctx context.Context) goplum.Result {
 	form := url.Values{"query": []string{q.Query}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
 	if err != nil {
-		return goplum.FailingResult("Error building request: %v", withoutUrl(err))
+		return goplum.FailingResult("Error building request: %v", internal.WithoutURL(err))
 	}
 	maps.Copy(req.Header, q.plugin.headers)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -150,7 +141,7 @@ func (q QueryCheck) Execute(ctx context.Context) goplum.Result {
 
 	res, err := q.plugin.client.Do(req)
 	if err != nil {
-		return goplum.FailingResult("Error making request: %v", withoutUrl(err))
+		return goplum.FailingResult("Error making request: %v", internal.WithoutURL(err))
 	}
 	defer func() { _ = res.Body.Close() }()
 
@@ -276,12 +267,4 @@ func formatSample(s sample) string {
 	slices.Sort(labels)
 
 	return fmt.Sprintf("%s{%s} = %s", name, strings.Join(labels, ", "), strconv.FormatFloat(s.value, 'g', -1, 64))
-}
-
-// withoutUrl strips the URL from a url.Error, as it may contain credentials.
-func withoutUrl(err error) error {
-	if urlErr, ok := errors.AsType[*url.Error](err); ok {
-		return urlErr.Err
-	}
-	return err
 }

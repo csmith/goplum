@@ -7,16 +7,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
 	"chameth.com/goplum"
+	"chameth.com/goplum/internal"
 	"github.com/nelkinda/health-go"
 )
 
@@ -83,7 +82,7 @@ type GetCheck struct {
 func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, g.Url, http.NoBody)
 	if err != nil {
-		return goplum.FailingResult("Error building request: %v", withoutUrl(err))
+		return goplum.FailingResult("Error building request: %v", internal.WithoutURL(err))
 	}
 
 	if len(g.Auth.Username) > 0 || len(g.Auth.Password) > 0 {
@@ -132,7 +131,7 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 }
 
 func (g GetCheck) Validate() error {
-	return validateUrl(g.Url)
+	return internal.ValidateHTTPURL(g.Url)
 }
 
 type HealthCheck struct {
@@ -143,7 +142,7 @@ type HealthCheck struct {
 func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.Url, http.NoBody)
 	if err != nil {
-		return goplum.FailingResult("Error building request: %v", withoutUrl(err))
+		return goplum.FailingResult("Error building request: %v", internal.WithoutURL(err))
 	}
 
 	if len(h.Auth.Username) > 0 || len(h.Auth.Password) > 0 {
@@ -182,7 +181,7 @@ func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 }
 
 func (h HealthCheck) Validate() error {
-	return validateUrl(h.Url)
+	return internal.ValidateHTTPURL(h.Url)
 }
 
 func (h HealthCheck) convert(status health.Status) goplum.CheckState {
@@ -226,7 +225,7 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 		req.Header.Set("X-Goplum-Signature", "sha256="+hex.EncodeToString(mac.Sum(nil)))
 	}
 
-	if err := addHeaders(req.Header, w.Headers); err != nil {
+	if err := internal.AddHeaders(req.Header, w.Headers); err != nil {
 		return err
 	}
 
@@ -245,55 +244,9 @@ func (w WebHookAlert) Send(details goplum.AlertDetails) error {
 }
 
 func (w WebHookAlert) Validate() error {
-	if err := validateUrl(w.Url); err != nil {
+	if err := internal.ValidateHTTPURL(w.Url); err != nil {
 		return err
 	}
 
-	return addHeaders(http.Header{}, w.Headers)
-}
-
-const headerNameChars = "!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-// addHeaders parses "Name: Value" entries into dst. It rejects anything net/http would refuse to send, so entries
-// that pass here can't fail later for being malformed. Errors give the entry's position instead of its content, as
-// it may contain credentials.
-func addHeaders(dst http.Header, headers []string) error {
-	for i, h := range headers {
-		name, value, ok := strings.Cut(h, ":")
-		name, value = strings.TrimSpace(name), strings.TrimSpace(value)
-
-		invalidValue := strings.ContainsFunc(
-			value,
-			func(r rune) bool {
-				return (r < ' ' && r != '\t') || r == 0x7f
-			},
-		)
-		if !ok || len(name) == 0 || strings.Trim(name, headerNameChars) != "" || invalidValue {
-			return fmt.Errorf("invalid header at position %d, expected format \"Name: Value\"", i+1)
-		}
-
-		dst.Add(name, value)
-	}
-
-	return nil
-}
-
-func validateUrl(u string) error {
-	if len(u) == 0 {
-		return errors.New("missing required argument: url")
-	}
-
-	if _, err := url.Parse(u); err != nil {
-		return fmt.Errorf("invalid url: %w", withoutUrl(err))
-	}
-
-	return nil
-}
-
-// withoutUrl strips the URL from a url.Error, as it may contain credentials.
-func withoutUrl(err error) error {
-	if urlErr, ok := errors.AsType[*url.Error](err); ok {
-		return urlErr.Err
-	}
-	return err
+	return internal.AddHeaders(http.Header{}, w.Headers)
 }

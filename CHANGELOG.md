@@ -6,6 +6,10 @@
 
 - Reject a `network.portscan` `address` with an IPv6 address in brackets, as
   the check passed without scanning anything
+- Reject `http.get`, `http.healthcheck` and `http.webhook` URLs that aren't
+  absolute `http` or `https` URLs, instead of failing every run
+- Reject malformed `prometheus` plugin `headers` in config instead of failing
+  every check
 
 ### Fixed
 

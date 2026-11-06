@@ -343,6 +343,32 @@ func TestValidate_RejectsUnparseableUrl(t *testing.T) {
 	}
 }
 
+func TestValidate_RejectsUrlsThatCanNeverWork(t *testing.T) {
+	for _, u := range []string{
+		"example.com/hook",
+		"ftp://user:secret@example.com/",
+		"https://",
+		"https:///path",
+	} {
+		validators := map[string]interface{ Validate() error }{
+			"get":         GetCheck{Url: u},
+			"healthcheck": HealthCheck{Url: u},
+			"webhook":     WebHookAlert{Url: u},
+		}
+
+		for name, v := range validators {
+			t.Run(
+				name+"/"+u,
+				func(t *testing.T) {
+					err := v.Validate()
+					require.ErrorContains(t, err, "must be an absolute http or https URL")
+					assert.NotContains(t, err.Error(), "secret")
+				},
+			)
+		}
+	}
+}
+
 func TestValidate_AcceptsValidUrl(t *testing.T) {
 	validators := map[string]interface{ Validate() error }{
 		"get":         GetCheck{Url: "https://example.com/"},
