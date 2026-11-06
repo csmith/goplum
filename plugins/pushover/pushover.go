@@ -14,7 +14,12 @@ import (
 	"chameth.com/goplum"
 )
 
-var client = http.Client{Timeout: 20 * time.Second}
+const maxMessageLength = 1024
+
+var (
+	client = http.Client{Timeout: 20 * time.Second}
+	apiURL = "https://api.pushover.net/1/messages.json"
+)
 
 type Plugin struct{}
 
@@ -44,14 +49,9 @@ type MessageAlert struct {
 	Devices    []string
 	Failing    PushSettings
 	Recovering PushSettings
-	errored    bool
 }
 
 func (m MessageAlert) Send(details goplum.AlertDetails) error {
-	if m.errored {
-		return errors.New("pushover alert disabled as a non-recoverable API error was previously returned")
-	}
-
 	var settings PushSettings
 	if details.NewState == goplum.StateFailing {
 		settings = m.Failing
@@ -73,7 +73,7 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 		}{
 			Token:     m.Token,
 			User:      m.Key,
-			Message:   details.Text,
+			Message:   goplum.Truncate(details.Text, maxMessageLength),
 			Device:    strings.Join(m.Devices, ","),
 			Priority:  settings.Priority,
 			Sound:     settings.Sound,
@@ -89,7 +89,7 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 	req, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
-		"https://api.pushover.net/1/messages.json",
+		apiURL,
 		bytes.NewReader(payload),
 	)
 	if err != nil {
@@ -105,9 +105,8 @@ func (m MessageAlert) Send(details goplum.AlertDetails) error {
 	defer res.Body.Close()
 
 	if res.StatusCode >= 400 && res.StatusCode < 500 {
-		m.errored = true
 		body, _ := io.ReadAll(res.Body)
-		return fmt.Errorf("error response from pushover, disabling alert: HTTP %d (%s)", res.StatusCode, body)
+		return fmt.Errorf("error response from pushover: HTTP %d (%s)", res.StatusCode, body)
 	} else if res.StatusCode >= 500 {
 		return fmt.Errorf("bad response from pushover: HTTP %d", res.StatusCode)
 	}

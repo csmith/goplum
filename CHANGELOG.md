@@ -15,6 +15,10 @@
 
 - Fix `plumctl unsuspend` saying "suspend" in its error message
 - Exit with a non-zero status when a `plumctl` command fails
+- Shorten `pushover.message` alerts to Pushover's 1024 character limit, instead
+  of the alert being rejected
+- Remove the claim that `pushover.message` alerts are disabled after an error
+  response; every alert is still attempted
 
 ## 1.2.0 - 2026-11-04 
 

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"reflect"
 	"time"
+	"unicode/utf8"
 )
 
 // Plugin is the API between plugins and the core. Plugins must provide an exported "Plum()" method in the
@@ -149,6 +150,15 @@ type AlertDetails struct {
 	NewState CheckState `json:"new_state"`
 	// IsReminder indicates that this alert is a periodic reminder for an ongoing failure, not a new state change.
 	IsReminder bool `json:"is_reminder"`
+}
+
+// Truncate shortens s to at most limit characters, which must be positive, ending it with an ellipsis if anything
+// was removed. It never splits a multi-byte character.
+func Truncate(s string, limit int) string {
+	if utf8.RuneCountInString(s) <= limit {
+		return s
+	}
+	return string([]rune(s)[:limit-1]) + "…"
 }
 
 const redactedValue = "[redacted]"
