@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Reject a `network.portscan` `address` with an IPv6 address in brackets, as
+  the check passed without scanning anything
+
 ### Fixed
 
 - Fix `plumctl unsuspend` saying "suspend" in its error message

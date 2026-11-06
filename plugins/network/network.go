@@ -161,6 +161,10 @@ func (c PortScanCheck) Validate() error {
 		return fmt.Errorf("invalid address %q: must not include a port", c.Address)
 	}
 
+	if strings.HasPrefix(c.Address, "[") || strings.HasSuffix(c.Address, "]") {
+		return fmt.Errorf("invalid address %q: IPv6 addresses must not be in brackets", c.Address)
+	}
+
 	if err := validateNetwork(c.Network); err != nil {
 		return err
 	}

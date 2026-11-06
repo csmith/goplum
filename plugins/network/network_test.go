@@ -217,6 +217,19 @@ func TestPortScanCheck_ValidateAddress(t *testing.T) {
 	}
 }
 
+func TestPortScanCheck_ValidateRejectsBracketedAddress(t *testing.T) {
+	for _, address := range []string{"[::1]", "[::1", "::1]"} {
+		t.Run(
+			address,
+			func(t *testing.T) {
+				check := portScan(1, 10)
+				check.Address = address
+				require.ErrorContains(t, check.Validate(), "must not be in brackets")
+			},
+		)
+	}
+}
+
 func TestPlugin_DefaultNetworkIsValid(t *testing.T) {
 	connect := Plugin{}.Check("connect").(ConnectCheck)
 	connect.Address = "127.0.0.1:80"
