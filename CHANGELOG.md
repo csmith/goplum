@@ -39,6 +39,8 @@
   run
 - Reject an `interval` or `timeout` of zero, as the check was run repeatedly
   and in parallel, or failed straight away
+- Reject `heartbeat.received` checks that share an `id`, ignoring case, as
+  heartbeats only reached the last of them and the others always failed
 
 ### Fixed
 

@@ -14,11 +14,11 @@ import (
 	"chameth.com/goplum"
 )
 
-var checks = make(map[string]*ReceivedCheck)
-
 type Plugin struct {
 	Port int
 	Path string
+
+	checks map[string]*ReceivedCheck
 }
 
 func (p *Plugin) Alert(_ string) goplum.Alert {
@@ -29,6 +29,7 @@ func (p *Plugin) Check(kind string) goplum.Check {
 	switch kind {
 	case "received":
 		return &ReceivedCheck{
+			plugin:  p,
 			created: time.Now(),
 		}
 	default:
@@ -49,8 +50,12 @@ func (p *Plugin) Validate() error {
 
 	p.Path = strings.ReplaceAll(fmt.Sprintf("/%s/", p.Path), "//", "/")
 
+	// Hand the registered checks over to the server, so that checks from a later config load can reuse their IDs.
+	handler := &receiver{path: p.Path, checks: p.checks}
+	p.checks = nil
+
 	server := &http.Server{
-		Handler:           p,
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		IdleTimeout:       time.Minute,
@@ -59,14 +64,19 @@ func (p *Plugin) Validate() error {
 	return nil
 }
 
-func (p *Plugin) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	if !strings.HasPrefix(request.URL.Path, p.Path) {
+type receiver struct {
+	path   string
+	checks map[string]*ReceivedCheck
+}
+
+func (r *receiver) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	if !strings.HasPrefix(request.URL.Path, r.path) {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	id := strings.ToLower(strings.TrimPrefix(request.URL.Path, p.Path))
-	if check, ok := checks[id]; ok {
+	id := strings.ToLower(strings.TrimPrefix(request.URL.Path, r.path))
+	if check, ok := r.checks[id]; ok {
 		slog.Info("Received heartbeat")
 		check.received = time.Now()
 		writer.WriteHeader(http.StatusAccepted)
@@ -80,6 +90,7 @@ type ReceivedCheck struct {
 	ID     string `config:"id" redact:"true"`
 	Within time.Duration
 
+	plugin   *Plugin
 	created  time.Time
 	received time.Time
 }
@@ -111,7 +122,14 @@ func (g *ReceivedCheck) Validate() error {
 		return errors.New("within must be at least 30 seconds")
 	}
 
-	checks[g.ID] = g
+	if existing, ok := g.plugin.checks[g.ID]; ok && existing != g {
+		return errors.New("id is already used by another heartbeat check")
+	}
+
+	if g.plugin.checks == nil {
+		g.plugin.checks = make(map[string]*ReceivedCheck)
+	}
+	g.plugin.checks[g.ID] = g
 	return nil
 }
 

@@ -52,7 +52,7 @@ check heartbeat.received "cron" {
 ```
 
 Checks to ensure that a heartbeat with the given ID has been received within the time
-period (in the example, 1 day 2 hour). Each check must have a unique heartbeat ID.
+period (in the example, 1 day 2 hour). Each check must have a unique heartbeat ID, ignoring case.
 
 > **Tip:** Ensure the `within` window is long enough to account for the scheduling time _and_
 > any execution time the job may take. For example, a daily cron job that varies in
