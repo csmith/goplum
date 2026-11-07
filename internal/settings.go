@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 func DecodeSettings(src *map[string]any, targets ...any) error {

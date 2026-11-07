@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"chameth.com/goplum"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 type Plugin struct{}
