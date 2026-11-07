@@ -17,7 +17,6 @@ import (
 
 	"chameth.com/goplum/config"
 	"chameth.com/goplum/internal"
-	"dario.cat/mergo"
 )
 
 var (
@@ -40,7 +39,9 @@ type Group struct {
 	Name        string
 	AlertLimit  int           `config:"alert_limit"`
 	AlertWindow time.Duration `config:"alert_window"`
-	Defaults    *CheckSettings
+
+	// defaults is the group's raw defaults block, so that only the keys it sets are applied over other defaults.
+	defaults map[string]any
 
 	// Alert state tracking for limiting
 	alertHistory []time.Time
@@ -460,10 +461,10 @@ func (p *Plum) addGroup(block *config.Block) error {
 
 	// Extract defaults from settings if present
 	if defaults, ok := block.Settings["defaults"].(map[string]any); ok {
-		group.Defaults = &CheckSettings{}
-		if err := internal.DecodeSettings(&defaults, group.Defaults); err != nil {
+		if err := internal.DecodeSettings(&defaults, &CheckSettings{}); err != nil {
 			return fmt.Errorf("error configuring defaults for group %s: %v", block.Name, err)
 		}
+		group.defaults = defaults
 		// Remove defaults from settings so it doesn't interfere with decoding other fields
 		delete(block.Settings, "defaults")
 	}
@@ -505,8 +506,8 @@ func (p *Plum) createCheck(checkBlock *config.Block, groups []string) (Check, Ch
 
 	// Apply group defaults in order
 	for _, groupName := range groups {
-		if group := p.Groups[groupName]; group != nil && group.Defaults != nil {
-			if err := mergo.Merge(&settings, group.Defaults, mergo.WithOverride); err != nil {
+		if group := p.Groups[groupName]; group != nil && group.defaults != nil {
+			if err := internal.DecodeSettings(&group.defaults, &settings); err != nil {
 				return nil, CheckSettings{}, fmt.Errorf("error applying group defaults from %s: %v", groupName, err)
 			}
 		}

@@ -47,19 +47,7 @@
     "test-group": {
       "Name": "test-group",
       "AlertLimit": 5,
-      "AlertWindow": 600000000000,
-      "Defaults": {
-        "Alerts": [
-          "debug"
-        ],
-        "Groups": null,
-        "Interval": 45000000000,
-        "Timeout": 15000000000,
-        "Reminder": 0,
-        "GoodThreshold": 0,
-        "FailingThreshold": 0,
-        "Link": ""
-      }
+      "AlertWindow": 600000000000
     }
   }
 }

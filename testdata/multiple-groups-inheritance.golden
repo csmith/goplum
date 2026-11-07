@@ -48,34 +48,12 @@
     "datacenter": {
       "Name": "datacenter",
       "AlertLimit": 10,
-      "AlertWindow": 300000000000,
-      "Defaults": {
-        "Alerts": [
-          "debug"
-        ],
-        "Groups": null,
-        "Interval": 0,
-        "Timeout": 30000000000,
-        "Reminder": 0,
-        "GoodThreshold": 3,
-        "FailingThreshold": 0,
-        "Link": ""
-      }
+      "AlertWindow": 300000000000
     },
     "webservices": {
       "Name": "webservices",
       "AlertLimit": 3,
-      "AlertWindow": 600000000000,
-      "Defaults": {
-        "Alerts": null,
-        "Groups": null,
-        "Interval": 45000000000,
-        "Timeout": 15000000000,
-        "Reminder": 0,
-        "GoodThreshold": 0,
-        "FailingThreshold": 5,
-        "Link": ""
-      }
+      "AlertWindow": 600000000000
     }
   }
 }

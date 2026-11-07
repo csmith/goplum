@@ -48,23 +48,12 @@
     "databases": {
       "Name": "databases",
       "AlertLimit": 2,
-      "AlertWindow": 300000000000,
-      "Defaults": null
+      "AlertWindow": 300000000000
     },
     "webservices": {
       "Name": "webservices",
       "AlertLimit": 3,
-      "AlertWindow": 600000000000,
-      "Defaults": {
-        "Alerts": null,
-        "Groups": null,
-        "Interval": 0,
-        "Timeout": 45000000000,
-        "Reminder": 0,
-        "GoodThreshold": 0,
-        "FailingThreshold": 0,
-        "Link": ""
-      }
+      "AlertWindow": 600000000000
     }
   }
 }

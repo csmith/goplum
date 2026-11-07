@@ -356,7 +356,7 @@ func TestRaiseAlerts_DashSendsNoAlerts(t *testing.T) {
 		t.Run(
 			name,
 			func(t *testing.T) {
-				plum := loadLinkConfig(t, alerts+tt.config)
+				plum := loadConfig(t, alerts+tt.config)
 				recorders := map[string]*recordingAlert{}
 				for alertName := range plum.Alerts {
 					recorders[alertName] = &recordingAlert{}
@@ -487,6 +487,83 @@ func TestReadConfig_ValidatesThresholds(t *testing.T) {
 	}
 }
 
+func TestReadConfig_CheckOverrideDoesNotChangeGroupDefaults(t *testing.T) {
+	plum := loadConfig(
+		t,
+		`alert debug.sysout "x" {}
+alert debug.sysout "y" {}
+alert debug.sysout "z" {}
+
+group "g" {
+  defaults {
+    alerts = ["x", "y"]
+  }
+}
+
+check debug.random "a" {
+  groups = ["g"]
+  alerts = ["z"]
+}
+
+check debug.random "b" {
+  groups = ["g"]
+}
+`,
+	)
+
+	assert.Equal(t, []string{"z"}, plum.Checks["a"].Config.Alerts)
+	assert.Equal(t, []string{"x", "y"}, plum.Checks["b"].Config.Alerts)
+}
+
+func TestReadConfig_GroupDefaultsCanSetZeroValues(t *testing.T) {
+	plum := loadConfig(
+		t,
+		`defaults {
+  alerts = ["-"]
+  reminder = 1h
+  link = "https://example.com/defaults"
+}
+
+group "quiet" {
+  defaults {
+    reminder = 0s
+    link = ""
+  }
+}
+
+group "loud" {
+  defaults {
+    reminder = 5m
+  }
+}
+
+check debug.random "quiet" {
+  groups = ["quiet"]
+}
+
+check debug.random "loud-then-quiet" {
+  groups = ["loud", "quiet"]
+}
+`,
+	)
+
+	for _, name := range []string{"quiet", "loud-then-quiet"} {
+		assert.Zero(t, plum.Checks[name].Config.Reminder, name)
+		assert.Empty(t, plum.Checks[name].Config.Link, name)
+	}
+}
+
+func TestReadConfig_ValidatesUnusedGroupDefaults(t *testing.T) {
+	dir := t.TempDir()
+	writeConfig(t, dir, "goplum.conf", "group \"g\" {\n  defaults {\n    interval = \"soon\"\n  }\n}\n")
+
+	plum := goplum.NewPlum()
+	plum.RegisterPlugins(plugins)
+	err := plum.ReadConfig(filepath.Join(dir, "goplum.conf"))
+
+	assert.ErrorContains(t, err, "error configuring defaults for group g")
+}
+
 type fixedCheck struct {
 	state goplum.CheckState
 }
@@ -581,7 +658,7 @@ func TestUpdateStatus_SettlesSilentlyAsGood(t *testing.T) {
 	assert.Equal(t, goplum.StateFailing, alert.details[0].NewState)
 }
 
-func loadLinkConfig(t *testing.T, config string) *goplum.Plum {
+func loadConfig(t *testing.T, config string) *goplum.Plum {
 	t.Helper()
 	dir := t.TempDir()
 	writeConfig(t, dir, "goplum.conf", config)
@@ -652,7 +729,7 @@ group "linkless" {
 		t.Run(
 			name,
 			func(t *testing.T) {
-				plum := loadLinkConfig(
+				plum := loadConfig(
 					t,
 					"defaults {\n  "+tt.defaults+"\n}\n\n"+groups+
 						"check debug.random \"c\" {\n  alerts = [\"-\"]\n  "+tt.check+"\n}\n",
@@ -782,7 +859,7 @@ func TestRaiseAlerts_ExpandsLink(t *testing.T) {
 		t.Run(
 			name,
 			func(t *testing.T) {
-				plum := loadLinkConfig(
+				plum := loadConfig(
 					t,
 					"alert debug.sysout \"test\" {}\n\ncheck debug.random \""+tt.check+"\" {\n"+
 						"  percent_good = 0\n  failing_threshold = 1\n  link = \""+tt.link+"\"\n}\n",
@@ -801,7 +878,7 @@ func TestRaiseAlerts_ExpandsLink(t *testing.T) {
 }
 
 func TestRaiseAlerts_RemindersCarryLink(t *testing.T) {
-	plum := loadLinkConfig(
+	plum := loadConfig(
 		t,
 		"alert debug.sysout \"test\" {}\n\ncheck debug.random \"c\" {\n  percent_good = 0\n"+
 			"  failing_threshold = 1\n  reminder = 1h\n  link = \"https://example.com/{name}\"\n}\n",
@@ -844,7 +921,7 @@ func TestWebhookAlert_SendsLinkInJson(t *testing.T) {
 				)
 				defer server.Close()
 
-				plum := loadLinkConfig(
+				plum := loadConfig(
 					t,
 					"alert http.webhook \"hook\" {\n  url = \""+server.URL+"\"\n}\n\n"+
 						"check debug.random \"my check\" {\n  percent_good = 0\n  failing_threshold = 1\n  "+

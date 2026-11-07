@@ -61,6 +61,10 @@
   service's message limit, instead of the alert being rejected or cut off
 - Fix a crash instead of an error message when the config path is
   a directory, or the config has a syntax error near the end of a file
+- Fix a check's `alerts` changing the `alerts` that later checks in the same
+  group get from the group's `defaults`
+- Fix group `defaults` being ignored when they set a zero value, such as
+  `reminder = 0s` or `link = ""`
 - Fix checks listing several `alerts` also sending to alerts whose names merely
   start with the first name, end with the last, or contain one in the middle
 - Fail `http.healthcheck` checks when the response's `status` is missing or

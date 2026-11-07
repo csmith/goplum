@@ -47,8 +47,7 @@
     "test-group": {
       "Name": "test-group",
       "AlertLimit": 5,
-      "AlertWindow": 600000000000,
-      "Defaults": null
+      "AlertWindow": 600000000000
     }
   }
 }
