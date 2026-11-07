@@ -2,7 +2,7 @@ package debug
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"math/rand"
 
 	"chameth.com/goplum"
@@ -45,6 +45,6 @@ type SysOutAlert struct {
 }
 
 func (s SysOutAlert) Send(details goplum.AlertDetails) error {
-	log.Printf("DEBUG ALERT - %s\n", details.TextWithLink(0))
+	slog.Info("Debug alert", "text", details.TextWithLink(0))
 	return nil
 }

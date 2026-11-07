@@ -5,7 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 	"os"
 	"reflect"
@@ -278,7 +278,7 @@ func (p *Plum) RemoveCheckListener(listener CheckListener) {
 // Returns the modified check, or nil if the check didn't exist.
 func (p *Plum) Suspend(checkName string) *ScheduledCheck {
 	if check, ok := p.Checks[checkName]; ok {
-		log.Printf("Check %s has been suspended", checkName)
+		slog.Info("Check suspended", "check", checkName)
 		check.Suspended = true
 		return check
 	}
@@ -289,7 +289,7 @@ func (p *Plum) Suspend(checkName string) *ScheduledCheck {
 // Returns the modified check, or nil if the check didn't exist.
 func (p *Plum) Unsuspend(checkName string) *ScheduledCheck {
 	if check, ok := p.Checks[checkName]; ok {
-		log.Printf("Check %s has been unsuspended", checkName)
+		slog.Info("Check unsuspended", "check", checkName)
 		check.Suspended = false
 		return check
 	}
@@ -621,7 +621,7 @@ func (p *Plum) configurePlugins(blocks []*config.Block) error {
 		}
 
 		if ok {
-			log.Printf("Config for plugin %s ignored as it is not loaded", name)
+			slog.Warn("Config for plugin ignored as it is not loaded", "plugin", name)
 		} else {
 			return fmt.Errorf("%s: unable to configure plugin %s: no such plugin", blocks[i].Position, name)
 		}
@@ -685,7 +685,13 @@ func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
 
 func (p *Plum) logCheck(c *ScheduledCheck, result Result) {
 	if !*quietLogging {
-		log.Printf("Check '%s' executed in %s: %s (%s)\n", c.Name, result.Facts[CheckTime], result.State, result.Detail)
+		slog.Info(
+			"Check executed",
+			slog.String("check", c.Name),
+			slog.Any("duration", result.Facts[CheckTime]),
+			slog.Any("state", result.State),
+			slog.String("detail", result.Detail),
+		)
 	}
 }
 
@@ -722,7 +728,7 @@ func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isRemind
 	// Check group limits for all groups this check belongs to
 	shouldSend, suppressionWarning, suppressingGroup := p.shouldSendAlert(c.Config.Groups)
 	if !shouldSend {
-		log.Printf("Alert for %s suppressed due to group limit (group: %s)\n", c.Name, suppressingGroup)
+		slog.Info("Alert suppressed due to group limit", "check", c.Name, "group", suppressingGroup)
 		return
 	}
 
@@ -732,10 +738,10 @@ func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isRemind
 	}
 
 	alerts := p.AlertsMatching(c.Config.Alerts)
-	log.Printf("Raising alerts for %s: %d alerts match config %v\n", c.Name, len(alerts), c.Config.Alerts)
+	slog.Info("Raising alerts", "check", c.Name, "matched", len(alerts), "alerts", c.Config.Alerts)
 	for n := range alerts {
 		if err := alerts[n].Send(details); err != nil {
-			log.Printf("Error sending alert: %v\n", err)
+			slog.Error("Unable to send alert", "check", c.Name, "error", err)
 		}
 	}
 
@@ -840,7 +846,7 @@ func Run(plugins map[string]Plugin, configPath, tombStonePath string, signals <-
 	}
 
 	if err := p.RestoreState(tombStonePath); err != nil {
-		log.Printf("Unable to restore state from tombstone: %v", err)
+		slog.Warn("Unable to restore state from tombstone", "error", err)
 	}
 
 	api := NewGrpcServer(p)
@@ -865,11 +871,11 @@ func Run(plugins map[string]Plugin, configPath, tombStonePath string, signals <-
 	select {
 	case <-stopped:
 	case <-time.After(shutdownTimeout):
-		log.Printf("Timed out waiting for running checks and alerts to finish")
+		slog.Warn("Timed out waiting for running checks and alerts to finish")
 	}
 
 	if err := p.SaveState(tombStonePath); err != nil {
-		log.Printf("Unable to save state to tombstone: %v", err)
+		slog.Error("Unable to save state to tombstone", "error", err)
 	}
 
 	return nil

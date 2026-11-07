@@ -58,6 +58,21 @@ If the path is relative it is interpreted with respect to Goplum's working direc
 
 Default: `goplum.conf`.
 
+## log.level and log.format
+
+```shell
+# Command line
+goplum --log.level debug --log.format json
+
+# Environment variable
+LOG_LEVEL=debug LOG_FORMAT=json goplum
+```
+
+Sets the lowest level of logs to output (`debug`, `info`, `warn` or `error`),
+and whether logs are written as `text` or `json`.
+
+Defaults: `info` and `text`, respectively.
+
 ## quiet
 
 ```shell

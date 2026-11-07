@@ -3,7 +3,7 @@ package goplum
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 )
@@ -39,7 +39,7 @@ func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
 			var err error
 			state, err = json.Marshal(stateful.Save())
 			if err != nil {
-				log.Printf("Unable to save state of check %s: %v", check.Name, err)
+				slog.Error("Unable to save state of check", "check", check.Name, "error", err)
 			}
 		}
 
@@ -99,7 +99,7 @@ func (ts *TombStone) Restore(checks map[string]*ScheduledCheck) error {
 				stateful.Restore(
 					func(i any) {
 						if err := json.Unmarshal(saved.PluginState, i); err != nil {
-							log.Printf("Unable to restore state of check %s: %v", check.Name, err)
+							slog.Warn("Unable to restore state of check", "check", check.Name, "error", err)
 						}
 					},
 				)

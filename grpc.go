@@ -6,7 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"time"
 
@@ -39,7 +39,7 @@ func NewGrpcServer(plum *Plum) *GrpcServer {
 func (s *GrpcServer) Start() error {
 	certs, pool, err := api.LoadCertificates(*localCert, *localKey, *caCert)
 	if err != nil {
-		log.Printf("Not starting API: unable to load certificates: %v", err)
+		slog.Warn("Not starting API: unable to load certificates", "error", err)
 		return nil
 	}
 
@@ -48,7 +48,7 @@ func (s *GrpcServer) Start() error {
 		return fmt.Errorf("unable to listen on port %d for API requests: %w", *apiPort, err)
 	}
 
-	log.Printf("Starting API server on port %d", *apiPort)
+	slog.Info("Starting API server", "port", *apiPort)
 	s.server = grpc.NewServer(
 		grpc.Creds(
 			credentials.NewTLS(
@@ -64,7 +64,7 @@ func (s *GrpcServer) Start() error {
 	api.RegisterGoPlumServer(s.server, s)
 	go func() {
 		if err := s.server.Serve(lis); err != nil {
-			log.Printf("Error serving API: %v", err)
+			slog.Error("Error serving API", "error", err)
 		}
 	}()
 

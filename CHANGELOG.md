@@ -14,6 +14,8 @@
 
 ### Changed
 
+- Write goplum's logs as structured `key=value` pairs, with new `--log.level`
+  and `--log.format` flags to set the minimum level or switch to JSON
 - Reject a `network.portscan` `address` with an IPv6 address in brackets, as
   the check passed without scanning anything
 - Reject `http.get`, `http.healthcheck` and `http.webhook` URLs that aren't
