@@ -1,16 +1,11 @@
-# Step 1: compile
-
-FROM reg.c5h.io/golang AS build
+FROM golang:1.27.3 AS build
 WORKDIR /go/src/app
 COPY . .
 
-# Build the main application
-RUN go install ./cmd/goplum
-
-# Generate licence information
-RUN go run github.com/google/go-licenses@latest save ./... --save_path=/notices
-
-# Step 2: execute
+RUN --mount=type=cache,target=/go/pkg/mod \
+    set -eux; \
+    CGO_ENABLED=0 go install ./cmd/goplum; \
+    go run github.com/google/go-licenses@latest save ./... --save_path=/notices;
 
 FROM ghcr.io/greboid/dockerbase/nonroot:1.20261020.1
 WORKDIR /

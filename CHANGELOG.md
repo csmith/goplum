@@ -21,6 +21,7 @@
   every check
 - Running checks are now cancelled on shutdown, and goplum waits up
   to 5 seconds for alerts being sent to finish before saving state
+- Docker images are now built with the upstream `golang` image
 
 ### Fixed
 
