@@ -17,3 +17,12 @@ jobs:
     secrets: inherit
     with:
       github: csmith/goplum
+
+  build-plumdash:
+    uses: meta/workflows/.forgejo/workflows/image-build.yml@master
+    runs-on: docker
+    secrets: inherit
+    with:
+      dockerfile: plumdash.Dockerfile
+      image: public/goplum/dashboard
+      github: csmith/goplum/dashboard

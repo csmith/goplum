@@ -28,6 +28,19 @@ $ plumdash --server plum.example.com:7586 \
 The dashboard is then available on port 8080. The page refreshes itself every
 30 seconds.
 
+A Docker image is also available as `ghcr.io/csmith/goplum/dashboard`:
+
+```
+$ docker run -d --restart always \
+    -p 8080:8080 \
+    -v /path/to/certs:/certs:ro \
+    -e SERVER=plum.example.com:7586 \
+    -e CA_CERT=/certs/ca.crt \
+    -e CERT=/certs/client.crt \
+    -e KEY=/certs/client.key \
+    ghcr.io/csmith/goplum/dashboard
+```
+
 ## Flags
 
 Each flag can also be set as an environment variable, e.g. `SERVER` or

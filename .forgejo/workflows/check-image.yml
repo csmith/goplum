@@ -10,3 +10,9 @@ jobs:
   build:
     uses: meta/workflows/.forgejo/workflows/image-test.yml@master
     runs-on: docker
+
+  build-plumdash:
+    uses: meta/workflows/.forgejo/workflows/image-test.yml@master
+    runs-on: docker
+    with:
+      dockerfile: plumdash.Dockerfile

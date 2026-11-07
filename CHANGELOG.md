@@ -5,7 +5,7 @@
 ### Added
 
 - Add `plumdash`, a web dashboard showing the state of each check and its
-  recent results
+  recent results, with a Docker image at `ghcr.io/csmith/goplum/dashboard`
 - Include each check's recent results in the API's `Check` message
 - Add a `link` check setting, sent with alerts to point at a runbook or
   dashboard. It supports `{name}` and `{type}` placeholders, and can be set in
