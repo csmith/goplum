@@ -67,7 +67,7 @@ recommended configuration is:
 
 ```goplum
 check heartbeat.received "cron" {
-  id = "58139f843d770c638420a327e530834d53b691f74c8449a86474b081e22b02f3"
+  id = "58139f843d770c638420a327e530834d"
   within = 1d2h
   interval = 30m
   good_threshold = 1
