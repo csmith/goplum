@@ -23,6 +23,7 @@ message Check {
   bool settled = 4;
   Status state = 5;
   bool suspended = 6;
+  repeated Result history = 7;
 }
 
 message Fact {

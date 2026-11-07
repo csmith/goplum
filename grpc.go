@@ -160,7 +160,28 @@ func (s *GrpcServer) convertCheck(check *ScheduledCheck) *api.Check {
 		Settled:   check.Settled,
 		State:     s.convertState(check.State),
 		Suspended: check.Suspended,
+		History:   s.convertHistory(check),
 	}
+}
+
+func (s *GrpcServer) convertHistory(check *ScheduledCheck) []*api.Result {
+	var res []*api.Result
+	for _, r := range check.History {
+		if r == nil {
+			continue
+		}
+		res = append(
+			res,
+			&api.Result{
+				Check:  check.Name,
+				Time:   r.Time.Unix(),
+				Result: s.convertState(r.State),
+				Detail: r.Detail,
+				Facts:  s.convertFacts(r.Facts),
+			},
+		)
+	}
+	return res
 }
 
 func (s *GrpcServer) convertState(state CheckState) api.Status {

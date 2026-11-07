@@ -306,6 +306,12 @@ as well as perform certain operations such as pausing and resuming a check. `plu
 uses the [gRPC API](#grpc-api). For more information see the
 [plumctl documentation](docs/plumctl.md).
 
+### plumdash web dashboard
+
+Goplum also comes with `plumdash`, a small web service that shows the state of
+each check and its recent results. `plumdash` uses the [gRPC API](#grpc-api).
+For more information see the [plumdash documentation](docs/plumdash.md).
+
 ## Licence and credits
 
 Goplum is licensed under the MIT licence. A full copy of the licence is available in

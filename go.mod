@@ -5,6 +5,7 @@ go 1.27.3
 require (
 	dario.cat/mergo v1.0.2
 	github.com/csmith/envflag/v2 v2.0.0
+	github.com/csmith/slogflags v1.2.0
 	github.com/dasrick/go-teams-notify/v2 v2.1.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gosnmp/gosnmp v1.45.0

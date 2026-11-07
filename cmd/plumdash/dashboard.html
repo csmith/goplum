@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Goplum</title>
+    <style>
+        :root {
+            --bg: #f6f6f4;
+            --fg: #1d1d1b;
+            --muted: #6b6b66;
+            --card: #ffffff;
+            --border: #deded8;
+            --good: #2e9e4f;
+            --failing: #d13b30;
+            --unknown: #a3a39c;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #161615;
+                --fg: #ececea;
+                --muted: #9a9a94;
+                --card: #1f1f1d;
+                --border: #33332f;
+                --unknown: #5c5c57;
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            background: var(--bg);
+            color: var(--fg);
+            font: 15px/1.4 system-ui, sans-serif;
+        }
+
+        main {
+            max-width: 720px;
+            margin: 0 auto;
+            display: grid;
+            gap: 12px;
+        }
+
+        .check {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-left: 6px solid var(--unknown);
+            border-radius: 6px;
+            padding: 12px 16px;
+        }
+
+        .check.Good { border-left-color: var(--good); }
+        .check.Failing { border-left-color: var(--failing); }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .name { font-weight: 600; overflow-wrap: anywhere; }
+        .state { font-weight: 600; }
+        .Good .state { color: var(--good); }
+        .Failing .state { color: var(--failing); }
+        .Unknown .state { color: var(--muted); }
+
+        .meta { color: var(--muted); font-size: 13px; }
+
+        .history {
+            display: flex;
+            gap: 3px;
+            margin-top: 8px;
+        }
+
+        .history span {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            background: var(--unknown);
+        }
+
+        .history .Good { background: var(--good); }
+        .history .Failing { background: var(--failing); }
+    </style>
+</head>
+<body>
+<main id="checks">
+    {{- range . }}
+    <section class="check {{ .State }}">
+        <div class="header">
+            <span class="name">{{ .Name }}</span>
+            <span class="state">{{ if .Suspended }}Suspended · {{ end }}{{ .State }}</span>
+        </div>
+        <div class="meta">{{ .Type }} · Last run {{ .LastRun }}</div>
+        <div class="history">
+            {{- range .History }}
+            <span class="{{ .State }}" title="{{ .Summary }}"></span>
+            {{- end }}
+        </div>
+    </section>
+    {{- else }}
+    <p>No checks configured.</p>
+    {{- end }}
+</main>
+<script>
+    setInterval(async () => {
+        try {
+            const res = await fetch(location.href);
+            if (!res.ok) return;
+            const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+            document.getElementById('checks').replaceWith(doc.getElementById('checks'));
+        } catch (e) {
+            // Keep showing the last known state until the next refresh works.
+        }
+    }, 30000);
+</script>
+</body>
+</html>

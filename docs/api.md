@@ -83,8 +83,7 @@ If any of the files are missing or invalid, GoPlum will not enable its API and w
 report the error in its log file.
 
 Clients will also require the CA certificate, and their own certificate and private
-key. Clients based on the GoPlum codebase will use the same flags and default settings
-as GoPlum; other clients may vary in how they accept these.
+key.
 
 ## Methods
 
@@ -100,7 +99,8 @@ a much finer granularity than alerts).
 
 ### GetChecks(Empty): CheckList
 
-Returns a list of all checks known to GoPlum and their current states
+Returns a list of all checks known to GoPlum, their current states, and their
+most recent results (newest first).
 
 ### GetCheck(CheckName): Check
 
