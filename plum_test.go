@@ -305,6 +305,28 @@ func TestRaiseAlerts_OmitsPluginSettings(t *testing.T) {
 	assert.NotContains(t, string(b), "secret-value")
 }
 
+type namedAlert string
+
+func (namedAlert) Send(goplum.AlertDetails) error { return nil }
+
+func TestAlertsMatching_MultipleNamesMatchWholeNames(t *testing.T) {
+	plum := goplum.NewPlum()
+	for _, name := range []string{
+		"pager", "pager-dev", "slack", "public-slack-channel", "slack-public",
+		"email", "oldemail", "team-sms", "team-sms-backup",
+	} {
+		plum.Alerts[name] = namedAlert(name)
+	}
+
+	alerts := plum.AlertsMatching([]string{"pager", "slack", "email", "team-*s"})
+	matched := make([]string, 0, len(alerts))
+	for _, a := range alerts {
+		matched = append(matched, string(a.(namedAlert)))
+	}
+
+	assert.ElementsMatch(t, []string{"pager", "slack", "email", "team-sms"}, matched)
+}
+
 func TestScheduledCheck_AddResult_ReachesThresholdOfFullHistory(t *testing.T) {
 	check := &goplum.ScheduledCheck{}
 	thresholds := map[goplum.CheckState]int{goplum.StateGood: 10, goplum.StateFailing: 10}

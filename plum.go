@@ -755,10 +755,10 @@ func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isRemind
 // regexpForWildcards converts a set of names containing '*' characters as wildcards into a single regex that will
 // match any of them.
 //
-// e.g. ["foo_*", "*+bar"] becomes /^(foo_.*)|(.*\+bar)$/
+// e.g. ["foo_*", "*+bar"] becomes /^(?:foo_.*|.*\+bar)$/
 func regexpForWildcards(names []string) *regexp.Regexp {
 	pattern := strings.Builder{}
-	pattern.WriteString("^")
+	pattern.WriteString("^(?:")
 
 	for i := range names {
 		if i > 0 {
@@ -773,7 +773,7 @@ func regexpForWildcards(names []string) *regexp.Regexp {
 		}
 	}
 
-	pattern.WriteString("$")
+	pattern.WriteString(")$")
 	re, _ := regexp.Compile(pattern.String())
 	return re
 }

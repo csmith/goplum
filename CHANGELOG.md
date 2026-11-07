@@ -50,6 +50,8 @@
   service's message limit, instead of the alert being rejected or cut off
 - Fix a crash instead of an error message when the config path is
   a directory, or the config has a syntax error near the end of a file
+- Fix checks listing several `alerts` also sending to alerts whose names merely
+  start with the first name, end with the last, or contain one in the middle
 
 ## 1.2.0 - 2026-11-04 
 
