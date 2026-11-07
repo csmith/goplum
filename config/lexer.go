@@ -245,7 +245,8 @@ func lexComment(lexer *Lexer) stateFunc {
 		if r == eof {
 			lexer.emit(tokenEOF, 0, nil)
 			return nil
-		} else if r == '\n' || r == '\r' {
+		} else if r == '\n' {
+			lexer.backup()
 			return lex
 		}
 	}

@@ -98,6 +98,39 @@ func TestLexer_InvalidNumbers(t *testing.T) {
 	}
 }
 
+func TestLexer_PositionsAfterComments(t *testing.T) {
+	tests := map[string]struct {
+		input  string
+		line   int
+		column int
+	}{
+		"comment lines":              {"# one\n# two\n# three\ncheck {}", 4, 0},
+		"comment after token":        {"{ # one\n  check {}", 2, 2},
+		"crlf line endings":          {"# one\r\n# two\r\ncheck {}", 3, 0},
+		"carriage return in comment": {"# one\rcheck\ncheck {}", 2, 0},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				tokens := lexAll(tt.input)
+				require.NotEmpty(t, tokens)
+				var check *token
+				for i := range tokens {
+					if tokens[i].Class == tokenCheck {
+						check = &tokens[i]
+						break
+					}
+				}
+				require.NotNil(t, check, "tokens: %+v", tokens)
+				assert.Equal(t, tt.line, check.Line)
+				assert.Equal(t, tt.column, check.Column)
+			},
+		)
+	}
+}
+
 func lexAll(input string) []token {
 	lexer := NewLexer(strings.NewReader(input))
 	go lexer.Lex()

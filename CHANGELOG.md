@@ -71,6 +71,8 @@
 - Close heartbeat plugin connections that are idle or too slow to send their
   request, instead of keeping them open forever
 - Fix resumed checks sometimes waiting up to a minute before running again
+- Fix config errors and check positions reporting the wrong line after
+  comments
 
 ## 1.2.0 - 2026-11-04 
 
