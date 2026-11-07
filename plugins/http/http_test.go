@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -321,6 +322,44 @@ func TestHealthCheck_FailsWithoutPanicOnUnparseableUrl(t *testing.T) {
 	assert.Equal(t, goplum.StateFailing, result.State)
 	assert.Contains(t, result.Detail, "Error building request")
 	assert.NotContains(t, result.Detail, "secret")
+}
+
+func TestHealthCheck_ReadsStatusAndComponents(t *testing.T) {
+	body, err := os.ReadFile("testdata/health.json")
+	require.NoError(t, err)
+
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/health+json")
+				_, _ = w.Write(body)
+			},
+		),
+	)
+	defer server.Close()
+
+	tests := []struct {
+		name            string
+		checkComponents bool
+		state           goplum.CheckState
+		detail          string
+	}{
+		{"overall", false, goplum.StateGood, "all good"},
+		{"components", true, goplum.StateFailing, "component db:connections: replica down"},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name,
+			func(t *testing.T) {
+				check := HealthCheck{Url: server.URL, CheckComponents: tt.checkComponents}
+
+				result := check.Execute(context.Background())
+				assert.Equal(t, tt.state, result.State)
+				assert.Equal(t, tt.detail, result.Detail)
+			},
+		)
+	}
 }
 
 func TestValidate_RejectsUnparseableUrl(t *testing.T) {

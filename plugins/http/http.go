@@ -16,7 +16,6 @@ import (
 
 	"chameth.com/goplum"
 	"chameth.com/goplum/internal"
-	"github.com/nelkinda/health-go"
 )
 
 // client is shared by checks and alerts. It has no overall timeout as checks are bounded by their context,
@@ -156,7 +155,16 @@ func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 
 	defer r.Body.Close()
 
-	res := &health.Health{}
+	type healthResponse struct {
+		Status string `json:"status"`
+		Output string `json:"output"`
+		Checks map[string][]struct {
+			Status string `json:"status"`
+			Output string `json:"output"`
+		} `json:"checks"`
+	}
+
+	res := &healthResponse{}
 	if err := json.NewDecoder(r.Body).Decode(res); err != nil {
 		return goplum.FailingResult("Error decoding response: %v", err)
 	}
@@ -184,8 +192,8 @@ func (h HealthCheck) Validate() error {
 	return internal.ValidateHTTPURL(h.Url)
 }
 
-func (h HealthCheck) convert(status health.Status) goplum.CheckState {
-	lower := strings.ToLower(string(status))
+func (h HealthCheck) convert(status string) goplum.CheckState {
+	lower := strings.ToLower(status)
 	if lower == "pass" || lower == "ok" || lower == "up" {
 		return goplum.StateGood
 	} else if lower == "fail" || lower == "error" || lower == "down" {

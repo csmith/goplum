@@ -10,7 +10,6 @@ require (
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gosnmp/gosnmp v1.45.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/nelkinda/health-go v0.0.1
 	github.com/sebdah/goldie/v2 v2.8.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
@@ -20,7 +19,6 @@ require (
 
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/nelkinda/http-go v0.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect

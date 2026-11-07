@@ -1,0 +1,10 @@
+{
+  "status": "pass",
+  "output": "all good",
+  "checks": {
+    "db:connections": [
+      {"status": "pass", "output": "fine"},
+      {"status": "fail", "output": "replica down"}
+    ]
+  }
+}
