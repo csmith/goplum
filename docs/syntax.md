@@ -173,10 +173,12 @@ The character `\` may be used as an escape character, e.g.: `"Bob said:\n\t\"Hel
 
 ### Durations
 
-One or more integer numbers suffixed with units, e.g. `1d5h`.
+One or more integer numbers suffixed with units, e.g. `1d5h`. A number without
+a unit isn't a valid duration.
 
 Valid units are:
 
+* `ms` - milliseconds
 * `s` - seconds
 * `m` - minutes
 * `h` - hours

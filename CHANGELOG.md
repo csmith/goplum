@@ -10,6 +10,7 @@
 - Add a `link` check setting, sent with alerts to point at a runbook or
   dashboard. It supports `{name}` and `{type}` placeholders, and can be set in
   `defaults`, a group's `defaults`, or on a check
+- Add an `ms` duration unit for milliseconds
 
 ### Changed
 
@@ -22,6 +23,8 @@
 - Running checks are now cancelled on shutdown, and goplum waits up
   to 5 seconds for alerts being sent to finish before saving state
 - Docker images are now built with the upstream `golang` image
+- Reject numbers without a unit for duration settings, as they were read as
+  nanoseconds; `interval = 30` must now be written `interval = 30s`
 
 ### Fixed
 

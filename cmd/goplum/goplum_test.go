@@ -91,6 +91,11 @@ func Test_Run_ReturnsConfigErrors(t *testing.T) {
 			want:   []string{"failing_threshold must be between 1 and 10, got 11"},
 		},
 		{
+			name:   "duration without units",
+			config: `check http.get "a" { url = "http://localhost/"` + "\n" + `interval = 30 }`,
+			want:   []string{"expected a duration with units, such as 30s, got 30"},
+		},
+		{
 			name:   "negative alert limit",
 			config: `group "g" { alert_limit = -1 }`,
 			want:   []string{"alert_limit can't be negative"},
@@ -254,7 +259,7 @@ func Test_Run_SendsRemindersWhileFailing(t *testing.T) {
 
 	startGoplum(
 		t,
-		writeConfig(t, sink.config(), httpCheck("site", site.URL, "reminder = "+nanos(reminder))),
+		writeConfig(t, sink.config(), httpCheck("site", site.URL, "reminder = "+millis(reminder))),
 		tombstonePath(t),
 	)
 
@@ -350,8 +355,8 @@ func Test_Run_ResumesAlertsAfterGroupWindow(t *testing.T) {
 		writeConfig(
 			t,
 			sink.config(),
-			fmt.Sprintf("group \"limited\" {\n alert_limit = 1\n alert_window = %s\n}\n", nanos(window)),
-			httpCheck("site", site.URL, `groups = ["limited"]`, "reminder = "+nanos(checkInterval)),
+			fmt.Sprintf("group \"limited\" {\n alert_limit = 1\n alert_window = %s\n}\n", millis(window)),
+			httpCheck("site", site.URL, `groups = ["limited"]`, "reminder = "+millis(checkInterval)),
 		),
 		tombstonePath(t),
 	)
@@ -681,7 +686,7 @@ func Test_Run_PrometheusQuery(t *testing.T) {
 			t,
 			sink.config(),
 			fmt.Sprintf("plugin prometheus {\n url = %q\n bearer_token = \"s3cret\"\n}\n", server.URL),
-			fmt.Sprintf("check prometheus.query \"prom\" {\n query = \"up == 1\"\n interval = %s\n}\n", nanos(checkInterval)),
+			fmt.Sprintf("check prometheus.query \"prom\" {\n query = \"up == 1\"\n interval = %s\n}\n", millis(checkInterval)),
 		),
 		tombstonePath(t),
 	)
@@ -1160,7 +1165,7 @@ func httpCheck(name, url string, settings ...string) string {
 		"check http.get %q {\n url = %q\n interval = %s\n %s\n}\n",
 		name,
 		url,
-		nanos(checkInterval),
+		millis(checkInterval),
 		strings.Join(settings, "\n "),
 	)
 }
@@ -1171,7 +1176,7 @@ func heartbeatConfig(port int) string {
 			"check heartbeat.received \"beat\" {\n id = %q\n within = 30s\n interval = %s\n failing_threshold = 1\n good_threshold = 1\n}\n",
 		port,
 		heartbeatID,
-		nanos(checkInterval),
+		millis(checkInterval),
 	)
 }
 
@@ -1209,10 +1214,8 @@ func prometheusVector(a, b string) string {
 	)
 }
 
-// nanos formats a duration as a plain number of nanoseconds, as the config syntax for durations has no units smaller
-// than a second.
-func nanos(d time.Duration) string {
-	return strconv.FormatInt(int64(d), 10)
+func millis(d time.Duration) string {
+	return strconv.FormatInt(d.Milliseconds(), 10) + "ms"
 }
 
 func writeConfig(t *testing.T, parts ...string) string {

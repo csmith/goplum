@@ -49,8 +49,10 @@ func TestLexer_Numbers(t *testing.T) {
 		{"-.5", tokenFloat, -0.5},
 		{"30s", tokenDuration, 30 * time.Second},
 		{"5m", tokenDuration, 5 * time.Minute},
+		{"250ms", tokenDuration, 250 * time.Millisecond},
 		{"1m30s", tokenDuration, 90 * time.Second},
-		{"1h2m3s", tokenDuration, time.Hour + 2*time.Minute + 3*time.Second},
+		{"1s500ms", tokenDuration, 1500 * time.Millisecond},
+		{"1h2m3ms", tokenDuration, time.Hour + 2*time.Minute + 3*time.Millisecond},
 		{"1d1w", tokenDuration, 8 * 24 * time.Hour},
 		{"-5", tokenInt, -5},
 	}

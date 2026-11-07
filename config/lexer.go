@@ -314,6 +314,15 @@ func lexNumber(lexer *Lexer) stateFunc {
 		case isDurationUnit:
 			width++
 
+			if r == 'm' {
+				if lexer.next() == 's' {
+					width++
+					multiplier = time.Millisecond
+				} else {
+					lexer.backup()
+				}
+			}
+
 			value, err := strconv.Atoi(builder.String())
 			if err != nil {
 				lexer.emit(tokenError, width, fmt.Sprintf("invalid duration quantity '%s': %v", builder.String(), err))

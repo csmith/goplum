@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -23,6 +25,7 @@ func DecodeSettings(src *map[string]any, targets ...any) error {
 				TagName:          "config",
 				Metadata:         &metadata,
 				Result:           dst,
+				DecodeHook:       requireDurationUnits,
 			},
 		)
 		if err != nil {
@@ -45,6 +48,14 @@ func DecodeSettings(src *map[string]any, targets ...any) error {
 	}
 
 	return nil
+}
+
+// requireDurationUnits stops plain numbers being decoded into durations, where they'd be read as nanoseconds.
+func requireDurationUnits(from, to reflect.Type, data any) (any, error) {
+	if to == reflect.TypeFor[time.Duration]() && from != to {
+		return nil, fmt.Errorf("expected a duration with units, such as 30s, got %v", data)
+	}
+	return data, nil
 }
 
 // ValidateHTTPURL checks a URL setting is an absolute http or https URL. Errors don't include the URL, as it may
