@@ -117,10 +117,6 @@ func (s StringCheck) Execute(ctx context.Context) goplum.Result {
 	return goplum.GoodResult()
 }
 
-func (s StringCheck) Validate() error {
-	return s.BaseCheck.Validate()
-}
-
 func octetString(variable gosnmp.SnmpPDU) (string, bool) {
 	if variable.Type != gosnmp.OctetString {
 		return "", false
@@ -163,10 +159,6 @@ func (c IntCheck) Execute(ctx context.Context) goplum.Result {
 	}
 
 	return goplum.GoodResult()
-}
-
-func (c IntCheck) Validate() error {
-	return c.BaseCheck.Validate()
 }
 
 func isNumeric(t gosnmp.Asn1BER) bool {

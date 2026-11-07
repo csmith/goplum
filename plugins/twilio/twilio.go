@@ -99,10 +99,6 @@ func (s SmsAlert) Send(details goplum.AlertDetails) error {
 	return nil
 }
 
-func (s SmsAlert) Validate() error {
-	return s.BaseAlert.Validate()
-}
-
 type CallAlert struct {
 	BaseAlert `config:",squash"`
 }
@@ -143,8 +139,4 @@ func (c CallAlert) Send(details goplum.AlertDetails) error {
 	}
 
 	return nil
-}
-
-func (c CallAlert) Validate() error {
-	return c.BaseAlert.Validate()
 }

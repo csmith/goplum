@@ -11,10 +11,7 @@ import (
 type Plugin struct{}
 
 func (p Plugin) Alert(kind string) goplum.Alert {
-	switch kind {
-	default:
-		return nil
-	}
+	return nil
 }
 
 func (p Plugin) Check(kind string) goplum.Check {
