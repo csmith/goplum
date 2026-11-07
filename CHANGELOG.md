@@ -85,6 +85,8 @@
 - Fix resumed checks sometimes waiting up to a minute before running again
 - Fix config errors and check positions reporting the wrong line after
   comments
+- Ignore saved state from the future, such as after the clock was corrected,
+  which stopped checks running until the clock caught up
 
 ## 1.2.0 - 2026-11-04 
 

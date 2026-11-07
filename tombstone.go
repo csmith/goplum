@@ -81,8 +81,12 @@ func (ts *TombStone) Save(path string) error {
 }
 
 func (ts *TombStone) Restore(checks map[string]*ScheduledCheck) error {
-	if time.Since(ts.Time) >= maxTombStoneAge {
+	age := time.Since(ts.Time)
+	if age >= maxTombStoneAge {
 		return fmt.Errorf("tombstone too old: %s", ts.Time)
+	}
+	if age < 0 {
+		return fmt.Errorf("tombstone is from the future: %s", ts.Time)
 	}
 
 	for i := range checks {
