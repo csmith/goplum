@@ -10,8 +10,9 @@ import (
 	"unicode/utf8"
 )
 
-// Plugin is the API between plugins and the core. Plugins must provide an exported "Plum()" method in the
-// main package which returns an instance of Plugin.
+// Plugin is the API between plugins and the core. Plugins are compiled into the binary and registered by name
+// with Plum.RegisterPlugin (or passed to Run). A single instance is used for the lifetime of a Plum; if the
+// plugin has configurable settings it should be registered as a pointer so they can be populated.
 //
 // The Check and Alert funcs should provide new instances of the named type, or nil if such a type does not
 // exist. Exported fields of the checks and alerts will then be populated according to the user's config, and

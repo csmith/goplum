@@ -25,13 +25,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var plugins = map[string]goplum.PluginLoader{
-	"http": func() (goplum.Plugin, error) {
-		return http.Plugin{}, nil
-	},
-	"debug": func() (goplum.Plugin, error) {
-		return debug.Plugin{}, nil
-	},
+var plugins = map[string]goplum.Plugin{
+	"http":  http.Plugin{},
+	"debug": debug.Plugin{},
 }
 
 func TestReadConfig_GoldenData(t *testing.T) {

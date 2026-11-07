@@ -2,13 +2,8 @@
 
 package main
 
-import (
-	"chameth.com/goplum"
-	"chameth.com/goplum/plugins/discord"
-)
+import "chameth.com/goplum/plugins/discord"
 
 func init() {
-	plugins["discord"] = func() (goplum.Plugin, error) {
-		return discord.Plugin{}, nil
-	}
+	plugins["discord"] = discord.Plugin{}
 }

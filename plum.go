@@ -107,17 +107,16 @@ var DefaultSettings = CheckSettings{
 	FailingThreshold: 2,
 }
 
-type PluginLoader func() (Plugin, error)
 type CheckListener func(*ScheduledCheck, Result)
 
 type Plum struct {
-	Alerts           map[string]Alert
-	Checks           map[string]*ScheduledCheck
-	Groups           map[string]*Group
-	availablePlugins map[string]PluginLoader
-	loadedPlugins    map[string]Plugin
-	checkDefaults    CheckSettings
-	scheduled        chan *ScheduledCheck
+	Alerts        map[string]Alert
+	Checks        map[string]*ScheduledCheck
+	Groups        map[string]*Group
+	plugins       map[string]Plugin
+	usedPlugins   map[string]bool
+	checkDefaults CheckSettings
+	scheduled     chan *ScheduledCheck
 
 	listenerMutex  sync.RWMutex
 	checkListeners map[reflect.Value]CheckListener
@@ -125,14 +124,14 @@ type Plum struct {
 
 func NewPlum() *Plum {
 	plum := &Plum{
-		availablePlugins: make(map[string]PluginLoader),
-		loadedPlugins:    make(map[string]Plugin),
-		Alerts:           make(map[string]Alert),
-		Checks:           make(map[string]*ScheduledCheck),
-		Groups:           make(map[string]*Group),
-		checkDefaults:    DefaultSettings.Copy(),
-		scheduled:        make(chan *ScheduledCheck, 100),
-		checkListeners:   make(map[reflect.Value]CheckListener),
+		plugins:        make(map[string]Plugin),
+		usedPlugins:    make(map[string]bool),
+		Alerts:         make(map[string]Alert),
+		Checks:         make(map[string]*ScheduledCheck),
+		Groups:         make(map[string]*Group),
+		checkDefaults:  DefaultSettings.Copy(),
+		scheduled:      make(chan *ScheduledCheck, 100),
+		checkListeners: make(map[reflect.Value]CheckListener),
 	}
 
 	plum.AddCheckListener(plum.updateStatus)
@@ -141,14 +140,14 @@ func NewPlum() *Plum {
 	return plum
 }
 
-func (p *Plum) RegisterPlugins(plugins map[string]PluginLoader) {
+func (p *Plum) RegisterPlugins(plugins map[string]Plugin) {
 	for n := range plugins {
 		p.RegisterPlugin(n, plugins[n])
 	}
 }
 
-func (p *Plum) RegisterPlugin(name string, loader PluginLoader) {
-	p.availablePlugins[name] = loader
+func (p *Plum) RegisterPlugin(name string, plugin Plugin) {
+	p.plugins[name] = plugin
 }
 
 func (p *Plum) ReadConfig(path string) error {
@@ -613,23 +612,23 @@ func (p *Plum) configurePlugins(blocks []*config.Block) error {
 		}
 		seen[name] = blocks[i].Position
 
-		loaded, ok := p.loadedPlugins[name]
-		if ok {
-			if err := internal.DecodeSettings(&blocks[i].Settings, &loaded); err != nil {
+		plugin, ok := p.plugins[name]
+		if ok && p.usedPlugins[name] {
+			if err := internal.DecodeSettings(&blocks[i].Settings, &plugin); err != nil {
 				return fmt.Errorf("%s: error configuring plugin %s: %v", blocks[i].Position, name, err)
 			}
 			continue
 		}
 
-		if _, ok := p.availablePlugins[name]; ok {
+		if ok {
 			log.Printf("Config for plugin %s ignored as it is not loaded", name)
 		} else {
 			return fmt.Errorf("%s: unable to configure plugin %s: no such plugin", blocks[i].Position, name)
 		}
 	}
 
-	for name := range p.loadedPlugins {
-		if v, ok := p.loadedPlugins[name].(Validator); ok {
+	for name := range p.usedPlugins {
+		if v, ok := p.plugins[name].(Validator); ok {
 			if err := v.Validate(); err != nil {
 				return fmt.Errorf("error configuring plugin %s: %v", name, err)
 			}
@@ -640,18 +639,9 @@ func (p *Plum) configurePlugins(blocks []*config.Block) error {
 }
 
 func (p *Plum) plugin(name string) (Plugin, error) {
-	loaded, ok := p.loadedPlugins[name]
+	plugin, ok := p.plugins[name]
 	if ok {
-		return loaded, nil
-	}
-
-	available, ok := p.availablePlugins[name]
-	if ok {
-		plugin, err := available()
-		if err != nil {
-			return nil, fmt.Errorf("unable to load plugin %s: %v", name, err)
-		}
-		p.loadedPlugins[name] = plugin
+		p.usedPlugins[name] = true
 		return plugin, nil
 	}
 
@@ -841,7 +831,7 @@ const shutdownTimeout = 5 * time.Second
 // Run creates a new instance of Plum, registers plugins and loads configuration, and starts the main loop. It blocks
 // until a value is received on signals, then saves state and cleans up. An error is returned if goplum couldn't start.
 // It is expected that flag.Parse has been called prior to calling this method.
-func Run(plugins map[string]PluginLoader, configPath, tombStonePath string, signals <-chan os.Signal) error {
+func Run(plugins map[string]Plugin, configPath, tombStonePath string, signals <-chan os.Signal) error {
 	p := NewPlum()
 	p.RegisterPlugins(plugins)
 

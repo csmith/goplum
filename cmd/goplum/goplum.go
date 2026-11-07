@@ -16,7 +16,7 @@ var (
 	tombStonePath = flag.String("tombstone", "/tmp/goplum.tomb", "Path to save tombstones to persist data across restarts")
 )
 
-var plugins = map[string]goplum.PluginLoader{}
+var plugins = map[string]goplum.Plugin{}
 
 func main() {
 	envflag.Parse()

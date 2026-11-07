@@ -2,13 +2,8 @@
 
 package main
 
-import (
-	"chameth.com/goplum"
-	"chameth.com/goplum/plugins/network"
-)
+import "chameth.com/goplum/plugins/network"
 
 func init() {
-	plugins["network"] = func() (goplum.Plugin, error) {
-		return network.Plugin{}, nil
-	}
+	plugins["network"] = network.Plugin{}
 }
