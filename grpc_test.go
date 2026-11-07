@@ -31,6 +31,27 @@ func TestGrpcServer_GetCheckIncludesHistory(t *testing.T) {
 	assert.Equal(t, api.Status_GOOD, res.GetHistory()[1].GetResult())
 }
 
+func TestGrpcServer_GetCheckSendsCheckTimeAsInt(t *testing.T) {
+	p := NewPlum()
+	check := &ScheduledCheck{
+		Name:   "web",
+		Check:  goodCheck{},
+		Config: &CheckSettings{Timeout: time.Second},
+	}
+	p.Checks["web"] = check
+	p.RunCheck(check)
+
+	res, err := NewGrpcServer(p).GetCheck(t.Context(), &api.CheckName{Name: "web"})
+	require.NoError(t, err)
+
+	require.Len(t, res.GetHistory(), 1)
+	facts := res.GetHistory()[0].GetFacts()
+	require.Len(t, facts, 1)
+	assert.Equal(t, string(CheckTime), facts[0].GetName())
+	require.IsType(t, &api.Fact_Int{}, facts[0].GetValue())
+	assert.Equal(t, int64(check.LastResult().Facts[CheckTime].(time.Duration)), facts[0].GetInt())
+}
+
 type goodCheck struct{}
 
 func (goodCheck) Execute(context.Context) Result {

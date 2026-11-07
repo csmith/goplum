@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"chameth.com/goplum/api"
 	"google.golang.org/grpc"
@@ -216,11 +217,14 @@ func (s *GrpcServer) convertFacts(facts map[Fact]any) []*api.Fact {
 }
 
 func (s *GrpcServer) convertFactValue(i any) api.FactValue {
-	if v, ok := i.(int64); ok {
+	switch v := i.(type) {
+	case int64:
 		return &api.Fact_Int{Int: v}
-	}
-	if v, ok := i.(string); ok {
+	case time.Duration:
+		return &api.Fact_Int{Int: int64(v)}
+	case string:
 		return &api.Fact_Str{Str: v}
+	default:
+		return nil
 	}
-	return nil
 }
