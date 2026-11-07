@@ -67,6 +67,9 @@
   group get from the group's `defaults`
 - Fix group `defaults` being ignored when they set a zero value, such as
   `reminder = 0s` or `link = ""`
+- Fix alerts suppressed by one group's `alert_limit` counting towards the
+  limits of the check's other groups, and a group listed twice on a check
+  counting each alert twice
 - Fix checks listing several `alerts` also sending to alerts whose names merely
   start with the first name, end with the last, or contain one in the middle
 - Fail `http.healthcheck` checks when the response's `status` is missing or

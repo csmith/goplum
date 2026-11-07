@@ -43,43 +43,41 @@ type Group struct {
 	// defaults is the group's raw defaults block, so that only the keys it sets are applied over other defaults.
 	defaults map[string]any
 
-	// Alert state tracking for limiting
+	mu           sync.Mutex
 	alertHistory []time.Time
-	mu           sync.RWMutex
 }
 
-// canSendAlert checks if an alert can be sent for this group within the alert window.
-// Returns (canSend, isLastAlert) where isLastAlert indicates this would be the final alert before throttling.
-func (g *Group) canSendAlert() (bool, bool) {
+func (g *Group) canSendAlert() bool {
 	if g.AlertLimit <= 0 {
-		return true, false // No limit configured
+		return true
+	}
+
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	g.pruneAlertHistory(time.Now())
+	return len(g.alertHistory) < g.AlertLimit
+}
+
+// recordAlert counts an alert against the group's limit, and reports whether it was the last one allowed before
+// alerts are suppressed.
+func (g *Group) recordAlert() bool {
+	if g.AlertLimit <= 0 {
+		return false
 	}
 
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
 	now := time.Now()
-	windowStart := now.Add(-g.AlertWindow)
-
-	// Remove alerts outside the window
-	validAlerts := g.alertHistory[:0]
-	for _, alertTime := range g.alertHistory {
-		if alertTime.After(windowStart) {
-			validAlerts = append(validAlerts, alertTime)
-		}
-	}
-	g.alertHistory = validAlerts
-
-	currentCount := len(g.alertHistory)
-	if currentCount >= g.AlertLimit {
-		return false, false // Already at limit
-	}
-
-	// Record this alert
+	g.pruneAlertHistory(now)
 	g.alertHistory = append(g.alertHistory, now)
+	return len(g.alertHistory) == g.AlertLimit
+}
 
-	// Check if this is the last alert we'll send before throttling
-	return true, currentCount+1 == g.AlertLimit
+func (g *Group) pruneAlertHistory(now time.Time) {
+	windowStart := now.Add(-g.AlertWindow)
+	g.alertHistory = slices.DeleteFunc(g.alertHistory, func(t time.Time) bool { return !t.After(windowStart) })
 }
 
 func (c CheckSettings) Copy() CheckSettings {
@@ -120,6 +118,9 @@ type Plum struct {
 	checkDefaults CheckSettings
 	scheduled     chan *ScheduledCheck
 	wake          chan struct{}
+
+	// alertLimitMutex makes checking and recording alerts against groups' limits atomic across all groups.
+	alertLimitMutex sync.Mutex
 
 	listenerMutex  sync.RWMutex
 	checkListeners map[reflect.Value]CheckListener
@@ -312,9 +313,6 @@ func (p *Plum) Unsuspend(checkName string) *ScheduledCheck {
 	return nil
 }
 
-// shouldSendAlert checks all groups for a check and determines if an alert should be sent.
-// Returns (shouldSend, suppressionWarning, suppressingGroup) where suppressionWarning contains text to append if this
-// is the last alert.
 func (p *Plum) runCheck(ctx context.Context, c *ScheduledCheck) {
 	start := time.Now()
 	result := func() (res Result) {
@@ -359,31 +357,34 @@ func (p *Plum) runCheck(ctx context.Context, c *ScheduledCheck) {
 	}
 }
 
+// shouldSendAlert checks all groups for a check and determines if an alert should be sent, counting it against each
+// group's limit only if it is. Returns (shouldSend, suppressionWarning, suppressingGroup) where suppressionWarning
+// contains text to append if this is the last alert.
 func (p *Plum) shouldSendAlert(groupNames []string) (bool, string, string) {
-	if len(groupNames) == 0 {
-		return true, "", "" // No groups, no limits
+	var groups []*Group
+	for _, groupName := range groupNames {
+		group, exists := p.Groups[groupName]
+		if exists && !slices.Contains(groups, group) {
+			groups = append(groups, group)
+		}
+	}
+
+	p.alertLimitMutex.Lock()
+	defer p.alertLimitMutex.Unlock()
+
+	for _, group := range groups {
+		if !group.canSendAlert() {
+			return false, "", group.Name
+		}
 	}
 
 	var warnings []string
-
-	// Check each group - if ANY group forbids sending, we don't send
-	for _, groupName := range groupNames {
-		group, exists := p.Groups[groupName]
-		if !exists {
-			continue // Group doesn't exist, skip (this would be caught in validation)
-		}
-
-		canSend, isLast := group.canSendAlert()
-		if !canSend {
-			return false, "", groupName // Suppressed by this group
-		}
-
-		if isLast && group.AlertLimit > 0 {
-			warnings = append(warnings, fmt.Sprintf("[GROUP ALERT LIMIT REACHED: %s]", groupName))
+	for _, group := range groups {
+		if group.recordAlert() {
+			warnings = append(warnings, fmt.Sprintf("[GROUP ALERT LIMIT REACHED: %s]", group.Name))
 		}
 	}
 
-	// Combine all suppression warnings
 	var warning string
 	if len(warnings) > 0 {
 		warning = " " + strings.Join(warnings, " ")
