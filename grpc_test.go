@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"chameth.com/goplum/api"
@@ -50,6 +51,44 @@ func TestGrpcServer_GetCheckSendsCheckTimeAsInt(t *testing.T) {
 	assert.Equal(t, string(CheckTime), facts[0].GetName())
 	require.IsType(t, &api.Fact_Int{}, facts[0].GetValue())
 	assert.Equal(t, int64(check.LastResult().Facts[CheckTime].(time.Duration)), facts[0].GetInt())
+}
+
+func TestGrpcServer_ResumeCheckSchedulesCheckWithoutWaiting(t *testing.T) {
+	synctest.Test(
+		t,
+		func(t *testing.T) {
+			// With no runners, scheduled checks stay queued for the test to inspect.
+			defer func(old int) { *runners = old }(*runners)
+			*runners = 0
+
+			p := NewPlum()
+			p.Checks["web"] = &ScheduledCheck{
+				Name:      "web",
+				Config:    &CheckSettings{Interval: time.Second},
+				Suspended: true,
+			}
+
+			ctx, cancel := context.WithCancel(t.Context())
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				p.Run(ctx)
+			}()
+			synctest.Wait()
+			require.Empty(t, p.scheduled)
+
+			start := time.Now()
+			_, err := NewGrpcServer(p).ResumeCheck(t.Context(), &api.CheckName{Name: "web"})
+			require.NoError(t, err)
+			synctest.Wait()
+
+			assert.Len(t, p.scheduled, 1)
+			assert.Equal(t, start, time.Now())
+
+			cancel()
+			<-done
+		},
+	)
 }
 
 type goodCheck struct{}

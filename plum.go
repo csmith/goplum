@@ -117,6 +117,7 @@ type Plum struct {
 	usedPlugins   map[string]bool
 	checkDefaults CheckSettings
 	scheduled     chan *ScheduledCheck
+	wake          chan struct{}
 
 	listenerMutex  sync.RWMutex
 	checkListeners map[reflect.Value]CheckListener
@@ -131,6 +132,7 @@ func NewPlum() *Plum {
 		Groups:         make(map[string]*Group),
 		checkDefaults:  DefaultSettings.Copy(),
 		scheduled:      make(chan *ScheduledCheck, 100),
+		wake:           make(chan struct{}, 1),
 		checkListeners: make(map[reflect.Value]CheckListener),
 	}
 
@@ -237,6 +239,7 @@ func (p *Plum) Run(ctx context.Context) {
 
 		select {
 		case <-time.After(time.Until(earliest)):
+		case <-p.wake:
 		case <-ctx.Done():
 			return
 		}
@@ -291,6 +294,10 @@ func (p *Plum) Unsuspend(checkName string) *ScheduledCheck {
 	if check, ok := p.Checks[checkName]; ok {
 		slog.Info("Check unsuspended", "check", checkName)
 		check.Suspended = false
+		select {
+		case p.wake <- struct{}{}:
+		default:
+		}
 		return check
 	}
 	return nil

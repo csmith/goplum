@@ -525,11 +525,7 @@ func Test_Run_Api_SuspendsAndResumesChecks(t *testing.T) {
 	sink := startAlertSink(t)
 	target := startSite(t)
 
-	// The scheduler isn't woken up when a check is resumed, and only looks at suspended checks once a minute. Having
-	// another check running keeps it moving.
-	clock := startSite(t)
-
-	config := writeConfig(t, sink.config(), httpCheck("target", target.URL), httpCheck("clock", clock.URL))
+	config := writeConfig(t, sink.config(), httpCheck("target", target.URL))
 	tombstone := tombstonePath(t)
 
 	g := startGoplum(t, config, tombstone)
@@ -541,14 +537,14 @@ func Test_Run_Api_SuspendsAndResumesChecks(t *testing.T) {
 	assert.True(t, g.check(t, "target").GetSuspended())
 
 	// The check may have already been running or queued when it was suspended.
-	clock.waitForMoreRequests(t, 3)
+	time.Sleep(5 * checkInterval)
 	before := target.requests()
-	clock.waitForMoreRequests(t, 5)
+	time.Sleep(5 * checkInterval)
 	assert.Equal(t, before, target.requests())
 
 	// A suspended check shouldn't raise alerts even if the service goes down.
 	target.setStatus(http.StatusInternalServerError)
-	clock.waitForMoreRequests(t, 5)
+	time.Sleep(5 * checkInterval)
 	assert.Empty(t, sink.alerts())
 
 	g.stop(t)

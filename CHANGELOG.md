@@ -68,6 +68,7 @@
   for sending a heartbeat
 - Close heartbeat plugin connections that are idle or too slow to send their
   request, instead of keeping them open forever
+- Fix resumed checks sometimes waiting up to a minute before running again
 
 ## 1.2.0 - 2026-11-04 
 
