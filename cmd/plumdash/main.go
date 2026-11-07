@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,8 +15,6 @@ import (
 	"chameth.com/goplum/api"
 	"github.com/csmith/envflag/v2"
 	"github.com/csmith/slogflags"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 var (
@@ -40,9 +36,9 @@ func main() {
 }
 
 func run() error {
-	conn, err := connect()
+	conn, err := api.Connect(*server, *cert, *key, *caCert)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to connect to API: %w", err)
 	}
 	defer conn.Close()
 
@@ -73,34 +69,4 @@ func run() error {
 		return err
 	}
 	return nil
-}
-
-func connect() (*grpc.ClientConn, error) {
-	certs, pool, err := api.LoadCertificates(*cert, *key, *caCert)
-	if err != nil {
-		return nil, fmt.Errorf("unable to load certificates: %w", err)
-	}
-
-	host, _, err := net.SplitHostPort(*server)
-	if err != nil {
-		return nil, fmt.Errorf("invalid server address: %w", err)
-	}
-
-	conn, err := grpc.NewClient(
-		*server,
-		grpc.WithTransportCredentials(
-			credentials.NewTLS(
-				&tls.Config{
-					ServerName:   host,
-					Certificates: certs,
-					RootCAs:      pool,
-					MinVersion:   tls.VersionTLS13,
-				},
-			),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("unable to connect to API: %w", err)
-	}
-	return conn, nil
 }

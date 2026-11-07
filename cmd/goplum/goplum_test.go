@@ -8,7 +8,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
@@ -35,8 +34,6 @@ import (
 	"chameth.com/goplum/plugins/heartbeat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -965,22 +962,7 @@ func runGoplum(config, tombstone string, certs certPaths, apiPort int, signals <
 func dial(t *testing.T, port int, certs certPaths) api.GoPlumClient {
 	t.Helper()
 
-	certificates, pool, err := api.LoadCertificates(certs.cert, certs.key, certs.ca)
-	require.NoError(t, err)
-
-	conn, err := grpc.NewClient(
-		net.JoinHostPort("localhost", strconv.Itoa(port)),
-		grpc.WithTransportCredentials(
-			credentials.NewTLS(
-				&tls.Config{
-					ServerName:   "localhost",
-					Certificates: certificates,
-					RootCAs:      pool,
-					MinVersion:   tls.VersionTLS13,
-				},
-			),
-		),
-	)
+	conn, err := api.Connect(net.JoinHostPort("localhost", strconv.Itoa(port)), certs.cert, certs.key, certs.ca)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
 
