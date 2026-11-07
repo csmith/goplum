@@ -37,6 +37,8 @@
 - Reject `http.get` `min_status_code` and `max_status_code` values outside
   100 to 599, or with the minimum above the maximum, instead of failing every
   run
+- Reject an `interval` or `timeout` of zero, as the check was run repeatedly
+  and in parallel, or failed straight away
 
 ### Fixed
 

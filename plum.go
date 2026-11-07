@@ -557,6 +557,14 @@ func (p *Plum) addCheck(block *config.Block) error {
 		return err
 	}
 
+	if err := validatePositive("interval", settings.Interval); err != nil {
+		return err
+	}
+
+	if err := validatePositive("timeout", settings.Timeout); err != nil {
+		return err
+	}
+
 	if err := validateThreshold("good_threshold", settings.GoodThreshold); err != nil {
 		return err
 	}
@@ -586,6 +594,13 @@ func (p *Plum) addCheck(block *config.Block) error {
 		Type:   block.Type,
 		Config: &settings,
 		Check:  check,
+	}
+	return nil
+}
+
+func validatePositive(name string, value time.Duration) error {
+	if value <= 0 {
+		return fmt.Errorf("%s must be greater than zero, got %s", name, value)
 	}
 	return nil
 }

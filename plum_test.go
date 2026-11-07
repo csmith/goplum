@@ -487,6 +487,54 @@ func TestReadConfig_ValidatesThresholds(t *testing.T) {
 	}
 }
 
+func TestReadConfig_ValidatesIntervalAndTimeout(t *testing.T) {
+	tests := map[string]struct {
+		config string
+		errMsg string
+	}{
+		"positive": {
+			config: "check debug.random \"c\" {\n  alerts = [\"-\"]\n  interval = 1ms\n  timeout = 1ms\n}\n",
+		},
+		"zero interval": {
+			config: "check debug.random \"c\" {\n  alerts = [\"-\"]\n  interval = 0s\n}\n",
+			errMsg: "interval must be greater than zero, got 0s",
+		},
+		"zero timeout": {
+			config: "check debug.random \"c\" {\n  alerts = [\"-\"]\n  timeout = 0s\n}\n",
+			errMsg: "timeout must be greater than zero, got 0s",
+		},
+		"inherited from defaults": {
+			config: "defaults {\n  interval = 0s\n}\n\ncheck debug.random \"c\" {\n  alerts = [\"-\"]\n}\n",
+			errMsg: "interval must be greater than zero, got 0s",
+		},
+		"inherited from group": {
+			config: "group \"g\" {\n  defaults {\n    timeout = 0s\n  }\n}\n\n" +
+				"check debug.random \"c\" {\n  alerts = [\"-\"]\n  groups = [\"g\"]\n}\n",
+			errMsg: "timeout must be greater than zero, got 0s",
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				dir := t.TempDir()
+				writeConfig(t, dir, "goplum.conf", tt.config)
+
+				plum := goplum.NewPlum()
+				plum.RegisterPlugins(plugins)
+				err := plum.ReadConfig(filepath.Join(dir, "goplum.conf"))
+
+				if tt.errMsg == "" {
+					assert.NoError(t, err)
+				} else {
+					assert.ErrorContains(t, err, tt.errMsg)
+				}
+			},
+		)
+	}
+}
+
 func TestReadConfig_CheckOverrideDoesNotChangeGroupDefaults(t *testing.T) {
 	plum := loadConfig(
 		t,
