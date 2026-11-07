@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"regexp"
@@ -45,11 +45,17 @@ func (p *Plugin) Validate() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Heartbeat plugin listening on port %d", p.Port)
+	slog.Info("Heartbeat plugin listening", "port", p.Port)
 
 	p.Path = strings.ReplaceAll(fmt.Sprintf("/%s/", p.Path), "//", "/")
 
-	go http.Serve(l, p)
+	server := &http.Server{
+		Handler:           p,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		IdleTimeout:       time.Minute,
+	}
+	go server.Serve(l)
 	return nil
 }
 
@@ -61,7 +67,7 @@ func (p *Plugin) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 
 	id := strings.ToLower(strings.TrimPrefix(request.URL.Path, p.Path))
 	if check, ok := checks[id]; ok {
-		log.Printf("Received heartbeat with ID %s", id)
+		slog.Info("Received heartbeat")
 		check.received = time.Now()
 		writer.WriteHeader(http.StatusAccepted)
 		return
