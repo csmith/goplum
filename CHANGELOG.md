@@ -25,6 +25,9 @@
 - Docker images are now built with the upstream `golang` image
 - Reject numbers without a unit for duration settings, as they were read as
   nanoseconds; `interval = 30` must now be written `interval = 30s`
+- Reject `http.get` `min_status_code` and `max_status_code` values outside
+  100 to 599, or with the minimum above the maximum, instead of failing every
+  run
 
 ### Fixed
 

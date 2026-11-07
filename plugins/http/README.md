@@ -31,7 +31,8 @@ The `min_status_code` and `max_status_code` parameter specify the allowed range 
 response's HTTP status code. These default to `100` and `399` (i.e., any non-error response).
 If you wish to test a URL denies access to unauthenticated users, for example, you can use
 `min_status_code=401` `max_status_code=403`; to check for a single status code the two parameters
-can be the same, e.g. `min_status_code=418` `max_status_code=418`
+can be the same, e.g. `min_status_code=418` `max_status_code=418`. Both must be between `100`
+and `599`, and `min_status_code` must not be greater than `max_status_code`.
 
 If the `content` parameter is specified then the response body is checked for the exact string.
 By default the string must be present, and the check will fail if it is not. If `content_expected`

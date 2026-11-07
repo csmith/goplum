@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -130,7 +131,15 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 }
 
 func (g GetCheck) Validate() error {
-	return internal.ValidateHTTPURL(g.Url)
+	if err := internal.ValidateHTTPURL(g.Url); err != nil {
+		return err
+	}
+
+	if g.MinStatusCode < 100 || g.MinStatusCode > g.MaxStatusCode || g.MaxStatusCode > 599 {
+		return errors.New("invalid status codes: must satisfy 100 <= min_status_code <= max_status_code <= 599")
+	}
+
+	return nil
 }
 
 type HealthCheck struct {

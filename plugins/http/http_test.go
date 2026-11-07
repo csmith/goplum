@@ -410,7 +410,7 @@ func TestValidate_RejectsUrlsThatCanNeverWork(t *testing.T) {
 
 func TestValidate_AcceptsValidUrl(t *testing.T) {
 	validators := map[string]interface{ Validate() error }{
-		"get":         GetCheck{Url: "https://example.com/"},
+		"get":         GetCheck{Url: "https://example.com/", MinStatusCode: 100, MaxStatusCode: 399},
 		"healthcheck": HealthCheck{Url: "https://example.com/"},
 		"webhook":     WebHookAlert{Url: "https://example.com/"},
 	}
@@ -420,6 +420,39 @@ func TestValidate_AcceptsValidUrl(t *testing.T) {
 			name,
 			func(t *testing.T) {
 				assert.NoError(t, v.Validate())
+			},
+		)
+	}
+}
+
+func TestGetCheck_ValidateStatusCodes(t *testing.T) {
+	tests := []struct {
+		name  string
+		min   int
+		max   int
+		valid bool
+	}{
+		{"full range", 100, 599, true},
+		{"single code", 418, 418, true},
+		{"min above max", 400, 399, false},
+		{"min below 100", 99, 399, false},
+		{"negative min", -1, 399, false},
+		{"max above 599", 200, 600, false},
+		{"negative max", 100, -200, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name,
+			func(t *testing.T) {
+				check := GetCheck{Url: "https://example.com/", MinStatusCode: tt.min, MaxStatusCode: tt.max}
+
+				err := check.Validate()
+				if tt.valid {
+					assert.NoError(t, err)
+				} else {
+					assert.ErrorContains(t, err, "invalid status codes")
+				}
 			},
 		)
 	}
