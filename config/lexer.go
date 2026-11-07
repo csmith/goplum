@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -324,25 +325,21 @@ func lexNumber(lexer *Lexer) stateFunc {
 				}
 			}
 
-			value, err := strconv.Atoi(builder.String())
+			total, err := addDuration(duration, builder.String(), multiplier)
 			if err != nil {
-				lexer.emit(tokenError, width, fmt.Sprintf("invalid duration quantity '%s': %v", builder.String(), err))
-				return nil
-			}
-			if value < 0 {
-				lexer.emit(
-					tokenError,
-					width,
-					fmt.Sprintf("invalid duration quantity '%s': durations can't be negative", builder.String()),
-				)
+				lexer.emit(tokenError, width, err.Error())
 				return nil
 			}
 
 			isDuration = true
-			duration += multiplier * time.Duration(value)
+			duration = total
 			builder.Reset()
 		case isDuration:
 			lexer.backup()
+			if builder.Len() > 0 {
+				lexer.emit(tokenError, width, fmt.Sprintf("invalid duration quantity '%s': missing unit", builder.String()))
+				return nil
+			}
 			lexer.emit(tokenDuration, width, duration)
 			return lex
 		case hasPeriod:
@@ -365,4 +362,18 @@ func lexNumber(lexer *Lexer) stateFunc {
 			return lex
 		}
 	}
+}
+
+func addDuration(total time.Duration, quantity string, multiplier time.Duration) (time.Duration, error) {
+	value, err := strconv.Atoi(quantity)
+	if err != nil {
+		return 0, fmt.Errorf("invalid duration quantity '%s': %v", quantity, err)
+	}
+	if value < 0 {
+		return 0, fmt.Errorf("invalid duration quantity '%s': durations can't be negative", quantity)
+	}
+	if time.Duration(value) > math.MaxInt64/multiplier || total > math.MaxInt64-multiplier*time.Duration(value) {
+		return 0, fmt.Errorf("invalid duration quantity '%s': duration is too long", quantity)
+	}
+	return total + multiplier*time.Duration(value), nil
 }

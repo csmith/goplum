@@ -54,6 +54,7 @@ func TestLexer_Numbers(t *testing.T) {
 		{"1s500ms", tokenDuration, 1500 * time.Millisecond},
 		{"1h2m3ms", tokenDuration, time.Hour + 2*time.Minute + 3*time.Millisecond},
 		{"1d1w", tokenDuration, 8 * 24 * time.Hour},
+		{"106751d", tokenDuration, 106751 * 24 * time.Hour},
 		{"-5", tokenInt, -5},
 	}
 
@@ -75,13 +76,20 @@ func TestLexer_Numbers(t *testing.T) {
 
 func TestLexer_InvalidNumbers(t *testing.T) {
 	tests := map[string]string{
-		"-":     "invalid integer literal '-'",
-		"--1":   "invalid integer literal '-'",
-		"1-":    "invalid integer literal",
-		"-5m":   "durations can't be negative",
-		"1m-5s": "durations can't be negative",
-		"1.5s":  "invalid duration quantity '1.5'",
-		"1.2.3": "multiple periods",
+		"-":                     "invalid integer literal '-'",
+		"--1":                   "invalid integer literal '-'",
+		"1-":                    "invalid integer literal",
+		"-5m":                   "durations can't be negative",
+		"1m-5s":                 "durations can't be negative",
+		"1.5s":                  "invalid duration quantity '1.5'",
+		"1.2.3":                 "multiple periods",
+		"1h30":                  "invalid duration quantity '30': missing unit",
+		"1h30 ":                 "invalid duration quantity '30': missing unit",
+		"1m.5":                  "invalid duration quantity '.5': missing unit",
+		"1m30x":                 "invalid duration quantity '30': missing unit",
+		"3000000h":              "invalid duration quantity '3000000': duration is too long",
+		"9223372036854775807ms": "invalid duration quantity '9223372036854775807': duration is too long",
+		"106751d1d":             "invalid duration quantity '1': duration is too long",
 	}
 
 	for input, want := range tests {
