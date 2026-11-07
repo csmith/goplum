@@ -31,6 +31,8 @@
 
 ### Fixed
 
+- Fix goplum sometimes crashing when `plumctl results` disconnects, and stop
+  slow API clients streaming results from delaying checks
 - Fix `plumctl` crashing on every command that talks to the API
 - Fix negative numbers being rejected in config files, so `pushover.message`
   priorities of `-1` and `-2` can be set

@@ -118,7 +118,9 @@ type Plum struct {
 	loadedPlugins    map[string]Plugin
 	checkDefaults    CheckSettings
 	scheduled        chan *ScheduledCheck
-	checkListeners   map[reflect.Value]CheckListener
+
+	listenerMutex  sync.RWMutex
+	checkListeners map[reflect.Value]CheckListener
 }
 
 func NewPlum() *Plum {
@@ -262,10 +264,14 @@ func (p *Plum) AlertsMatching(names []string) []Alert {
 }
 
 func (p *Plum) AddCheckListener(listener CheckListener) {
+	p.listenerMutex.Lock()
+	defer p.listenerMutex.Unlock()
 	p.checkListeners[reflect.ValueOf(listener)] = listener
 }
 
 func (p *Plum) RemoveCheckListener(listener CheckListener) {
+	p.listenerMutex.Lock()
+	defer p.listenerMutex.Unlock()
 	delete(p.checkListeners, reflect.ValueOf(listener))
 }
 
@@ -326,7 +332,14 @@ func (p *Plum) runCheck(ctx context.Context, c *ScheduledCheck) {
 
 	c.AddResult(&result)
 
+	p.listenerMutex.RLock()
+	listeners := make([]CheckListener, 0, len(p.checkListeners))
 	for _, listener := range p.checkListeners {
+		listeners = append(listeners, listener)
+	}
+	p.listenerMutex.RUnlock()
+
+	for _, listener := range listeners {
 		listener(c, result)
 	}
 }

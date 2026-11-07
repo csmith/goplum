@@ -77,32 +77,36 @@ func (s *GrpcServer) Stop() {
 }
 
 func (s *GrpcServer) Results(_ *api.Empty, rs api.GoPlum_ResultsServer) error {
-	var (
-		l CheckListener
-		c = make(chan error, 1)
-	)
-
-	l = func(check *ScheduledCheck, result Result) {
-		err := rs.Send(
-			&api.Result{
+	// Results are queued so a slow client doesn't stall check runners; if the queue fills up, results are dropped.
+	results := make(chan *api.Result, 100)
+	l := CheckListener(
+		func(check *ScheduledCheck, result Result) {
+			select {
+			case results <- &api.Result{
 				Check:  check.Name,
 				Time:   check.LastRun.Unix(),
 				Result: s.convertState(result.State),
 				Detail: result.Detail,
 				Facts:  s.convertFacts(result.Facts),
-			},
-		)
-		if err != nil {
-			s.plum.RemoveCheckListener(l)
-			c <- err
-		}
-	}
-
-	defer close(c)
+			}:
+			default:
+			}
+		},
+	)
 
 	s.plum.AddCheckListener(l)
+	defer s.plum.RemoveCheckListener(l)
 
-	return <-c
+	for {
+		select {
+		case <-rs.Context().Done():
+			return rs.Context().Err()
+		case r := <-results:
+			if err := rs.Send(r); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func (s *GrpcServer) GetChecks(_ context.Context, _ *api.Empty) (*api.CheckList, error) {
