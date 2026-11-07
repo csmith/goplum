@@ -362,6 +362,44 @@ func TestHealthCheck_ReadsStatusAndComponents(t *testing.T) {
 	}
 }
 
+func TestHealthCheck_FailsOnBadResponses(t *testing.T) {
+	tests := []struct {
+		name   string
+		code   int
+		body   string
+		detail string
+	}{
+		{
+			"html error page", http.StatusBadGateway, "<html>Bad Gateway</html>",
+			"Error decoding response (HTTP 502 Bad Gateway): ",
+		},
+		{"empty body", http.StatusServiceUnavailable, "", "Error decoding response (HTTP 503 Service Unavailable): "},
+		{"missing status", http.StatusOK, `{"output": "hello"}`, `Unrecognised status "" (HTTP 200 OK)`},
+		{"unknown status", http.StatusOK, `{"status": "maybe"}`, `Unrecognised status "maybe" (HTTP 200 OK)`},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name,
+			func(t *testing.T) {
+				server := httptest.NewServer(
+					http.HandlerFunc(
+						func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(tt.code)
+							_, _ = w.Write([]byte(tt.body))
+						},
+					),
+				)
+				defer server.Close()
+
+				result := HealthCheck{Url: server.URL}.Execute(context.Background())
+				assert.Equal(t, goplum.StateFailing, result.State)
+				assert.Contains(t, result.Detail, tt.detail)
+			},
+		)
+	}
+}
+
 func TestValidate_RejectsUnparseableUrl(t *testing.T) {
 	validators := map[string]interface{ Validate() error }{
 		"get":         GetCheck{Url: unparseableUrl},

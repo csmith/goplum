@@ -60,7 +60,8 @@ check http.healthcheck "example" {
 
 Retrieves the current status from a HTTP healthcheck endpoint. The endpoint is expected
 to return JSON in a manner compatible with
-[draft-inadarei-api-health-check-04](https://tools.ietf.org/id/draft-inadarei-api-health-check-04.html).
+[draft-inadarei-api-health-check-04](https://tools.ietf.org/id/draft-inadarei-api-health-check-04.html). The
+check fails if the response isn't valid JSON, or its `status` is missing or not recognised.
 
 If the `check_components` setting is enabled, the state of each component/dependency
 reported in the healthcheck response will also be verified. This means if the overall service

@@ -175,10 +175,14 @@ func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 
 	res := &healthResponse{}
 	if err := json.NewDecoder(r.Body).Decode(res); err != nil {
-		return goplum.FailingResult("Error decoding response: %v", err)
+		return goplum.FailingResult("Error decoding response (HTTP %s): %v", r.Status, err)
 	}
 
 	status := h.convert(res.Status)
+	if status == goplum.StateIndeterminate {
+		return goplum.FailingResult("Unrecognised status %q (HTTP %s)", res.Status, r.Status)
+	}
+
 	detail := res.Output
 
 	if status == goplum.StateGood && h.CheckComponents {

@@ -52,6 +52,10 @@
   a directory, or the config has a syntax error near the end of a file
 - Fix checks listing several `alerts` also sending to alerts whose names merely
   start with the first name, end with the last, or contain one in the middle
+- Fail `http.healthcheck` checks when the response's `status` is missing or
+  not recognised, instead of giving an indeterminate result
+- Include the HTTP status in `http.healthcheck` failures when the response
+  can't be decoded, e.g. for a `502 Bad Gateway` error page
 
 ## 1.2.0 - 2026-11-04 
 
