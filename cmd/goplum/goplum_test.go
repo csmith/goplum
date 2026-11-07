@@ -91,6 +91,11 @@ func Test_Run_ReturnsConfigErrors(t *testing.T) {
 			want:   []string{"failing_threshold must be between 1 and 10, got 11"},
 		},
 		{
+			name:   "negative alert limit",
+			config: `group "g" { alert_limit = -1 }`,
+			want:   []string{"alert_limit can't be negative"},
+		},
+		{
 			name:   "unknown group",
 			config: `check http.get "a" { url = "http://localhost/"` + "\n" + `groups = ["nope"] }`,
 			want:   []string{"no group named 'nope'"},

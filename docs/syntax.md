@@ -185,11 +185,12 @@ Valid units are:
 
 ### Integers
 
-Sequence of digits in base 10, e.g. `123456`
+Sequence of digits in base 10, optionally preceded by a `-`, e.g. `123456` or `-2`
 
 ### Floats
 
-Sequence of digits in base 10 with exactly one decimal point e.g. `1.234`, `.1` or `1.`
+Sequence of digits in base 10 with exactly one decimal point, optionally preceded by a `-`,
+e.g. `1.234`, `.1`, `1.` or `-0.5`
 
 ### Booleans
 

@@ -26,6 +26,8 @@
 ### Fixed
 
 - Fix `plumctl` crashing on every command that talks to the API
+- Fix negative numbers being rejected in config files, so `pushover.message`
+  priorities of `-1` and `-2` can be set
 - Fix `plumctl unsuspend` saying "suspend" in its error message
 - Exit with a non-zero status when a `plumctl` command fails
 - Shorten `pushover.message` alerts to Pushover's 1024 character limit, instead

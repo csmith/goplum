@@ -98,12 +98,12 @@ var symbols = map[rune]tokenClass{
 	']': tokenArrayEnd,
 }
 
-var durations = map[rune]int{
-	's': 1,
-	'm': 60,
-	'h': 60 * 60,
-	'd': 60 * 60 * 24,
-	'w': 60 * 60 * 24 * 7,
+var durations = map[rune]time.Duration{
+	's': time.Second,
+	'm': time.Minute,
+	'h': time.Hour,
+	'd': 24 * time.Hour,
+	'w': 7 * 24 * time.Hour,
 }
 
 var stringEscapes = map[rune]rune{
@@ -124,6 +124,7 @@ type Lexer struct {
 	reader *bufio.Reader
 	state  stateFunc
 	output chan token
+	atEOF  bool
 }
 
 func NewLexer(reader io.Reader) *Lexer {
@@ -146,6 +147,7 @@ func (l *Lexer) next() rune {
 	r, _, err := l.reader.ReadRune()
 	if err != nil {
 		if err == io.EOF {
+			l.atEOF = true
 			return eof
 		}
 		panic(err)
@@ -154,7 +156,11 @@ func (l *Lexer) next() rune {
 	return r
 }
 
+// backup unreads the last rune. Reading again after EOF gives EOF, so backing up from it does nothing.
 func (l *Lexer) backup() {
+	if l.atEOF {
+		return
+	}
 	if err := l.reader.UnreadRune(); err != nil {
 		panic(err)
 	}
@@ -192,7 +198,7 @@ func lex(lexer *Lexer) stateFunc {
 		case unicode.IsLetter(r):
 			lexer.backup()
 			return lexIdentifier
-		case unicode.IsNumber(r) || r == '.':
+		case unicode.IsNumber(r) || r == '.' || r == '-':
 			lexer.backup()
 			return lexNumber
 		case isSymbol:
@@ -283,12 +289,15 @@ func lexNumber(lexer *Lexer) stateFunc {
 	builder := strings.Builder{}
 	isDuration := false
 	hasPeriod := false
-	duration := 0
+	var duration time.Duration
 
 	for {
 		r := lexer.next()
 		multiplier, isDurationUnit := durations[r]
 		switch {
+		case r == '-' && width == 0:
+			width++
+			builder.WriteRune(r)
 		case unicode.IsNumber(r):
 			width++
 			builder.WriteRune(r)
@@ -310,13 +319,21 @@ func lexNumber(lexer *Lexer) stateFunc {
 				lexer.emit(tokenError, width, fmt.Sprintf("invalid duration quantity '%s': %v", builder.String(), err))
 				return nil
 			}
+			if value < 0 {
+				lexer.emit(
+					tokenError,
+					width,
+					fmt.Sprintf("invalid duration quantity '%s': durations can't be negative", builder.String()),
+				)
+				return nil
+			}
 
 			isDuration = true
-			duration += multiplier * value
+			duration += multiplier * time.Duration(value)
 			builder.Reset()
 		case isDuration:
 			lexer.backup()
-			lexer.emit(tokenDuration, width, time.Duration(duration)*time.Second)
+			lexer.emit(tokenDuration, width, duration)
 			return lex
 		case hasPeriod:
 			lexer.backup()

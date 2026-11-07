@@ -446,6 +446,10 @@ func (p *Plum) addGroup(block *config.Block) error {
 		return fmt.Errorf("error configuring group %s: %v", block.Name, err)
 	}
 
+	if group.AlertLimit < 0 {
+		return fmt.Errorf("error configuring group %s: alert_limit can't be negative", block.Name)
+	}
+
 	p.Groups[block.Name] = group
 	return nil
 }
