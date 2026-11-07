@@ -211,7 +211,7 @@ If they're not specified then Goplum's built-in defaults will be used.
 |---|---|---|
 | `interval` | Length of time between each run of the check. | `30s` |
 | `timeout` | Maximum length of time the check can run for before it's terminated. | `20s` |
-| `alerts` | A list of alert names to trigger when the service changes state. Supports '\*' as a wildcard. | `["*"]` |
+| `alerts` | A list of alert names to trigger when the service changes state. Supports '\*' as a wildcard. Use `["-"]` to send no alerts, for example to stop a check using the default alerts. | `["*"]` |
 | `groups` | A list of group names this check belongs to. | `[]` |
 | `failing_threshold` | The number of checks that must fail in a row before a failure alert is raised (1 to 10). | `2` |
 | `good_threshold` | The number of checks that must pass in a row before a recovery alert is raised (1 to 10). | `2` |

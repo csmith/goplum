@@ -3,6 +3,7 @@ package goplum_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	nethttp "net/http"
 	"net/http/httptest"
@@ -321,6 +322,59 @@ func TestAlertsMatching_MultipleNamesMatchWholeNames(t *testing.T) {
 	}
 
 	assert.ElementsMatch(t, []string{"pager", "slack", "email", "team-sms"}, matched)
+}
+
+func TestRaiseAlerts_DashSendsNoAlerts(t *testing.T) {
+	const alerts = "alert debug.sysout \"-\" {}\n\nalert debug.sysout \"pager\" {}\n\n"
+	const check = "check debug.random \"c\" {\n  percent_good = 0\n  failing_threshold = 1\n  %s\n}\n"
+
+	tests := map[string]struct {
+		config   string
+		expected []string
+	}{
+		"wildcard matches every alert": {
+			config:   fmt.Sprintf(check, ""),
+			expected: []string{"-", "pager"},
+		},
+		"check overrides built-in defaults": {
+			config: fmt.Sprintf(check, `alerts = ["-"]`),
+		},
+		"check overrides configured defaults": {
+			config: "defaults {\n  alerts = [\"pager\"]\n}\n\n" + fmt.Sprintf(check, `alerts = ["-"]`),
+		},
+		"group defaults": {
+			config: "group \"quiet\" {\n  defaults {\n    alerts = [\"-\"]\n  }\n}\n\n" +
+				fmt.Sprintf(check, `groups = ["quiet"]`),
+		},
+		"alongside other names": {
+			config:   fmt.Sprintf(check, `alerts = ["-", "pager"]`),
+			expected: []string{"pager"},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				plum := loadLinkConfig(t, alerts+tt.config)
+				recorders := map[string]*recordingAlert{}
+				for alertName := range plum.Alerts {
+					recorders[alertName] = &recordingAlert{}
+					plum.Alerts[alertName] = recorders[alertName]
+				}
+
+				plum.RunCheck(plum.Checks["c"])
+
+				var alerted []string
+				for alertName, recorder := range recorders {
+					if len(recorder.details) > 0 {
+						alerted = append(alerted, alertName)
+					}
+				}
+				assert.ElementsMatch(t, tt.expected, alerted)
+			},
+		)
+	}
 }
 
 func TestScheduledCheck_AddResult_ReachesThresholdOfFullHistory(t *testing.T) {

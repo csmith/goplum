@@ -13,6 +13,8 @@
 - Add an `ms` duration unit for milliseconds
 - Add a `network` setting to `http.get` and `http.healthcheck` checks to
   connect only over IPv4 (`tcp4`) or IPv6 (`tcp6`)
+- Support `alerts = ["-"]` for a check that sends no alerts, such as to override
+  the default alerts. It never matches an alert named `-`
 
 ### Changed
 

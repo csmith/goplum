@@ -10,6 +10,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -254,7 +255,14 @@ func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
 	p.raiseAlerts(c, previousState, false)
 }
 
+// AlertsMatching returns the alerts whose names match any of the given names, which may contain '*' wildcards. Names
+// of "-" are ignored, so that a check can be configured to send no alerts.
 func (p *Plum) AlertsMatching(names []string) []Alert {
+	names = slices.DeleteFunc(slices.Clone(names), func(name string) bool { return name == "-" })
+	if len(names) == 0 {
+		return nil
+	}
+
 	var res []Alert
 	re := regexpForWildcards(names)
 	for j := range p.Alerts {
