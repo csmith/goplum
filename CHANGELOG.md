@@ -11,6 +11,8 @@
   dashboard. It supports `{name}` and `{type}` placeholders, and can be set in
   `defaults`, a group's `defaults`, or on a check
 - Add an `ms` duration unit for milliseconds
+- Add a `network` setting to `http.get` and `http.healthcheck` checks to
+  connect only over IPv4 (`tcp4`) or IPv6 (`tcp6`)
 
 ### Changed
 

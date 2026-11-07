@@ -18,6 +18,8 @@ check http.get "example" {
 
   certificate_validity = 10d
 
+  network = "tcp6"
+
   auth {
     username = "acidburn"
     password = "HackThePlanet"
@@ -45,12 +47,19 @@ from now. (An expired or untrusted certificate will cause a failure regardless o
 If the `auth` settings are provided, they will be sent in a Basic authentication header. Note
 that basic authentication isn't encrypted, so shouldn't be used over an insecure connection.
 
+By default, connections are made over TCP using IPv6 or IPv4 (whichever connects first). Set
+`network` to `"tcp4"` or `"tcp6"` to only connect over IPv4 or IPv6, for example to check each
+family of a dual-stack site separately. The check fails if the host has no address in that family.
+Redirects are followed over the same family. If a proxy is configured, only the connection to the
+proxy is limited.
+
 ### http.healthcheck
 
 ```goplum
 check http.healthcheck "example" {
   url = "https://www.example.com/health"
   check_components = true
+  network = "tcp4"
   auth {
     username = "acidburn"
     password = "HackThePlanet"
@@ -69,6 +78,8 @@ status is `pass` but a component is `fail` then the Goplum check will fail.
 
 If the `auth` settings are provided, they will be sent in a Basic authentication header. Note
 that basic authentication isn't encrypted, so shouldn't be used over an insecure connection.
+
+The `network` setting limits connections to IPv4 or IPv6, as for `http.get`.
 
 ## Alerts
 
@@ -107,6 +118,7 @@ replaced with `xxxxx`.
       "Username": "acidburn",
       "Password": "[redacted]"
     },
+    "Network": "tcp",
     "Content": "Example Domain",
     "ContentExpected": true,
     "CertificateValidity": 864000000000000,

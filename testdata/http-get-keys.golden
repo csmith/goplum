@@ -24,6 +24,7 @@
           "Username": "acidburn",
           "Password": "HackThePlanet"
         },
+        "Network": "tcp6",
         "Content": "Example Domain",
         "ContentExpected": false,
         "CertificateValidity": 864000000000000,

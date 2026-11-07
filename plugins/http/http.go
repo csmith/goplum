@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -21,15 +22,45 @@ import (
 
 // client is shared by checks and alerts. It has no overall timeout as checks are bounded by their context,
 // which may be configured to be longer than any default we could pick here.
-var client = http.Client{
-	Transport: &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
-		DialContext:           (&net.Dialer{Timeout: 30 * time.Second}).DialContext,
-		ForceAttemptHTTP2:     true,
-		DisableKeepAlives:     true,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	},
+var client = newClient("tcp")
+
+var networkClients = map[string]*http.Client{
+	"tcp":  client,
+	"tcp4": newClient("tcp4"),
+	"tcp6": newClient("tcp6"),
+}
+
+var networkFamilies = map[string]string{
+	"tcp4": "IPv4",
+	"tcp6": "IPv6",
+}
+
+func newClient(network string) *http.Client {
+	dialer := &net.Dialer{Timeout: 30 * time.Second}
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: func(ctx context.Context, _, addr string) (net.Conn, error) {
+				conn, err := dialer.DialContext(ctx, network, addr)
+				if family, ok := networkFamilies[network]; ok && isNoAddressError(err) {
+					host, _, _ := net.SplitHostPort(addr)
+					return nil, fmt.Errorf("no %s address for %s: %w", family, host, err)
+				}
+				return conn, err
+			},
+			ForceAttemptHTTP2:     true,
+			DisableKeepAlives:     true,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
+}
+
+func isNoAddressError(err error) bool {
+	var addrErr *net.AddrError
+	var dnsErr *net.DNSError
+	return (errors.As(err, &addrErr) && addrErr.Err == "no suitable address found") ||
+		(errors.As(err, &dnsErr) && dnsErr.IsNotFound)
 }
 
 var webhookTimeout = 20 * time.Second
@@ -49,12 +80,13 @@ func (p Plugin) Check(kind string) goplum.Check {
 	switch kind {
 	case "get":
 		return GetCheck{
+			Network:         "tcp",
 			ContentExpected: true,
 			MinStatusCode:   100,
 			MaxStatusCode:   399,
 		}
 	case "healthcheck":
-		return HealthCheck{}
+		return HealthCheck{Network: "tcp"}
 	default:
 		return nil
 	}
@@ -66,8 +98,30 @@ type Credentials struct {
 }
 
 type BaseCheck struct {
-	Url  string `redact:"url"`
-	Auth Credentials
+	Url     string `redact:"url"`
+	Auth    Credentials
+	Network string
+}
+
+var validNetworks = []string{"tcp", "tcp4", "tcp6"}
+
+func (b BaseCheck) validate() error {
+	if err := internal.ValidateHTTPURL(b.Url); err != nil {
+		return err
+	}
+
+	if !slices.Contains(validNetworks, b.Network) {
+		return fmt.Errorf("invalid network %q: must be one of %s", b.Network, strings.Join(validNetworks, ", "))
+	}
+
+	return nil
+}
+
+func (b BaseCheck) client() *http.Client {
+	if c, ok := networkClients[b.Network]; ok {
+		return c
+	}
+	return client
 }
 
 type GetCheck struct {
@@ -89,7 +143,7 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 		req.SetBasicAuth(g.Auth.Username, g.Auth.Password)
 	}
 
-	r, err := client.Do(req)
+	r, err := g.client().Do(req)
 	if err != nil {
 		return goplum.FailingResult("Error making request: %v", err)
 	}
@@ -131,7 +185,7 @@ func (g GetCheck) Execute(ctx context.Context) goplum.Result {
 }
 
 func (g GetCheck) Validate() error {
-	if err := internal.ValidateHTTPURL(g.Url); err != nil {
+	if err := g.validate(); err != nil {
 		return err
 	}
 
@@ -157,7 +211,7 @@ func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 		req.SetBasicAuth(h.Auth.Username, h.Auth.Password)
 	}
 
-	r, err := client.Do(req)
+	r, err := h.client().Do(req)
 	if err != nil {
 		return goplum.FailingResult("Error making request: %v", err)
 	}
@@ -202,7 +256,7 @@ func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 }
 
 func (h HealthCheck) Validate() error {
-	return internal.ValidateHTTPURL(h.Url)
+	return h.validate()
 }
 
 func (h HealthCheck) convert(status string) goplum.CheckState {

@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -448,8 +449,12 @@ func TestValidate_RejectsUrlsThatCanNeverWork(t *testing.T) {
 
 func TestValidate_AcceptsValidUrl(t *testing.T) {
 	validators := map[string]interface{ Validate() error }{
-		"get":         GetCheck{Url: "https://example.com/", MinStatusCode: 100, MaxStatusCode: 399},
-		"healthcheck": HealthCheck{Url: "https://example.com/"},
+		"get": GetCheck{
+			BaseCheck:     BaseCheck{Url: "https://example.com/", Network: "tcp"},
+			MinStatusCode: 100,
+			MaxStatusCode: 399,
+		},
+		"healthcheck": HealthCheck{BaseCheck: BaseCheck{Url: "https://example.com/", Network: "tcp"}},
 		"webhook":     WebHookAlert{Url: "https://example.com/"},
 	}
 
@@ -483,7 +488,12 @@ func TestGetCheck_ValidateStatusCodes(t *testing.T) {
 		t.Run(
 			tt.name,
 			func(t *testing.T) {
-				check := GetCheck{Url: "https://example.com/", MinStatusCode: tt.min, MaxStatusCode: tt.max}
+				check := GetCheck{
+					Url:           "https://example.com/",
+					Network:       "tcp",
+					MinStatusCode: tt.min,
+					MaxStatusCode: tt.max,
+				}
 
 				err := check.Validate()
 				if tt.valid {
@@ -494,4 +504,105 @@ func TestGetCheck_ValidateStatusCodes(t *testing.T) {
 			},
 		)
 	}
+}
+
+func TestChecks_ConnectOverRequestedNetwork(t *testing.T) {
+	tests := []struct {
+		name    string
+		listen  string
+		network string
+		detail  string
+	}{
+		{"ipv4 over tcp", "127.0.0.1:0", "tcp", ""},
+		{"ipv4 over tcp4", "127.0.0.1:0", "tcp4", ""},
+		{"ipv4 over tcp6", "127.0.0.1:0", "tcp6", "no IPv6 address for 127.0.0.1"},
+		{"ipv6 over tcp", "[::1]:0", "tcp", ""},
+		{"ipv6 over tcp6", "[::1]:0", "tcp6", ""},
+		{"ipv6 over tcp4", "[::1]:0", "tcp4", "no IPv4 address for ::1"},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name,
+			func(t *testing.T) {
+				listener, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", tt.listen)
+				if err != nil {
+					t.Skipf("unable to listen on %s: %v", tt.listen, err)
+				}
+
+				server := httptest.NewUnstartedServer(
+					http.HandlerFunc(
+						func(w http.ResponseWriter, r *http.Request) {
+							_, _ = w.Write([]byte(`{"status": "pass"}`))
+						},
+					),
+				)
+				server.Listener = listener
+				server.Start()
+				defer server.Close()
+
+				base := BaseCheck{Url: server.URL, Network: tt.network}
+				checks := map[string]goplum.Check{
+					"get":         GetCheck{BaseCheck: base, MinStatusCode: 200, MaxStatusCode: 299},
+					"healthcheck": HealthCheck{BaseCheck: base},
+				}
+
+				for name, check := range checks {
+					result := check.Execute(context.Background())
+					if tt.detail == "" {
+						assert.Equal(t, goplum.StateGood, result.State, name)
+					} else {
+						assert.Equal(t, goplum.StateFailing, result.State, name)
+						assert.Contains(t, result.Detail, tt.detail, name)
+					}
+				}
+			},
+		)
+	}
+}
+
+func TestChecks_ValidateNetwork(t *testing.T) {
+	tests := []struct {
+		network string
+		valid   bool
+	}{
+		{"tcp", true},
+		{"tcp4", true},
+		{"tcp6", true},
+		{"", false},
+		{"udp", false},
+		{"TCP4", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.network,
+			func(t *testing.T) {
+				base := BaseCheck{Url: "https://example.com/", Network: tt.network}
+				validators := map[string]interface{ Validate() error }{
+					"get":         GetCheck{BaseCheck: base, MinStatusCode: 100, MaxStatusCode: 399},
+					"healthcheck": HealthCheck{BaseCheck: base},
+				}
+
+				for name, v := range validators {
+					err := v.Validate()
+					if tt.valid {
+						assert.NoError(t, err, name)
+					} else {
+						assert.ErrorContains(t, err, "invalid network", name)
+					}
+				}
+			},
+		)
+	}
+}
+
+func TestPlugin_DefaultNetworkIsValid(t *testing.T) {
+	get := Plugin{}.Check("get").(GetCheck)
+	get.Url = "https://example.com/"
+	require.NoError(t, get.Validate())
+
+	health := Plugin{}.Check("healthcheck").(HealthCheck)
+	health.Url = "https://example.com/"
+	require.NoError(t, health.Validate())
 }
