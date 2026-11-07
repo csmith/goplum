@@ -62,6 +62,8 @@
   not recognised, instead of giving an indeterminate result
 - Include the HTTP status in `http.healthcheck` failures when the response
   can't be decoded, e.g. for a `502 Bad Gateway` error page
+- Fail `http.healthcheck` checks on 4xx and 5xx responses, even if the body's
+  `status` is `pass`
 - Stop the heartbeat plugin logging heartbeat IDs, which act as the password
   for sending a heartbeat
 - Close heartbeat plugin connections that are idle or too slow to send their

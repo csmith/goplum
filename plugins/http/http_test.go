@@ -375,6 +375,14 @@ func TestHealthCheck_FailsOnBadResponses(t *testing.T) {
 			"Error decoding response (HTTP 502 Bad Gateway): ",
 		},
 		{"empty body", http.StatusServiceUnavailable, "", "Error decoding response (HTTP 503 Service Unavailable): "},
+		{
+			"passing body with error status", http.StatusServiceUnavailable, `{"status": "pass", "output": "draining"}`,
+			"Bad response (HTTP 503 Service Unavailable): draining",
+		},
+		{
+			"passing body without output", http.StatusNotFound, `{"status": "pass"}`,
+			"Bad response (HTTP 404 Not Found)",
+		},
 		{"missing status", http.StatusOK, `{"output": "hello"}`, `Unrecognised status "" (HTTP 200 OK)`},
 		{"unknown status", http.StatusOK, `{"status": "maybe"}`, `Unrecognised status "maybe" (HTTP 200 OK)`},
 	}

@@ -232,6 +232,13 @@ func (h HealthCheck) Execute(ctx context.Context) goplum.Result {
 		return goplum.FailingResult("Error decoding response (HTTP %s): %v", r.Status, err)
 	}
 
+	if r.StatusCode >= 400 {
+		if res.Output == "" {
+			return goplum.FailingResult("Bad response (HTTP %s)", r.Status)
+		}
+		return goplum.FailingResult("Bad response (HTTP %s): %s", r.Status, res.Output)
+	}
+
 	status := h.convert(res.Status)
 	if status == goplum.StateIndeterminate {
 		return goplum.FailingResult("Unrecognised status %q (HTTP %s)", res.Status, r.Status)
