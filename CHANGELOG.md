@@ -25,6 +25,7 @@
 
 ### Fixed
 
+- Fix `plumctl` crashing on every command that talks to the API
 - Fix `plumctl unsuspend` saying "suspend" in its error message
 - Exit with a non-zero status when a `plumctl` command fails
 - Shorten `pushover.message` alerts to Pushover's 1024 character limit, instead

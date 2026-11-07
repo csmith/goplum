@@ -43,7 +43,8 @@ func LoadConfig() error {
 	}
 	defer f.Close()
 
-	return yaml.NewDecoder(f).Decode(&config)
+	config = &Config{}
+	return yaml.NewDecoder(f).Decode(config)
 }
 
 func SaveConfig() error {
