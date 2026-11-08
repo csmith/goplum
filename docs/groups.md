@@ -105,9 +105,8 @@ defaults {
   groups = ["monitoring"]
 }
 
-check tcp.connect "database" {
-  host = "db.example.com"
-  port = 5432
+check network.connect "database" {
+  address = "db.example.com:5432"
   # Inherits groups = ["monitoring"] from defaults
 }
 ```
