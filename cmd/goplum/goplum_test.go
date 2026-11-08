@@ -14,6 +14,7 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
+	"log/slog"
 	"math/big"
 	mathrand "math/rand/v2"
 	"net"
@@ -53,9 +54,7 @@ func TestMain(m *testing.M) {
 		return
 	}
 
-	if err := flag.Set("quiet", "true"); err != nil {
-		panic(err)
-	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn})))
 
 	os.Exit(m.Run())
 }
@@ -784,6 +783,13 @@ func Test_Main_ExitsWithMessageOnConfigError(t *testing.T) {
 	assert.Contains(t, string(output), "missing.conf")
 }
 
+func Test_Main_WarnsThatQuietIsDeprecated(t *testing.T) {
+	output, _ := goplumCommand("--quiet", "--config", filepath.Join(t.TempDir(), "missing.conf")).CombinedOutput()
+
+	assert.Contains(t, string(output), "level=WARN")
+	assert.Contains(t, string(output), "--log.level warn")
+}
+
 func Test_Main_SavesTombstoneOnSignal(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -827,7 +833,8 @@ func Test_Main_SavesTombstoneOnSignal(t *testing.T) {
 					missing,
 					"--key",
 					missing,
-					"--quiet",
+					"--log.level",
+					"warn",
 				)
 				tt.tombstone(cmd, tombstone)
 				cmd.Stdout = &output

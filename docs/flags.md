@@ -83,8 +83,11 @@ goplum -quiet
 QUIET=true goplum
 ```
 
-Reduces the amount of logging from normal operations, such as checks being
-executed.
+Deprecated: use `--log.level warn` instead. This flag will be removed in a
+future release.
+
+Sets the default log level to `warn`, hiding logs from normal operations such
+as checks being executed. An explicit `--log.level` takes precedence.
 
 Default: `false`
 

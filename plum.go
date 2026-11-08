@@ -20,8 +20,7 @@ import (
 )
 
 var (
-	quietLogging = flag.Bool("quiet", false, "Reduce logging output from normal operations")
-	runners      = flag.Int("runners", 4, "Number of runners to use to execute checks concurrently")
+	runners = flag.Int("runners", 4, "Number of runners to use to execute checks concurrently")
 )
 
 type CheckSettings struct {
@@ -716,15 +715,13 @@ func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
 }
 
 func (p *Plum) logCheck(c *ScheduledCheck, result Result) {
-	if !*quietLogging {
-		slog.Info(
-			"Check executed",
-			slog.String("check", c.Name),
-			slog.Any("duration", result.Facts[CheckTime]),
-			slog.Any("state", result.State),
-			slog.String("detail", result.Detail),
-		)
-	}
+	slog.Info(
+		"Check executed",
+		slog.String("check", c.Name),
+		slog.Any("duration", result.Facts[CheckTime]),
+		slog.Any("state", result.State),
+		slog.String("detail", result.Detail),
+	)
 }
 
 func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isReminder bool) {
