@@ -636,6 +636,23 @@ check debug.random "loud-then-quiet" {
 	}
 }
 
+func TestReadConfig_PlainZeroDisablesReminders(t *testing.T) {
+	plum := loadConfig(
+		t,
+		`defaults {
+  alerts = ["-"]
+  reminder = 1h
+}
+
+check debug.random "a" {
+  reminder = 0
+}
+`,
+	)
+
+	assert.Zero(t, plum.Checks["a"].Config.Reminder)
+}
+
 func TestReadConfig_ValidatesUnusedGroupDefaults(t *testing.T) {
 	dir := t.TempDir()
 	writeConfig(t, dir, "goplum.conf", "group \"g\" {\n  defaults {\n    interval = \"soon\"\n  }\n}\n")

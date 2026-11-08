@@ -51,9 +51,13 @@ func DecodeSettings(src *map[string]any, targets ...any) error {
 	return nil
 }
 
-// requireDurationUnits stops plain numbers being decoded into durations, where they'd be read as nanoseconds.
+// requireDurationUnits stops plain numbers being decoded into durations, where they'd be read as nanoseconds. Zero
+// is allowed, as it means the same in any unit.
 func requireDurationUnits(from, to reflect.Type, data any) (any, error) {
 	if to == reflect.TypeFor[time.Duration]() && from != to {
+		if v := reflect.ValueOf(data); (v.CanInt() && v.Int() == 0) || (v.CanFloat() && v.Float() == 0) {
+			return time.Duration(0), nil
+		}
 		return nil, fmt.Errorf("expected a duration with units, such as 30s, got %v", data)
 	}
 	return data, nil

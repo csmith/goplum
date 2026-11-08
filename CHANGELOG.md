@@ -32,8 +32,8 @@
 - Running checks are now cancelled on shutdown, and goplum waits up
   to 5 seconds for alerts being sent to finish before saving state
 - Docker images are now built with the upstream `golang` image
-- Reject numbers without a unit for duration settings, as they were read as
-  nanoseconds; `interval = 30` must now be written `interval = 30s`
+- Reject non-zero numbers without a unit for duration settings, as they were
+  read as nanoseconds; `interval = 30` must now be written `interval = 30s`
 - Reject durations ending in a number without a unit, such as `1h30`, which
   was read as `1h`, and durations too long to represent, which wrapped around
   to negative values
