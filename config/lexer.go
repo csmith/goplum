@@ -218,9 +218,6 @@ func lexIdentifier(lexer *Lexer) stateFunc {
 	for {
 		r := lexer.next()
 		switch {
-		case r == eof:
-			lexer.emit(tokenEOF, 0, nil)
-			return nil
 		case unicode.IsLetter(r) || r == '.' || r == '_':
 			builder.WriteRune(r)
 		default:

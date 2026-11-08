@@ -52,6 +52,8 @@
 - Fix `plumctl` crashing on every command that talks to the API
 - Fix negative numbers being rejected in config files, so `pushover.message`
   priorities of `-1` and `-2` can be set
+- Reject a config file that ends with a stray word and no trailing newline,
+  which was silently ignored
 - Fix `plumctl unsuspend` saying "suspend" in its error message
 - Exit with a non-zero status when a `plumctl` command fails
 - Fix `plumctl results` reporting an error when the server ends the stream

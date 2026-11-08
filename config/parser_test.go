@@ -72,6 +72,18 @@ plugin debug {}
 	assert.Equal(t, Position{Line: 6}, parser.GroupBlocks[0].Position)
 }
 
+func TestParser_RejectsTrailingWordAtEndOfFile(t *testing.T) {
+	for _, word := range []string{"check", "chek"} {
+		t.Run(
+			word,
+			func(t *testing.T) {
+				parser := NewParser(strings.NewReader("check debug.random \"a\" {}\n" + word))
+				assert.Error(t, parser.Parse())
+			},
+		)
+	}
+}
+
 func TestParser_RejectsTopLevelOnlyBlocksInIncludedFiles(t *testing.T) {
 	tests := map[string]string{
 		"defaults": "check debug.random \"c\" {}\ndefaults {}\n",
