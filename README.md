@@ -113,7 +113,7 @@ Running it via the command line:
 
 ```shell
 # Create a configuration file
-vi goplum.config
+vi goplum.conf
 
 # Make a 'tombstone' file that Goplum's unprivileged user can write
 touch goplum.tomb
@@ -121,8 +121,8 @@ chown 65532:65532 goplum.tomb
 
 # Start goplum
 docker run -d --restart always \
-   -v $(PWD)/goplum.conf:/goplum.conf:ro \
-   -v $(PWD)/goplum.tomb:/tmp/goplum.tomb \
+   -v $PWD/goplum.conf:/goplum.conf:ro \
+   -v $PWD/goplum.tomb:/tmp/goplum.tomb \
    ghcr.io/csmith/goplum
 ```
 
