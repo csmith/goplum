@@ -1,101 +1,35 @@
 # Changelog
 
-## Unreleased
+## 1.3.0 - 2026-11-08
 
-### Added
+### Major changes
 
 - Add `plumdash`, a web dashboard showing the state of each check and its
-  recent results, with a Docker image at `ghcr.io/csmith/goplum/dashboard`
-- Include each check's recent results in the API's `Check` message
-- Add a `link` check setting, sent with alerts to point at a runbook or
-  dashboard. It supports `{name}` and `{type}` placeholders, and can be set in
-  `defaults`, a group's `defaults`, or on a check
-- Add an `ms` duration unit for milliseconds
-- Add a `network` setting to `http.get` and `http.healthcheck` checks to
-  connect only over IPv4 (`tcp4`) or IPv6 (`tcp6`)
-- Support `alerts = ["-"]` for a check that sends no alerts, such as to override
-  the default alerts. It never matches an alert named `-`
+  recent results
+- Add a `link` check setting to send a runbook or dashboard URL with alerts
+- Logs are now structured, with `--log.level` and `--log.format` flags;
+  `--quiet` is deprecated in favour of `--log.level warn`
+- Duration settings now require a unit (`interval = 30s`, not `interval = 30`)
 
-### Changed
+### Other changes
 
-- Write goplum's logs as structured `key=value` pairs, with new `--log.level`
-  and `--log.format` flags to set the minimum level or switch to JSON
-- Deprecate the `--quiet` flag in favour of `--log.level warn`. It now sets the
-  default log level to `warn`, so it also hides other info logs such as alerts
-  being raised
-- Reject a `network.portscan` `address` with an IPv6 address in brackets, as
-  the check passed without scanning anything
-- Reject `http.get`, `http.healthcheck` and `http.webhook` URLs that aren't
-  absolute `http` or `https` URLs, instead of failing every run
-- Reject malformed `prometheus` plugin `headers` in config instead of failing
-  every check
-- Running checks are now cancelled on shutdown, and goplum waits up
-  to 5 seconds for alerts being sent to finish before saving state
-- Docker images are now built with the upstream `golang` image
-- Reject non-zero numbers without a unit for duration settings, as they were
-  read as nanoseconds; `interval = 30` must now be written `interval = 30s`
-- Reject durations ending in a number without a unit, such as `1h30`, which
-  was read as `1h`, and durations too long to represent, which wrapped around
-  to negative values
-- Reject `http.get` `min_status_code` and `max_status_code` values outside
-  100 to 599, or with the minimum above the maximum, instead of failing every
-  run
-- Reject an `interval` or `timeout` of zero, as the check was run repeatedly
-  and in parallel, or failed straight away
-- Reject `heartbeat.received` checks that share an `id`, ignoring case, as
-  heartbeats only reached the last of them and the others always failed
+- Add an `ms` duration unit
+- Add a `network` setting to HTTP checks to force IPv4 or IPv6
+- Include recent results in the API's `Check` message
+- Cancel running checks on shutdown
+- Shorten alerts to fit each service's message limit
+- Various improvements to config file parsing and validation
+- Various `plumctl` fixes
 
-### Fixed
+### Bug fixes
 
-- Fix goplum sometimes crashing when `plumctl results` disconnects, and stop
-  slow API clients streaming results from delaying checks
-- Fix `plumctl` crashing on every command that talks to the API
-- Fix negative numbers being rejected in config files, so `pushover.message`
-  priorities of `-1` and `-2` can be set
-- Reject a config file that ends with a stray word and no trailing newline,
-  which was silently ignored
-- Fix `plumctl unsuspend` saying "suspend" in its error message
-- Exit with a non-zero status when a `plumctl` command fails
-- Fix `plumctl results` reporting an error when the server ends the stream
-- Fix the API sending check results' `check_time` fact without a value; it is
-  now sent as an integer number of nanoseconds
-- Shorten `pushover.message` alerts to Pushover's 1024 character limit, instead
-  of the alert being rejected
-- Remove the claim that `pushover.message` alerts are disabled after an error
-  response; every alert is still attempted
-- Fix `smtp.send` alerts having malformed headers when a check's detail spans
-  multiple lines; the subject is now kept to a single line of up to 200
-  characters
-- Shorten `discord.message`, `slack.message` and `twilio.sms` alerts to fit each
-  service's message limit, instead of the alert being rejected or cut off
-- Fix a crash instead of an error message when the config path is
-  a directory, or the config has a syntax error near the end of a file
-- Fix a check's `alerts` changing the `alerts` that later checks in the same
-  group get from the group's `defaults`
-- Fix group `defaults` being ignored when they set a zero value, such as
-  `reminder = 0s` or `link = ""`
-- Fix alerts suppressed by one group's `alert_limit` counting towards the
-  limits of the check's other groups, and a group listed twice on a check
-  counting each alert twice
-- Fix checks with `alerts = ["-"]` counting towards their groups'
-  `alert_limit`, which suppressed real alerts from other checks in the group
-- Fix checks listing several `alerts` also sending to alerts whose names merely
-  start with the first name, end with the last, or contain one in the middle
-- Fail `http.healthcheck` checks when the response's `status` is missing or
-  not recognised, instead of giving an indeterminate result
-- Include the HTTP status in `http.healthcheck` failures when the response
-  can't be decoded, e.g. for a `502 Bad Gateway` error page
-- Fail `http.healthcheck` checks on 4xx and 5xx responses, even if the body's
-  `status` is `pass`
-- Stop the heartbeat plugin logging heartbeat IDs, which act as the password
-  for sending a heartbeat
-- Close heartbeat plugin connections that are idle or too slow to send their
-  request, instead of keeping them open forever
-- Fix resumed checks sometimes waiting up to a minute before running again
-- Fix config errors and check positions reporting the wrong line after
-  comments
-- Ignore saved state from the future, such as after the clock was corrected,
-  which stopped checks running until the clock caught up
+- Fix goplum crashing or delaying checks when API clients stream results
+- Fix checks with several `alerts` also sending to alerts with similar names
+- Fix group `defaults` leaking between checks and ignoring zero values
+- Fix `alert_limit` counting alerts that were never sent
+- Fix `http.healthcheck` passing on error responses or unknown statuses
+- Fix resumed checks sometimes waiting up to a minute to run
+- Fix saved state from the future stopping checks from running
 
 ## 1.2.0 - 2026-11-04 
 
