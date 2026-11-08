@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"chameth.com/goplum"
+	"chameth.com/goplum/internal"
 )
 
 type Plugin struct{}
@@ -41,15 +42,6 @@ func (p Plugin) Check(kind string) goplum.Check {
 	}
 }
 
-var validNetworks = []string{"tcp", "tcp4", "tcp6"}
-
-func validateNetwork(network string) error {
-	if !slices.Contains(validNetworks, network) {
-		return fmt.Errorf("invalid network %q: must be one of %s", network, strings.Join(validNetworks, ", "))
-	}
-	return nil
-}
-
 type ConnectCheck struct {
 	Network string
 	Address string
@@ -70,7 +62,7 @@ func (c ConnectCheck) Validate() error {
 		return errors.New("missing required argument: address")
 	}
 
-	if err := validateNetwork(c.Network); err != nil {
+	if err := internal.ValidateNetwork(c.Network); err != nil {
 		return err
 	}
 
@@ -162,7 +154,7 @@ func (c PortScanCheck) Validate() error {
 		return fmt.Errorf("invalid address %q: IPv6 addresses must not be in brackets", c.Address)
 	}
 
-	if err := validateNetwork(c.Network); err != nil {
+	if err := internal.ValidateNetwork(c.Network); err != nil {
 		return err
 	}
 

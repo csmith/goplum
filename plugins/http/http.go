@@ -12,7 +12,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"slices"
 	"strings"
 	"time"
 
@@ -103,18 +102,12 @@ type BaseCheck struct {
 	Network string
 }
 
-var validNetworks = []string{"tcp", "tcp4", "tcp6"}
-
 func (b BaseCheck) validate() error {
 	if err := internal.ValidateHTTPURL(b.Url); err != nil {
 		return err
 	}
 
-	if !slices.Contains(validNetworks, b.Network) {
-		return fmt.Errorf("invalid network %q: must be one of %s", b.Network, strings.Join(validNetworks, ", "))
-	}
-
-	return nil
+	return internal.ValidateNetwork(b.Network)
 }
 
 func (b BaseCheck) client() *http.Client {

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -74,6 +75,16 @@ func ValidateHTTPURL(raw string) error {
 		return errors.New("invalid url: must be an absolute http or https URL")
 	}
 
+	return nil
+}
+
+var validNetworks = []string{"tcp", "tcp4", "tcp6"}
+
+// ValidateNetwork checks a network setting is one that checks can dial: tcp, or tcp4/tcp6 to force an IP version.
+func ValidateNetwork(network string) error {
+	if !slices.Contains(validNetworks, network) {
+		return fmt.Errorf("invalid network %q: must be one of %s", network, strings.Join(validNetworks, ", "))
+	}
 	return nil
 }
 
