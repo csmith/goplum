@@ -289,7 +289,7 @@ You can exclude plugins by setting the appropriate tag when building; for exampl
 to exclude the Discord and Slack plugin:
 
 ```shell
-go build -tags "nodiscord,noslack" ./cmd/plugins
+go build -tags "nodiscord,noslack" ./cmd/goplum
 ```
 
 ### gRPC API
