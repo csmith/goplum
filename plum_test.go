@@ -377,6 +377,41 @@ func TestRaiseAlerts_DashSendsNoAlerts(t *testing.T) {
 	}
 }
 
+func TestRaiseAlerts_DashDoesNotUseGroupAlertLimit(t *testing.T) {
+	plum := loadConfig(
+		t,
+		`alert debug.sysout "pager" {}
+
+group "g" {
+  alert_limit = 1
+  alert_window = 1h
+}
+
+check debug.random "silent" {
+  percent_good = 0
+  failing_threshold = 1
+  groups = ["g"]
+  alerts = ["-"]
+}
+
+check debug.random "loud" {
+  percent_good = 0
+  failing_threshold = 1
+  groups = ["g"]
+}
+`,
+	)
+	alert := &recordingAlert{}
+	plum.Alerts["pager"] = alert
+
+	plum.RunCheck(plum.Checks["silent"])
+	plum.RunCheck(plum.Checks["loud"])
+
+	require.Len(t, alert.details, 1)
+	assert.Equal(t, "loud", alert.details[0].Name)
+	assert.Contains(t, alert.details[0].Text, "[GROUP ALERT LIMIT REACHED: g]")
+}
+
 func TestScheduledCheck_AddResult_ReachesThresholdOfFullHistory(t *testing.T) {
 	check := &goplum.ScheduledCheck{}
 	thresholds := map[goplum.CheckState]int{goplum.StateGood: 10, goplum.StateFailing: 10}

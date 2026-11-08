@@ -77,6 +77,8 @@
 - Fix alerts suppressed by one group's `alert_limit` counting towards the
   limits of the check's other groups, and a group listed twice on a check
   counting each alert twice
+- Fix checks with `alerts = ["-"]` counting towards their groups'
+  `alert_limit`, which suppressed real alerts from other checks in the group
 - Fix checks listing several `alerts` also sending to alerts whose names merely
   start with the first name, end with the last, or contain one in the middle
 - Fail `http.healthcheck` checks when the response's `status` is missing or

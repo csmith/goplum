@@ -754,19 +754,16 @@ func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isRemind
 		details.Text = fmt.Sprintf("Check '%s' is now %s, was %s.", details.Name, details.NewState, details.PreviousState)
 	}
 
-	// Check group limits for all groups this check belongs to
-	shouldSend, suppressionWarning, suppressingGroup := p.shouldSendAlert(c.Config.Groups)
-	if !shouldSend {
-		slog.Info("Alert suppressed due to group limit", "check", c.Name, "group", suppressingGroup)
-		return
-	}
-
-	// Add suppression warning if this is the last alert before throttling
-	if suppressionWarning != "" {
+	alerts := p.AlertsMatching(c.Config.Alerts)
+	if len(alerts) > 0 {
+		shouldSend, suppressionWarning, suppressingGroup := p.shouldSendAlert(c.Config.Groups)
+		if !shouldSend {
+			slog.Info("Alert suppressed due to group limit", "check", c.Name, "group", suppressingGroup)
+			return
+		}
 		details.Text += suppressionWarning
 	}
 
-	alerts := p.AlertsMatching(c.Config.Alerts)
 	slog.Info("Raising alerts", "check", c.Name, "matched", len(alerts), "alerts", c.Config.Alerts)
 	for n := range alerts {
 		if err := alerts[n].Send(details); err != nil {
