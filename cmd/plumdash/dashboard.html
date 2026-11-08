@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Goplum</title>
+    <link rel="icon" id="favicon">
     <style>
         :root {
             --bg: #f6f6f4;
@@ -105,12 +106,26 @@
     {{- end }}
 </main>
 <script>
+    const baseTitle = document.title;
+
+    function showStatus() {
+        const failing = document.querySelectorAll('#checks .check.Failing').length;
+        const unknown = document.querySelectorAll('#checks .check:not(.Good):not(.Failing)').length;
+        const worst = failing > 0 ? 'failing' : unknown > 0 ? 'unknown' : 'good';
+        const colour = getComputedStyle(document.documentElement).getPropertyValue(`--${worst}`).trim();
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="${colour}"/></svg>`;
+        document.getElementById('favicon').href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+        document.title = failing > 0 ? `${baseTitle} [${failing} failing]` : baseTitle;
+    }
+
+    showStatus();
     setInterval(async () => {
         try {
             const res = await fetch(location.href);
             if (!res.ok) return;
             const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
             document.getElementById('checks').replaceWith(doc.getElementById('checks'));
+            showStatus();
         } catch (e) {
             // Keep showing the last known state until the next refresh works.
         }
