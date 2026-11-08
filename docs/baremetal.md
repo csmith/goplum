@@ -2,7 +2,8 @@
 
 ## Compiling
 
-You must have [Go 1.24](https://golang.org/) or newer installed.
+You must have [Go](https://golang.org/) installed, at the version given in
+`go.mod` or newer.
 
 ```shell
 go build -o goplum ./cmd/goplum
