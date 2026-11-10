@@ -126,7 +126,8 @@ so a check can refer to alerts and groups from any file.
 
 #### Identifier
 
-Identifiers are unquoted strings consisting of letters, dots and underscores.
+Identifiers are unquoted strings consisting of letters, digits, dots and
+underscores. They must start with a letter.
 They refer to variables and types provided by goplum plugins.
 
 #### Keywords

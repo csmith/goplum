@@ -74,6 +74,15 @@ func TestLexer_Numbers(t *testing.T) {
 	}
 }
 
+func TestLexer_IdentifiersWithDigits(t *testing.T) {
+	tokens := lexAll("oauth2 { ipv6_only = true }")
+	require.NotEmpty(t, tokens)
+	assert.Equal(t, tokenIdentifier, tokens[0].Class)
+	assert.Equal(t, "oauth2", tokens[0].Value)
+	assert.Equal(t, tokenIdentifier, tokens[2].Class)
+	assert.Equal(t, "ipv6_only", tokens[2].Value)
+}
+
 func TestLexer_InvalidNumbers(t *testing.T) {
 	tests := map[string]string{
 		"-":                     "invalid integer literal '-'",

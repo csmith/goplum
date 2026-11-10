@@ -218,7 +218,7 @@ func lexIdentifier(lexer *Lexer) stateFunc {
 	for {
 		r := lexer.next()
 		switch {
-		case unicode.IsLetter(r) || r == '.' || r == '_':
+		case unicode.IsLetter(r) || unicode.IsNumber(r) || r == '.' || r == '_':
 			builder.WriteRune(r)
 		default:
 			lexer.backup()
