@@ -16,9 +16,12 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"chameth.com/goplum"
 	"chameth.com/goplum/internal"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 const maxSeriesInDetail = 5
@@ -26,12 +29,14 @@ const maxSeriesInDetail = 5
 type Plugin struct {
 	Url         string
 	Auth        Credentials
-	BearerToken string `config:"bearer_token"`
+	BearerToken string       `config:"bearer_token"`
+	OAuth2      OAuth2Config `config:"oauth2"`
 	Headers     []string
 	TLS         TLSConfig `config:"tls"`
 
 	headers http.Header
 	client  *http.Client
+	tokens  *tokenCache
 }
 
 type Credentials struct {
@@ -63,8 +68,27 @@ func (p *Plugin) Validate() error {
 		return err
 	}
 
-	if len(p.BearerToken) > 0 && (len(p.Auth.Username) > 0 || len(p.Auth.Password) > 0) {
-		return errors.New("bearer_token and auth cannot both be specified")
+	authMethods := 0
+	for _, used := range []bool{
+		len(p.Auth.Username) > 0 || len(p.Auth.Password) > 0,
+		len(p.BearerToken) > 0,
+		p.OAuth2.configured(),
+	} {
+		if used {
+			authMethods++
+		}
+	}
+	if authMethods > 1 {
+		return errors.New("only one of auth, bearer_token and oauth2 can be specified")
+	}
+
+	p.tokens = nil
+	if p.OAuth2.configured() {
+		config, err := p.OAuth2.build()
+		if err != nil {
+			return fmt.Errorf("invalid oauth2 config: %w", err)
+		}
+		p.tokens = &tokenCache{config: config}
 	}
 
 	p.headers = make(http.Header)
@@ -113,6 +137,78 @@ func (t TLSConfig) build() (*tls.Config, error) {
 	return config, nil
 }
 
+type OAuth2Config struct {
+	ClientID     string `config:"client_id"`
+	ClientSecret string `config:"client_secret"`
+	TokenURL     string `config:"token_url"`
+	Scopes       []string
+	Params       []string
+}
+
+func (o OAuth2Config) configured() bool {
+	return len(o.ClientID) > 0 || len(o.ClientSecret) > 0 || len(o.TokenURL) > 0 ||
+		len(o.Scopes) > 0 || len(o.Params) > 0
+}
+
+func (o OAuth2Config) build() (*clientcredentials.Config, error) {
+	if len(o.ClientID) == 0 {
+		return nil, errors.New("missing required argument: client_id")
+	}
+
+	if len(o.ClientSecret) == 0 {
+		return nil, errors.New("missing required argument: client_secret")
+	}
+
+	if len(o.TokenURL) == 0 {
+		return nil, errors.New("missing required argument: token_url")
+	}
+
+	if err := internal.ValidateHTTPURL(o.TokenURL); err != nil {
+		return nil, fmt.Errorf("token_url: %w", err)
+	}
+
+	params := url.Values{}
+	for i, param := range o.Params {
+		name, value, ok := strings.Cut(param, "=")
+		if !ok || len(name) == 0 {
+			return nil, fmt.Errorf("invalid param at position %d, expected format \"name=value\"", i+1)
+		}
+		params.Add(name, value)
+	}
+
+	return &clientcredentials.Config{
+		ClientID:       o.ClientID,
+		ClientSecret:   o.ClientSecret,
+		TokenURL:       o.TokenURL,
+		Scopes:         o.Scopes,
+		EndpointParams: params,
+	}, nil
+}
+
+// tokenCache holds an access token until it expires. Unlike oauth2.ReuseTokenSource, it fetches
+// new tokens with the caller's context, so a slow token endpoint can't outlast a check's timeout.
+type tokenCache struct {
+	config *clientcredentials.Config
+
+	mutex sync.Mutex
+	token *oauth2.Token
+}
+
+func (c *tokenCache) Token(ctx context.Context) (string, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if !c.token.Valid() {
+		token, err := c.config.Token(ctx)
+		if err != nil {
+			return "", err
+		}
+		c.token = token
+	}
+
+	return c.token.AccessToken, nil
+}
+
 type QueryCheck struct {
 	Query string
 
@@ -137,6 +233,12 @@ func (q QueryCheck) Execute(ctx context.Context) goplum.Result {
 		req.SetBasicAuth(q.plugin.Auth.Username, q.plugin.Auth.Password)
 	} else if len(q.plugin.BearerToken) > 0 {
 		req.Header.Set("Authorization", "Bearer "+q.plugin.BearerToken)
+	} else if q.plugin.tokens != nil {
+		token, err := q.plugin.tokens.Token(ctx)
+		if err != nil {
+			return goplum.FailingResult("Error fetching oauth2 token: %v", internal.WithoutURL(err))
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
 	res, err := q.plugin.client.Do(req)

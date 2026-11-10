@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add OAuth2 client credentials authentication to the Prometheus plugin
 - Allow digits in config identifiers
 
 ## 1.3.0 - 2026-11-08

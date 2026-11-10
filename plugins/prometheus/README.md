@@ -21,6 +21,20 @@ plugin prometheus {
   # Or a bearer token
   bearer_token = "abc123"
 
+  # Or an OAuth2 client credentials grant
+  oauth2 {
+    client_id = "goplum"
+    client_secret = "hunter2"
+    token_url = "https://id.example.com/api/oidc/token"
+
+    # Optional scopes to request
+    scopes = ["metrics:read"]
+
+    # Optional extra parameters for the token request, such as an RFC 8707
+    # resource indicator
+    params = ["resource=https://prometheus.example.com"]
+  }
+
   # Additional headers, such as a tenant ID for Mimir or Cortex
   headers = ["X-Scope-OrgID: tenant-1"]
 
@@ -35,7 +49,12 @@ plugin prometheus {
 }
 ```
 
-Only one of `auth` and `bearer_token` may be specified. Headers are given in
+Only one of `auth`, `bearer_token` and `oauth2` may be specified. With
+`oauth2`, Goplum fetches an access token from `token_url`, reuses it until it
+expires, and sends it as a bearer token. If a token can't be fetched, checks
+fail with the error. The `tls` settings don't apply to the token request.
+
+Headers are given in
 `"Name: Value"` format, and a header may be repeated to send multiple values.
 `cert_file` and `key_file` must be specified together, and all TLS files must
 be PEM-encoded.

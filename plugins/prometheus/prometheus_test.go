@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -159,6 +160,85 @@ func TestQueryCheck_SendsBearerToken(t *testing.T) {
 	assert.Equal(t, "Bearer token123", received.headers.Get("Authorization"))
 }
 
+type tokenRequest struct {
+	form     url.Values
+	username string
+	password string
+}
+
+func tokenServer(t *testing.T, status int) (*httptest.Server, *[]tokenRequest) {
+	t.Helper()
+	var requests []tokenRequest
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.NoError(t, r.ParseForm())
+				username, password, _ := r.BasicAuth()
+				requests = append(requests, tokenRequest{form: r.PostForm, username: username, password: password})
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(status)
+				_, _ = fmt.Fprintf(w, `{"access_token":"token-%d","token_type":"Bearer","expires_in":3600}`, len(requests))
+			},
+		),
+	)
+	t.Cleanup(server.Close)
+	return server, &requests
+}
+
+func oauth2Plugin(apiURL, tokenURL string) *Plugin {
+	return &Plugin{
+		Url: apiURL,
+		OAuth2: OAuth2Config{
+			ClientID:     "goplum",
+			ClientSecret: "secret",
+			TokenURL:     tokenURL,
+			Scopes:       []string{"metrics:read"},
+			Params:       []string{"resource=https://metrics.example.com"},
+		},
+	}
+}
+
+func TestQueryCheck_OAuth2(t *testing.T) {
+	api, received := fixtureServer(t, http.StatusOK, "healthy.json")
+	api.Start()
+	tokens, requests := tokenServer(t, http.StatusOK)
+
+	plugin := oauth2Plugin(api.URL, tokens.URL)
+	require.NoError(t, plugin.Validate())
+	check := plugin.Check("query").(QueryCheck)
+	check.Query = "up"
+
+	assert.Equal(t, goplum.StateGood, check.Execute(context.Background()).State)
+	assert.Equal(t, "Bearer token-1", received.headers.Get("Authorization"))
+	require.Len(t, *requests, 1)
+	assert.Equal(t, "goplum", (*requests)[0].username)
+	assert.Equal(t, "secret", (*requests)[0].password)
+	assert.Equal(t, "client_credentials", (*requests)[0].form.Get("grant_type"))
+	assert.Equal(t, "metrics:read", (*requests)[0].form.Get("scope"))
+	assert.Equal(t, "https://metrics.example.com", (*requests)[0].form.Get("resource"))
+
+	check.Execute(context.Background())
+	assert.Equal(t, "Bearer token-1", received.headers.Get("Authorization"))
+	assert.Len(t, *requests, 1)
+
+	plugin.tokens.token.Expiry = time.Now().Add(-time.Minute)
+	check.Execute(context.Background())
+	assert.Equal(t, "Bearer token-2", received.headers.Get("Authorization"))
+	assert.Len(t, *requests, 2)
+}
+
+func TestQueryCheck_OAuth2Failure(t *testing.T) {
+	api, received := fixtureServer(t, http.StatusOK, "healthy.json")
+	api.Start()
+	tokens, _ := tokenServer(t, http.StatusUnauthorized)
+
+	result := execute(t, oauth2Plugin(api.URL, tokens.URL))
+	assert.Equal(t, goplum.StateFailing, result.State)
+	assert.Contains(t, result.Detail, "Error fetching oauth2 token")
+	assert.Nil(t, received.headers)
+}
+
 func TestQueryCheck_TLS(t *testing.T) {
 	dir := t.TempDir()
 	clientCert, clientKey, clientPool := generateClientCert(t, dir)
@@ -253,6 +333,43 @@ func TestPlugin_Validate(t *testing.T) {
 		"url without scheme": {Plugin{Url: "prometheus.example.com"}, false},
 		"auth and bearer token": {
 			Plugin{Url: "https://example.com/", Auth: Credentials{Username: "user"}, BearerToken: "token"},
+			false,
+		},
+		"oauth2": {*oauth2Plugin("https://example.com/", "https://id.example.com/token"), true},
+		"oauth2 and bearer token": {
+			func() Plugin {
+				p := oauth2Plugin("https://example.com/", "https://id.example.com/token")
+				p.BearerToken = "token"
+				return *p
+			}(),
+			false,
+		},
+		"oauth2 and auth": {
+			func() Plugin {
+				p := oauth2Plugin("https://example.com/", "https://id.example.com/token")
+				p.Auth.Username = "user"
+				return *p
+			}(),
+			false,
+		},
+		"oauth2 without client_id": {
+			Plugin{Url: "https://example.com/", OAuth2: OAuth2Config{ClientSecret: "s", TokenURL: "https://id.example.com/"}},
+			false,
+		},
+		"oauth2 without client_secret": {
+			Plugin{Url: "https://example.com/", OAuth2: OAuth2Config{ClientID: "c", TokenURL: "https://id.example.com/"}},
+			false,
+		},
+		"oauth2 without token_url": {
+			Plugin{Url: "https://example.com/", OAuth2: OAuth2Config{ClientID: "c", ClientSecret: "s"}},
+			false,
+		},
+		"oauth2 malformed param": {
+			func() Plugin {
+				p := oauth2Plugin("https://example.com/", "https://id.example.com/token")
+				p.OAuth2.Params = []string{"resource"}
+				return *p
+			}(),
 			false,
 		},
 		"empty header name":    {Plugin{Url: "https://example.com/", Headers: []string{": value"}}, false},
