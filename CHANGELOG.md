@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.4.0 - 2026-11-12
 
 - Add OAuth2 client credentials authentication to the Prometheus plugin
 - Allow digits in config identifiers
+- Update to Go 1.27.4
 
 ## 1.3.0 - 2026-11-08
 
