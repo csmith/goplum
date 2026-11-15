@@ -321,5 +321,5 @@ Some icons in this README are modifications of the Material Design icons created
 and released under the [Apache 2.0 licence](https://www.apache.org/licenses/LICENSE-2.0.html).
 
 Goplum makes use of a number of third-party libraries. See the [go.mod](go.mod) file
-for a list of direct dependencies. Users of the docker image will find a copy of the
-relevant licence and notice files under the `/notices` directory in the image.
+for a list of direct dependencies. Users of the docker image will find the licences of all
+compiled code in the `/notices/CREDITS` file in the image.

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Docker images now list third-party licences in a single `/notices/CREDITS` file
+
 ## 1.4.0 - 2026-11-12
 
 - Add OAuth2 client credentials authentication to the Prometheus plugin

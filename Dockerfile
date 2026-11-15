@@ -5,7 +5,8 @@ COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod \
     set -eux; \
     CGO_ENABLED=0 go install ./cmd/goplum; \
-    go tool go-licenses save ./... --save_path=/notices;
+    mkdir /notices; \
+    go tool gocredits -skip-missing . > /notices/CREDITS;
 
 FROM ghcr.io/greboid/dockerbase/nonroot:1.20261020.1
 WORKDIR /
