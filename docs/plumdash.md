@@ -3,8 +3,11 @@
 `plumdash` is a web dashboard that shows the state of each check, along with
 its recent results. It connects to GoPlum using the [GoPlum API](api.md).
 
-plumdash has no authentication and serves plain HTTP, so it should only be
-exposed on a trusted network or behind a reverse proxy that adds both.
+plumdash has no authentication and serves plain HTTP. It is meant to run
+behind a reverse proxy that terminates TLS, routes by hostname, and adds
+authentication. Don't expose its port directly, even on a trusted network:
+plumdash doesn't check the `Host` header, so any web page opened in a browser
+that can reach it could read the dashboard using DNS rebinding.
 
 ## Getting started
 
@@ -25,14 +28,17 @@ $ plumdash --server plum.example.com:7586 \
     --key client.key
 ```
 
-The dashboard is then available on port 8080. The page refreshes itself every
-30 seconds.
+The dashboard is then served on port 8080, for your reverse proxy to forward
+to. If the proxy runs on the same host, use `--listen 127.0.0.1:8080` so the
+port isn't reachable from the network. The page refreshes itself every 30
+seconds.
 
-A Docker image is also available as `ghcr.io/csmith/goplum/dashboard`:
+A Docker image is also available as `ghcr.io/csmith/goplum/dashboard`. Attach
+it to a network your reverse proxy is on rather than publishing its port:
 
 ```
 $ docker run -d --restart always \
-    -p 8080:8080 \
+    --network proxy \
     -v /path/to/certs:/certs:ro \
     -e SERVER=plum.example.com:7586 \
     -e CA_CERT=/certs/ca.crt \
