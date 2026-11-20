@@ -210,7 +210,9 @@ func (c *tokenCache) Token(ctx context.Context) (string, error) {
 }
 
 type QueryCheck struct {
-	Query string
+	Query   string
+	AtLeast *float64 `config:"at_least"`
+	AtMost  *float64 `config:"at_most"`
 
 	plugin *Plugin
 }
@@ -280,12 +282,15 @@ func (q QueryCheck) Execute(ctx context.Context) goplum.Result {
 		return goplum.FailingResult("%v", err)
 	}
 
-	return evaluate(results)
+	return q.evaluate(results)
 }
 
 func (q QueryCheck) Validate() error {
 	if len(q.Query) == 0 {
 		return errors.New("missing required argument: query")
+	}
+	if q.AtLeast != nil && q.AtMost != nil && *q.AtLeast > *q.AtMost {
+		return errors.New("at_least must not be greater than at_most")
 	}
 	return nil
 }
@@ -334,15 +339,15 @@ func parseResults(resultType string, raw json.RawMessage) ([]sample, error) {
 	return samples, nil
 }
 
-func evaluate(samples []sample) goplum.Result {
+func (q QueryCheck) evaluate(samples []sample) goplum.Result {
 	if len(samples) == 0 {
 		return goplum.FailingResult("Query returned no results")
 	}
 
 	var bad []string
 	for i := range samples {
-		if samples[i].value == 0 || math.IsNaN(samples[i].value) {
-			bad = append(bad, formatSample(samples[i]))
+		if problem, failed := q.problem(samples[i].value); failed {
+			bad = append(bad, formatSample(samples[i])+problem)
 		}
 	}
 
@@ -357,6 +362,21 @@ func evaluate(samples []sample) goplum.Result {
 	return goplum.FailingResult("%d of %d series failed: %s", len(bad), len(samples), detail)
 }
 
+func (q QueryCheck) problem(value float64) (string, bool) {
+	switch {
+	case math.IsNaN(value):
+		return "", true
+	case q.AtLeast != nil && value < *q.AtLeast:
+		return " (must be at least " + formatFloat(*q.AtLeast) + ")", true
+	case q.AtMost != nil && value > *q.AtMost:
+		return " (must be at most " + formatFloat(*q.AtMost) + ")", true
+	case q.AtLeast == nil && q.AtMost == nil:
+		return "", value == 0
+	default:
+		return "", false
+	}
+}
+
 func formatSample(s sample) string {
 	name := s.labels["__name__"]
 
@@ -368,5 +388,9 @@ func formatSample(s sample) string {
 	}
 	slices.Sort(labels)
 
-	return fmt.Sprintf("%s{%s} = %s", name, strings.Join(labels, ", "), strconv.FormatFloat(s.value, 'g', -1, 64))
+	return fmt.Sprintf("%s{%s} = %s", name, strings.Join(labels, ", "), formatFloat(s.value))
+}
+
+func formatFloat(f float64) string {
+	return strconv.FormatFloat(f, 'g', -1, 64)
 }

@@ -70,8 +70,8 @@ check prometheus.query "example" {
 ```
 
 Runs an instant query, which should describe the healthy state of the service.
-The check passes if the query returns at least one series and every value is
-non-zero. It fails if:
+By default, the check passes if the query returns at least one series and
+every value is non-zero. It fails if:
 
 - the query returns no series, so a metric that has disappeared fails without
   needing `absent()`;
@@ -97,6 +97,22 @@ check prometheus.query "all hosts reporting" {
   query = "count(up{job='node'} == 1) == 3"
 }
 ```
+
+#### Thresholds
+
+To check a value against limits, set `at_least`, `at_most` or both, and have
+the query return the value itself:
+
+```goplum
+check prometheus.query "load" {
+  query = "node_load15{instance='web1'} / count(node_cpu_seconds_total{instance='web1',mode='idle'})"
+  at_most = 2
+}
+```
+
+With either set, zero is an ordinary value. Each series must be within the
+limits (inclusive), and failures report the value and the limit it broke. The
+check still fails if the query returns no series, or any value is `NaN`.
 
 PromQL accepts single-quoted label values, so queries don't need to escape
 Goplum's double quotes.

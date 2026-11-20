@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `at_least` and `at_most` thresholds to `prometheus.query` checks
 - Docker images now list third-party licences in a single `/notices/CREDITS` file
 
 ## 1.4.0 - 2026-11-12

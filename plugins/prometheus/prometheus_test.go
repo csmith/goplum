@@ -118,6 +118,85 @@ func TestQueryCheck_Failing(t *testing.T) {
 	}
 }
 
+func TestQueryCheck_Thresholds(t *testing.T) {
+	tests := map[string]struct {
+		fixture string
+		atLeast *float64
+		atMost  *float64
+		state   goplum.CheckState
+		detail  string
+	}{
+		"within both":  {"healthy.json", new(-3.0), new(1.0), goplum.StateGood, ""},
+		"zero allowed": {"zero.json", new(0.0), nil, goplum.StateGood, ""},
+		"zero below bound": {
+			"zero.json", new(0.5), nil, goplum.StateFailing,
+			`1 of 2 series failed: up{instance="b", job="node"} = 0 (must be at least 0.5)`,
+		},
+		"above at_most": {
+			"healthy.json", nil, new(-1.0), goplum.StateFailing,
+			`1 of 2 series failed: up{instance="a"} = 1 (must be at most -1)`,
+		},
+		"each bound": {
+			"healthy.json", new(0.0), new(0.5), goplum.StateFailing,
+			`2 of 2 series failed: up{instance="a"} = 1 (must be at most 0.5), up{instance="b"} = -2.5 (must be at least 0)`,
+		},
+		"nan":        {"nan.json", nil, new(10.0), goplum.StateFailing, "1 of 1 series failed: {} = NaN"},
+		"no results": {"empty.json", new(0.0), nil, goplum.StateFailing, "Query returned no results"},
+		"many": {
+			"many-zero.json", new(1.0), nil, goplum.StateFailing,
+			`7 of 7 series failed: {i="1"} = 0 (must be at least 1), {i="2"} = 0 (must be at least 1), ` +
+				`{i="3"} = 0 (must be at least 1), {i="4"} = 0 (must be at least 1), {i="5"} = 0 (must be at least 1) and 2 more`,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				server, _ := fixtureServer(t, http.StatusOK, tt.fixture)
+				server.Start()
+
+				plugin := &Plugin{Url: server.URL}
+				require.NoError(t, plugin.Validate())
+				check := plugin.Check("query").(QueryCheck)
+				check.Query = "up"
+				check.AtLeast = tt.atLeast
+				check.AtMost = tt.atMost
+				require.NoError(t, check.Validate())
+
+				result := check.Execute(context.Background())
+				assert.Equal(t, tt.state, result.State)
+				assert.Equal(t, tt.detail, result.Detail)
+			},
+		)
+	}
+}
+
+func TestQueryCheck_Validate(t *testing.T) {
+	tests := map[string]struct {
+		check QueryCheck
+		valid bool
+	}{
+		"query only":             {QueryCheck{Query: "up"}, true},
+		"missing query":          {QueryCheck{AtLeast: new(1.0)}, false},
+		"equal bounds":           {QueryCheck{Query: "up", AtLeast: new(1.0), AtMost: new(1.0)}, true},
+		"at_least above at_most": {QueryCheck{Query: "up", AtLeast: new(2.0), AtMost: new(1.0)}, false},
+	}
+
+	for name, tt := range tests {
+		t.Run(
+			name,
+			func(t *testing.T) {
+				if tt.valid {
+					require.NoError(t, tt.check.Validate())
+				} else {
+					require.Error(t, tt.check.Validate())
+				}
+			},
+		)
+	}
+}
+
 func TestQueryCheck_ConnectionError(t *testing.T) {
 	server := httptest.NewServer(http.NotFoundHandler())
 	server.Close()
