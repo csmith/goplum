@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Add `at_least` and `at_most` thresholds to `prometheus.query` checks
+- Fix `msteams.message` alerts not sending to current Teams webhooks, and
+  remove its `theme` setting
 - Docker images now list third-party licences in a single `/notices/CREDITS` file
 
 ## 1.4.0 - 2026-11-12

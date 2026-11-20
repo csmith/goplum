@@ -1,6 +1,6 @@
 # Microsoft Teams plugin
 
-The msteams plugin provides alerts that send messages to Microsoft Teams channels.
+The msteams plugin provides alerts that send messages to Microsoft Teams channels and chats.
 
 ## Alerts
 
@@ -8,16 +8,15 @@ The msteams plugin provides alerts that send messages to Microsoft Teams channel
 
 ```goplum
 alert msteams.message "example" {
-  url = "https://outlook.office.com/webhook/...../IncomingWebhook/....."
+  url = "https://.../workflows/.../triggers/manual/paths/invoke?..."
   title = "Service alert"
-  theme = "#ff0000"
 }
 ```
 
-Sends a Teams message via an Incoming Webhook connector. See
-[the Microsoft documentation](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel)
-for how to add an Incoming Webhook connector.
+Sends an Adaptive Card to a Teams webhook created with the Workflows app. Create one
+from the channel's "Workflows" menu using a template such as "Send webhook alerts to a
+channel", then copy the webhook URL it gives you. See
+[the Microsoft documentation](https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook)
+for details.
 
-The `title` and `theme` parameters are optional. Title defaults to
-"Goplum alert". The theme parameter controls the colour scheme of
-the message, and defaults to "#6c2b8f".
+The `title` parameter is optional, and defaults to "Goplum alert".
