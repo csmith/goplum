@@ -7,6 +7,7 @@
 - Fix `msteams.message` alerts not sending to current Teams webhooks, and
   remove its `theme` setting
 - Docker images now list third-party licences in a single `/notices/CREDITS` file
+- Fix data races that could briefly show wrong check state in the API and `plumdash`
 
 ## 1.4.0 - 2026-11-12
 

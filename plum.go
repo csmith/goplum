@@ -227,7 +227,17 @@ func (p *Plum) Run(ctx context.Context) {
 		for i := range p.Checks {
 			c := p.Checks[i]
 
-			if c.Suspended {
+			c.mu.Lock()
+			suspended := c.Suspended
+			remaining := c.remaining()
+			due := !suspended && remaining <= 0
+			if due {
+				c.Scheduled = true
+				remaining = c.remaining()
+			}
+			c.mu.Unlock()
+
+			if suspended {
 				// If a check is suspended, don't wait more than a minute before we check again.
 				if next := time.Now().Add(time.Minute); next.Before(earliest) {
 					earliest = next
@@ -235,15 +245,12 @@ func (p *Plum) Run(ctx context.Context) {
 				continue
 			}
 
-			remaining := c.Remaining()
-			if remaining <= 0 {
-				c.Scheduled = true
+			if due {
 				select {
 				case p.scheduled <- c:
 				case <-ctx.Done():
 					return
 				}
-				remaining = c.Remaining()
 			}
 
 			if next := time.Now().Add(remaining); next.Before(earliest) {
@@ -265,7 +272,11 @@ func (p *Plum) RunCheck(c *ScheduledCheck) {
 }
 
 func (p *Plum) RaiseAlerts(c *ScheduledCheck, previousState CheckState) {
-	p.raiseAlerts(c, previousState, false)
+	c.mu.Lock()
+	lastResult, newState := c.History[0], c.State
+	c.mu.Unlock()
+
+	p.raiseAlerts(c, lastResult, previousState, newState, false)
 }
 
 // AlertsMatching returns the alerts whose names match any of the given names, which may contain '*' wildcards. Names
@@ -303,7 +314,9 @@ func (p *Plum) RemoveCheckListener(listener CheckListener) {
 func (p *Plum) Suspend(checkName string) *ScheduledCheck {
 	if check, ok := p.Checks[checkName]; ok {
 		slog.Info("Check suspended", "check", checkName)
+		check.mu.Lock()
 		check.Suspended = true
+		check.mu.Unlock()
 		return check
 	}
 	return nil
@@ -314,7 +327,9 @@ func (p *Plum) Suspend(checkName string) *ScheduledCheck {
 func (p *Plum) Unsuspend(checkName string) *ScheduledCheck {
 	if check, ok := p.Checks[checkName]; ok {
 		slog.Info("Check unsuspended", "check", checkName)
+		check.mu.Lock()
 		check.Suspended = false
+		check.mu.Unlock()
 		select {
 		case p.wake <- struct{}{}:
 		default:
@@ -696,14 +711,20 @@ func (p *Plum) processScheduledChecks(ctx context.Context) {
 		select {
 		case c := <-p.scheduled:
 			p.runCheck(ctx, c)
+			c.mu.Lock()
 			c.Scheduled = false
+			c.mu.Unlock()
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
+// updateStatus works out the check's new state from its history and raises any alerts. The check's lock isn't held
+// while alerts are sent, as they can be slow.
 func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
+	c.mu.Lock()
+	lastResult := c.History[0]
 	oldState := c.State
 	newState := c.History.State(
 		map[CheckState]int{
@@ -711,18 +732,20 @@ func (p *Plum) updateStatus(c *ScheduledCheck, _ Result) {
 			StateGood:    c.Config.GoodThreshold,
 		},
 	)
+
+	var alert, reminder bool
 	if newState != oldState {
 		c.State = newState
-		if c.Settled || newState == StateFailing {
-			p.raiseAlerts(c, oldState, false)
-		}
+		alert = c.Settled || newState == StateFailing
 		c.Settled = true
-		return
+	} else {
+		reminderDue := c.Config.Reminder > 0 && time.Since(c.LastAlertTime) >= c.Config.Reminder
+		reminder = newState == StateFailing && c.Settled && reminderDue
 	}
+	c.mu.Unlock()
 
-	reminderDue := c.Config.Reminder > 0 && time.Since(c.LastAlertTime) >= c.Config.Reminder
-	if newState == StateFailing && c.Settled && reminderDue {
-		p.raiseAlerts(c, oldState, true)
+	if alert || reminder {
+		p.raiseAlerts(c, lastResult, oldState, newState, reminder)
 	}
 }
 
@@ -736,14 +759,14 @@ func (p *Plum) logCheck(c *ScheduledCheck, result Result) {
 	)
 }
 
-func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isReminder bool) {
+func (p *Plum) raiseAlerts(c *ScheduledCheck, lastResult *Result, previousState, newState CheckState, isReminder bool) {
 	details := AlertDetails{
 		Name:          c.Name,
 		Config:        redact(c.Check),
 		Type:          c.Type,
-		LastResult:    c.LastResult(),
+		LastResult:    lastResult,
 		PreviousState: previousState,
-		NewState:      c.State,
+		NewState:      newState,
 		IsReminder:    isReminder,
 		Link:          expandLink(c.Config.Link, c.Name, c.Type),
 	}
@@ -783,7 +806,9 @@ func (p *Plum) raiseAlerts(c *ScheduledCheck, previousState CheckState, isRemind
 		}
 	}
 
+	c.mu.Lock()
 	c.LastAlertTime = time.Now()
+	c.mu.Unlock()
 }
 
 // regexpForWildcards converts a set of names containing '*' characters as wildcards into a single regex that will
@@ -813,10 +838,12 @@ func regexpForWildcards(names []string) *regexp.Regexp {
 }
 
 type ScheduledCheck struct {
-	Name          string
-	Type          string
-	Config        *CheckSettings
-	Check         Check
+	Name   string
+	Type   string
+	Config *CheckSettings
+	Check  Check
+
+	mu            sync.Mutex // guards the fields below
 	LastRun       time.Time
 	LastAlertTime time.Time
 	Scheduled     bool
@@ -827,13 +854,14 @@ type ScheduledCheck struct {
 }
 
 func (c *ScheduledCheck) Remaining() time.Duration {
-	if c.Scheduled {
-		return c.Config.Interval
-	}
-	return time.Until(c.LastRun.Add(c.Config.Interval))
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.remaining()
 }
 
 func (c *ScheduledCheck) AddResult(result *Result) ResultHistory {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	copy(c.History[1:], c.History[:len(c.History)-1])
 	c.History[0] = result
 	c.LastRun = time.Now()
@@ -841,7 +869,16 @@ func (c *ScheduledCheck) AddResult(result *Result) ResultHistory {
 }
 
 func (c *ScheduledCheck) LastResult() *Result {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.History[0]
+}
+
+func (c *ScheduledCheck) remaining() time.Duration {
+	if c.Scheduled {
+		return c.Config.Interval
+	}
+	return time.Until(c.LastRun.Add(c.Config.Interval))
 }
 
 type ResultHistory [10]*Result

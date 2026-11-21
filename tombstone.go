@@ -43,6 +43,7 @@ func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
 			}
 		}
 
+		check.mu.Lock()
 		ts.Checks[check.Name] = CheckTombStone{
 			LastRun:       check.LastRun,
 			Settled:       check.Settled,
@@ -52,6 +53,7 @@ func NewTombStone(checks map[string]*ScheduledCheck) *TombStone {
 			History:       check.History,
 			PluginState:   state,
 		}
+		check.mu.Unlock()
 	}
 
 	return ts
@@ -92,12 +94,14 @@ func (ts *TombStone) Restore(checks map[string]*ScheduledCheck) error {
 	for i := range checks {
 		check := checks[i]
 		if saved, ok := ts.Checks[check.Name]; ok {
+			check.mu.Lock()
 			check.LastRun = saved.LastRun
 			check.Settled = saved.Settled
 			check.State = saved.State
 			check.Suspended = saved.Suspended
 			check.LastAlertTime = saved.LastAlertTime
 			check.History = saved.History
+			check.mu.Unlock()
 
 			if stateful, ok := check.Check.(Stateful); ok && saved.PluginState != nil {
 				stateful.Restore(

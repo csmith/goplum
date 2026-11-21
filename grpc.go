@@ -82,10 +82,14 @@ func (s *GrpcServer) Results(_ *api.Empty, rs api.GoPlum_ResultsServer) error {
 	results := make(chan *api.Result, 100)
 	l := CheckListener(
 		func(check *ScheduledCheck, result Result) {
+			check.mu.Lock()
+			lastRun := check.LastRun
+			check.mu.Unlock()
+
 			select {
 			case results <- &api.Result{
 				Check:  check.Name,
-				Time:   check.LastRun.Unix(),
+				Time:   lastRun.Unix(),
 				Result: s.convertState(result.State),
 				Detail: result.Detail,
 				Facts:  s.convertFacts(result.Facts),
@@ -158,6 +162,9 @@ func (s *GrpcServer) ResumeCheck(_ context.Context, name *api.CheckName) (*api.C
 }
 
 func (s *GrpcServer) convertCheck(check *ScheduledCheck) *api.Check {
+	check.mu.Lock()
+	defer check.mu.Unlock()
+
 	return &api.Check{
 		Name:      check.Name,
 		Type:      check.Type,
@@ -165,20 +172,20 @@ func (s *GrpcServer) convertCheck(check *ScheduledCheck) *api.Check {
 		Settled:   check.Settled,
 		State:     s.convertState(check.State),
 		Suspended: check.Suspended,
-		History:   s.convertHistory(check),
+		History:   s.convertHistory(check.Name, check.History),
 	}
 }
 
-func (s *GrpcServer) convertHistory(check *ScheduledCheck) []*api.Result {
+func (s *GrpcServer) convertHistory(name string, history ResultHistory) []*api.Result {
 	var res []*api.Result
-	for _, r := range check.History {
+	for _, r := range history {
 		if r == nil {
 			continue
 		}
 		res = append(
 			res,
 			&api.Result{
-				Check:  check.Name,
+				Check:  name,
 				Time:   r.Time.Unix(),
 				Result: s.convertState(r.State),
 				Detail: r.Detail,
