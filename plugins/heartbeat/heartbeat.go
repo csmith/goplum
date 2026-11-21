@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"chameth.com/goplum"
@@ -81,7 +82,9 @@ func (r *receiver) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	id := strings.ToLower(strings.TrimPrefix(request.URL.Path, r.path))
 	if check, ok := r.checks[id]; ok {
 		slog.Info("Received heartbeat")
+		check.mu.Lock()
 		check.received = time.Now()
+		check.mu.Unlock()
 		writer.WriteHeader(http.StatusAccepted)
 		return
 	}
@@ -93,21 +96,27 @@ type ReceivedCheck struct {
 	ID     string `config:"id" redact:"true"`
 	Within time.Duration
 
-	plugin   *Plugin
+	plugin *Plugin
+
+	mu       sync.Mutex // guards created and received
 	created  time.Time
 	received time.Time
 }
 
 func (g *ReceivedCheck) Execute(_ context.Context) goplum.Result {
-	if g.received.IsZero() {
+	g.mu.Lock()
+	created, received := g.created, g.received
+	g.mu.Unlock()
+
+	if received.IsZero() {
 		// We've not received a heartbeat since we started
-		if delta := time.Since(g.created); delta > g.Within {
+		if delta := time.Since(created); delta > g.Within {
 			return goplum.FailingResult("No heartbeat received in %s", delta)
 		}
-		return goplum.IndeterminateResult("No heartbeat received since monitoring started at %s", g.created)
+		return goplum.IndeterminateResult("No heartbeat received since monitoring started at %s", created)
 	}
 
-	if delta := time.Since(g.received); delta > g.Within {
+	if delta := time.Since(received); delta > g.Within {
 		return goplum.FailingResult("No heartbeat received in %s", delta)
 	}
 	return goplum.GoodResult()
@@ -142,6 +151,8 @@ type SavedState struct {
 }
 
 func (g *ReceivedCheck) Save() any {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	return SavedState{
 		Created:  g.created,
 		Received: g.received,
@@ -151,6 +162,9 @@ func (g *ReceivedCheck) Save() any {
 func (g *ReceivedCheck) Restore(restorer func(any)) {
 	state := SavedState{}
 	restorer(&state)
+
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	g.created = state.Created
 	g.received = state.Received
 }
