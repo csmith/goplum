@@ -42,17 +42,20 @@ func (p *Plugin) Validate() error {
 		return errors.New("port must be specified")
 	}
 
+	p.Path = strings.ReplaceAll(fmt.Sprintf("/%s/", p.Path), "//", "/")
+	return nil
+}
+
+func (p *Plugin) Start() error {
+	// Hand the registered checks over to the server, so that checks from a later config load can reuse their IDs.
+	handler := &receiver{path: p.Path, checks: p.checks}
+	p.checks = nil
+
 	l, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf(":%d", p.Port))
 	if err != nil {
 		return err
 	}
 	slog.Info("Heartbeat plugin listening", "port", p.Port)
-
-	p.Path = strings.ReplaceAll(fmt.Sprintf("/%s/", p.Path), "//", "/")
-
-	// Hand the registered checks over to the server, so that checks from a later config load can reuse their IDs.
-	handler := &receiver{path: p.Path, checks: p.checks}
-	p.checks = nil
 
 	server := &http.Server{
 		Handler:           handler,

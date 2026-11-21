@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add a `--validate` flag to check the config file and exit
 - Add `at_least` and `at_most` thresholds to `prometheus.query` checks
 - Fix `msteams.message` alerts not sending to current Teams webhooks, and
   remove its `theme` setting

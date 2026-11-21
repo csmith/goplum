@@ -176,6 +176,23 @@ func Test_Run_ReturnsErrorIfApiPortInUse(t *testing.T) {
 	assert.ErrorContains(t, err, fmt.Sprintf("unable to listen on port %d", port))
 }
 
+func Test_Run_ReturnsErrorIfHeartbeatPortInUse(t *testing.T) {
+	listener, err := net.Listen("tcp", "0.0.0.0:0")
+	require.NoError(t, err)
+	defer func() { _ = listener.Close() }()
+	port := listener.Addr().(*net.TCPAddr).Port
+
+	err = runGoplum(
+		writeConfig(t, startAlertSink(t).config(), heartbeatConfig(port)),
+		filepath.Join(t.TempDir(), "tomb"),
+		certPaths{},
+		0,
+		make(chan os.Signal, 1),
+	)
+
+	assert.ErrorContains(t, err, "unable to start plugin heartbeat")
+}
+
 func Test_Run_AlertsOnFailureAndRecovery(t *testing.T) {
 	sink := startAlertSink(t)
 	site := startSite(t)
@@ -788,6 +805,69 @@ func Test_Main_WarnsThatQuietIsDeprecated(t *testing.T) {
 
 	assert.Contains(t, string(output), "level=WARN")
 	assert.Contains(t, string(output), "--log.level warn")
+}
+
+func Test_Main_Validate_AcceptsValidConfig(t *testing.T) {
+	// Hold the heartbeat port, so validating fails if it tries to listen on it.
+	listener, err := net.Listen("tcp", "0.0.0.0:0")
+	require.NoError(t, err)
+	defer func() { _ = listener.Close() }()
+	port := listener.Addr().(*net.TCPAddr).Port
+
+	tombstone := tombstonePath(t)
+	writeHeartbeatTombstone(t, tombstone, heartbeat.SavedState{Created: time.Now()})
+	before, err := os.ReadFile(tombstone)
+	require.NoError(t, err)
+
+	cmd := goplumCommand(
+		"--config",
+		writeConfig(t, startAlertSink(t).config(), heartbeatConfig(port), httpCheck("site", "http://127.0.0.1:1/")),
+		"--tombstone",
+		tombstone,
+		"--api-port",
+		strconv.Itoa(port),
+	)
+	cmd.Env = append(cmd.Env, "VALIDATE=true")
+	output, err := cmd.CombinedOutput()
+
+	require.NoError(t, err, string(output))
+	assert.Contains(t, string(output), "Config is valid")
+	after, err := os.ReadFile(tombstone)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+}
+
+func Test_Main_Validate_RejectsInvalidConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		config string
+		want   string
+	}{
+		{
+			name:   "invalid check setting",
+			config: `check http.get "a" { url = "http://localhost/"` + "\n" + `failing_threshold = 11 }`,
+			want:   "failing_threshold must be between 1 and 10, got 11",
+		},
+		{
+			name:   "bad include",
+			config: `include "nope.conf"`,
+			want:   "nope.conf does not exist",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name,
+			func(t *testing.T) {
+				output, err := goplumCommand("--validate", "--config", writeConfig(t, tt.config)).CombinedOutput()
+
+				var exitErr *exec.ExitError
+				require.ErrorAs(t, err, &exitErr)
+				assert.Equal(t, 1, exitErr.ExitCode())
+				assert.Contains(t, string(output), tt.want)
+			},
+		)
+	}
 }
 
 func Test_Main_SavesTombstoneOnSignal(t *testing.T) {

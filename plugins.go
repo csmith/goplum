@@ -280,6 +280,12 @@ type Validator interface {
 	Validate() error
 }
 
+// Starter is implemented by plugins that need to start long-lived work, such as listening for connections. Start is
+// called once the config has loaded and any saved state has been restored, and never when only validating the config.
+type Starter interface {
+	Start() error
+}
+
 // LongRunning is implemented by checks that intentionally run for a long period of time. Checks that implement
 // this interface won't be subject to user-defined timeouts.
 type LongRunning interface {

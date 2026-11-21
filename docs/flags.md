@@ -126,3 +126,20 @@ Goplum can operate without a tombstone file, and will run even if it can't read 
 write to the specified file, but the status of checks will be lost when it is restarted.
 
 Default: `/tmp/goplum.tomb`
+
+## validate
+
+```shell
+# Command line
+goplum --validate
+
+# Environment variable
+VALIDATE=true goplum
+```
+
+Loads the config file, including any included files and plugin settings,
+then exits. Goplum exits with status 0 if the config is valid, or prints the
+error and exits with status 1 if it isn't. No checks are run, the tombstone
+isn't read or written, and nothing listens for connections.
+
+Default: `false`

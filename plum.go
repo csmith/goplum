@@ -196,6 +196,18 @@ func (p *Plum) SaveState(tombStonePath string) error {
 	return NewTombStone(p.Checks).Save(tombStonePath)
 }
 
+// StartPlugins starts the long-lived work of each plugin used by the config.
+func (p *Plum) StartPlugins() error {
+	for name := range p.usedPlugins {
+		if s, ok := p.plugins[name].(Starter); ok {
+			if err := s.Start(); err != nil {
+				return fmt.Errorf("unable to start plugin %s: %w", name, err)
+			}
+		}
+	}
+	return nil
+}
+
 // Run schedules checks until ctx is cancelled, then waits for any running checks and alerts to finish. Cancelling ctx
 // also interrupts the running checks, and their results are discarded.
 func (p *Plum) Run(ctx context.Context) {
@@ -860,6 +872,17 @@ func (h ResultHistory) State(thresholds map[CheckState]int) CheckState {
 
 const shutdownTimeout = 5 * time.Second
 
+// ValidateConfig loads the config the same way Run does, without restoring state, starting plugins or running checks.
+func ValidateConfig(plugins map[string]Plugin, configPath string) error {
+	p := NewPlum()
+	p.RegisterPlugins(plugins)
+
+	if err := p.ReadConfig(configPath); err != nil {
+		return fmt.Errorf("unable to read config: %w", err)
+	}
+	return nil
+}
+
 // Run creates a new instance of Plum, registers plugins and loads configuration, and starts the main loop. It blocks
 // until a value is received on signals, then saves state and cleans up. An error is returned if goplum couldn't start.
 // It is expected that flag.Parse has been called prior to calling this method.
@@ -873,6 +896,10 @@ func Run(plugins map[string]Plugin, configPath, tombStonePath string, signals <-
 
 	if err := p.RestoreState(tombStonePath); err != nil {
 		slog.Warn("Unable to restore state from tombstone", "error", err)
+	}
+
+	if err := p.StartPlugins(); err != nil {
+		return err
 	}
 
 	api := NewGrpcServer(p)
