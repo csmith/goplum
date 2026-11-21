@@ -8,7 +8,7 @@ require (
 	github.com/csmith/slogflags v1.2.0
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/goccy/go-yaml v1.19.2
-	github.com/gosnmp/gosnmp v1.46.0
+	github.com/gosnmp/gosnmp v1.47.0
 	github.com/sebdah/goldie/v2 v2.8.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
