@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -10,9 +9,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"chameth.com/goplum/api"
+	xhttp "chameth.com/x/http"
 	"github.com/csmith/envflag/v2"
 	"github.com/csmith/slogflags"
 )
@@ -42,31 +41,15 @@ func run() error {
 	}
 	defer conn.Close()
 
-	srv := &http.Server{
-		Addr:              *listen,
-		Handler:           newDashboard(api.NewGoPlumClient(conn)),
-		ReadHeaderTimeout: 10 * time.Second,
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	errs := make(chan error, 1)
-	go func() {
-		slog.Info("Serving dashboard", "address", *listen, "server", *server)
-		errs <- srv.ListenAndServe()
-	}()
-
-	select {
-	case err := <-errs:
-		return err
-	case <-ctx.Done():
-	}
-
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
-	return nil
+	slog.Info("Serving dashboard", "address", *listen, "server", *server)
+	return xhttp.ListenAndServe(
+		ctx,
+		&http.Server{
+			Addr:    *listen,
+			Handler: newDashboard(api.NewGoPlumClient(conn)),
+		},
+	)
 }
